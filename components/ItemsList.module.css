@@ -1,0 +1,580 @@
+.container {
+  background: #1a1a1a;
+  border: 1px solid #333;
+  border-radius: 12px;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+/* ==================== 顶部标签 ==================== */
+.tabs {
+  display: flex;
+  border-bottom: 1px solid #333;
+  background: #0f0f0f;
+}
+
+.tab {
+  flex: 1;
+  padding: 15px;
+  background: transparent;
+  border: none;
+  color: #999;
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  border-bottom: 2px solid transparent;
+}
+
+.tab:hover {
+  background: #1a1a1a;
+  color: #fff;
+}
+
+.tab.active {
+  color: #667eea;
+  border-bottom-color: #667eea;
+  background: #1a1a1a;
+}
+
+/* ==================== 搜索过滤器 ==================== */
+.searchBoxContainer {
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+  background: #2b2621;
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.3);
+}
+
+.filterContent {
+  display: flex;
+  flex-direction: column;
+}
+
+.filterHeader {
+  padding: 12px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+}
+
+.filterHeaderLeft {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+}
+
+.filterTitle {
+  font-size: 12px;
+  color: #ffcd19;
+  font-weight: bold;
+}
+
+.matchModeButtons {
+  display: flex;
+  gap: 4px;
+}
+
+.matchModeBtn {
+  padding: 4px 8px;
+  font-size: 11px;
+  border-radius: 4px;
+  background: transparent;
+  color: #ffcd19;
+  border: 1px solid #ffcd19;
+  cursor: pointer;
+  transition: all 0.25s ease;
+}
+
+.matchModeBtn.active {
+  background: #ffcd19;
+  color: #1e1b18;
+}
+
+.collapseBtn {
+  background: transparent;
+  border: 1px solid rgba(255, 205, 25, 0.3);
+  color: #ffcd19;
+  padding: 4px 8px;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 11px;
+}
+
+.filterBody {
+  padding: 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  max-height: 400px;
+  overflow-y: auto;
+}
+
+.filterRow {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.searchInput {
+  flex: 1;
+  min-width: 200px;
+  background: #1e1b18;
+  border: 1px solid #48413a;
+  color: #eee;
+  padding: 8px 12px;
+  border-radius: 4px;
+  font-size: 14px;
+}
+
+.searchInput:focus {
+  outline: none;
+  border-color: #d4af37;
+  box-shadow: 0 0 10px rgba(212, 175, 55, 0.2);
+}
+
+.buttonGroup {
+  display: flex;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+
+.toggleBtn {
+  background: rgba(0, 0, 0, 0.2);
+  color: #a0937d;
+  border: 1px solid #7d6b4a;
+  padding: 6px 12px;
+  font-size: 13px;
+  border-radius: 4px;
+  cursor: pointer;
+  transition: all 0.25s ease;
+}
+
+.toggleBtn:hover {
+  border-color: #d4af37;
+  color: #fff;
+  box-shadow: 0 0 8px rgba(212, 175, 55, 0.3);
+}
+
+.toggleBtn.active {
+  background: rgba(255, 204, 0, 0.1);
+  border-color: #ffcc00;
+  color: #ffcc00;
+  box-shadow: inset 0 0 8px rgba(255, 204, 0, 0.2), 0 0 12px rgba(255, 204, 0, 0.3);
+  text-shadow: 0 0 5px rgba(255, 204, 0, 0.5);
+  font-weight: 700;
+}
+
+.filterSection {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.sectionLabel {
+  font-size: 11px;
+  color: #888;
+}
+
+.tagButtons {
+  display: flex;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+
+.tagBtn {
+  padding: 6px 10px;
+  font-size: 12px;
+}
+
+.hiddenTagButtons {
+  display: flex;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.hiddenTagGroup {
+  display: flex;
+  gap: 2px;
+}
+
+.hiddenTagBtn {
+  padding: 6px 10px;
+  font-size: 12px;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.tagIcon {
+  width: 14px;
+  height: 14px;
+  display: inline-block;
+  flex-shrink: 0;
+}
+
+.filterFooter {
+  padding: 8px 12px;
+  border-top: 1px solid rgba(255, 255, 255, 0.05);
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  background: rgba(0, 0, 0, 0.2);
+}
+
+.resultCount {
+  font-size: 13px;
+  color: #a0937d;
+}
+
+.resultNumber {
+  color: #ffcc00;
+  font-weight: bold;
+}
+
+.resetBtn {
+  background: rgba(0, 0, 0, 0.2);
+  border: 1px solid #7d6b4a;
+  color: #a0937d;
+  padding: 4px 8px;
+  border-radius: 4px;
+  font-size: 11px;
+  cursor: pointer;
+  transition: all 0.25s ease;
+}
+
+.resetBtn:hover {
+  background: rgba(212, 175, 55, 0.05);
+  border-color: #d4af37;
+  color: #fff;
+}
+
+/* ==================== 物品列表 ==================== */
+.itemsList {
+  flex: 1;
+  max-height: calc(100vh - 500px);
+  overflow-y: auto;
+  padding: 10px;
+}
+
+/* ==================== 物品卡片 ==================== */
+.itemCardContainer {
+  margin-bottom: 8px;
+  background: rgba(30, 30, 30, 0.4);
+  border-radius: 8px;
+  border: 1px solid rgba(255, 255, 255, 0.05);
+  overflow: hidden;
+  transition: all 0.2s ease;
+  cursor: pointer;
+}
+
+.itemCardContainer:hover {
+  background: rgba(50, 50, 50, 0.5);
+  border-color: rgba(255, 255, 255, 0.15);
+  transform: translateY(-1px);
+}
+
+.itemCardContainer.expanded {
+  background: rgba(25, 25, 25, 0.9);
+  border-color: rgba(255, 205, 25, 0.3);
+  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.6);
+}
+
+.itemCardContainer.dragging {
+  opacity: 0.5;
+}
+
+.itemCard {
+  display: flex;
+  align-items: center;
+  padding: 8px 12px;
+  gap: 12px;
+  min-height: 64px;
+}
+
+/* 品质边框 */
+.itemCard.tierBronze { border-left: 4px solid #cd7f32; }
+.itemCard.tierSilver { border-left: 4px solid #c0c0c0; }
+.itemCard.tierGold { border-left: 4px solid #ffd700; }
+.itemCard.tierDiamond { border-left: 4px solid #b9f2ff; }
+.itemCard.tierLegendary { border-left: 4px solid #ff4500; }
+
+/* 卡片左侧 */
+.cardLeft {
+  display: flex;
+  align-items: center;
+}
+
+.imageBox {
+  background: rgba(0, 0, 0, 0.4);
+  border-radius: 6px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  position: relative;
+  overflow: hidden;
+  flex-shrink: 0;
+  height: 44px;
+}
+
+.imageBox.sizeSmall {
+  width: 22px;
+  border-radius: 4px;
+}
+
+.imageBox.sizeMedium {
+  width: 44px;
+}
+
+.imageBox.sizeLarge {
+  width: 66px;
+  border-radius: 8px;
+}
+
+.placeholder {
+  font-size: 24px;
+}
+
+.itemImage {
+  width: 100%;
+  height: 100%;
+  object-fit: fill;
+  display: block;
+}
+
+/* 卡片中间 */
+.cardCenter {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.nameLine {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.nameCn {
+  font-size: 17px;
+  font-weight: bold;
+  color: #fff;
+}
+
+.tierLabel {
+  font-size: 11px;
+  font-weight: 800;
+  padding: 1px 4px;
+  border-radius: 3px;
+  background: rgba(255, 255, 255, 0.08);
+}
+
+.tierLabel.tierBronze { color: #cd7f32; border: 1px solid rgba(205, 127, 50, 0.3); }
+.tierLabel.tierSilver { color: #c0c0c0; border: 1px solid rgba(192, 192, 192, 0.3); }
+.tierLabel.tierGold { color: #ffd700; border: 1px solid rgba(255, 215, 0, 0.3); }
+.tierLabel.tierDiamond { color: #b9f2ff; border: 1px solid rgba(185, 242, 255, 0.3); }
+.tierLabel.tierLegendary { color: #ff4500; border: 1px solid rgba(255, 69, 0, 0.25); }
+
+.tagsLine {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+}
+
+.tagBadge {
+  font-size: 11px;
+  color: #9098fe;
+  background: rgba(152, 168, 254, 0.1);
+  padding: 0 6px;
+  border-radius: 10px;
+  border: 1px solid rgba(152, 168, 254, 0.3);
+}
+
+/* 卡片右侧 */
+.cardRight {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  justify-content: space-between;
+  align-self: stretch;
+  min-height: 48px;
+}
+
+.topRightGroup {
+  display: flex;
+  gap: 4px;
+  align-items: center;
+}
+
+.heroBadge {
+  font-size: 12px;
+  font-weight: 600;
+  padding: 2px 6px;
+  border-radius: 4px;
+  background: rgba(255, 255, 255, 0.05);
+}
+
+.expandChevron {
+  font-size: 14px;
+  color: #888;
+  transition: transform 0.2s ease;
+}
+
+/* ==================== 展开详情 ==================== */
+.itemDetailsV2 {
+  border-top: 1px solid rgba(255, 255, 255, 0.05);
+  background: rgba(0, 0, 0, 0.3);
+  padding: 12px;
+}
+
+.detailsContent {
+  display: flex;
+  gap: 12px;
+}
+
+.detailsLeft {
+  flex-shrink: 0;
+}
+
+.cdProgression {
+  background: rgba(0, 0, 0, 0.2);
+  border: 1px solid rgba(255, 255, 255, 0.05);
+  padding: 4px;
+  border-radius: 4px;
+  min-width: 50px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+}
+
+.cdStep {
+  font-size: 16px;
+  font-weight: bold;
+  padding: 2px 6px;
+  border-radius: 3px;
+}
+
+.cdStep.valBronze { color: #cd7f32; }
+.cdStep.valSilver { color: #c0c0c0; }
+.cdStep.valGold { color: #ffd700; }
+.cdStep.valDiamond { color: #b9f2ff; }
+.cdStep.valLegendary { color: #ff4500; }
+
+.cdArrow {
+  color: #666;
+  font-size: 12px;
+}
+
+.cdUnit {
+  font-size: 11px;
+  color: #888;
+  margin-top: 2px;
+}
+
+/* 单个CD显示 */
+.cdDisplay {
+  background: rgba(0, 0, 0, 0.2);
+  border: 1px solid rgba(255, 255, 255, 0.05);
+  padding: 8px;
+  border-radius: 4px;
+  min-width: 50px;
+  text-align: center;
+}
+
+.cdValue {
+  font-size: 18px;
+  font-weight: bold;
+  color: #00ecc3;
+}
+
+.cdDisplay .cdUnit {
+  font-size: 11px;
+  color: #888;
+  margin-top: 2px;
+}
+
+.detailsRight {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.skillItem {
+  font-size: 14px;
+  line-height: 1.6;
+  color: #ddd;
+  margin-bottom: 6px;
+}
+
+/* 附魔行容器 */
+.itemEnchantmentsRow {
+  margin: 0 12px 12px 12px;
+  padding-top: 8px;
+  border-top: 1px solid rgba(255, 255, 255, 0.05);
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.enchantItem {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 14px;
+  line-height: 1.6;
+  color: #ddd;
+}
+
+.enchantBadge {
+  font-size: 12.5px;
+  font-weight: bold;
+  padding: 1px 0;
+  min-width: 52px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 3px;
+  color: var(--enc-clr);
+  background: color-mix(in srgb, var(--enc-clr), transparent 88%);
+  border: 1px solid color-mix(in srgb, var(--enc-clr), transparent 70%);
+  white-space: nowrap;
+}
+
+.enchantEffect {
+  color: #ddd;
+}
+
+/* 加载更多 */
+.loadingMore {
+  padding: 15px;
+  text-align: center;
+  color: #666;
+  font-size: 12px;
+  font-style: italic;
+}
+
+/* 滚动条 */
+.itemsList::-webkit-scrollbar,
+.filterBody::-webkit-scrollbar {
+  width: 6px;
+}
+
+.itemsList::-webkit-scrollbar-track,
+.filterBody::-webkit-scrollbar-track {
+  background: #0f0f0f;
+}
+
+.itemsList::-webkit-scrollbar-thumb,
+.filterBody::-webkit-scrollbar-thumb {
+  background: #444;
+  border-radius: 3px;
+}
+
+.itemsList::-webkit-scrollbar-thumb:hover,
+.filterBody::-webkit-scrollbar-thumb:hover {
+  background: #666;
+}

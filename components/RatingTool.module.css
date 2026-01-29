@@ -1,0 +1,322 @@
+.container {
+  display: flex;
+  gap: 20px;
+  height: 100%;
+  max-height: calc(100vh - 140px);
+}
+
+/* 评分区域 */
+.ratingSection {
+  flex: 1;
+  background: #1a1a1a;
+  border: 1px solid #333;
+  border-radius: 12px;
+  padding: 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+  overflow-y: auto;
+  max-height: 100%;
+}
+
+.sectionHeader {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.sectionTitle {
+  font-size: 20px;
+  font-weight: 700;
+  color: #fff;
+}
+
+.editButton {
+  padding: 8px 16px;
+  background: #2a2a2a;
+  border: 1px solid #444;
+  border-radius: 6px;
+  color: #667eea;
+  font-size: 13px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.3s ease;
+}
+
+.editButton:hover {
+  background: #333;
+  border-color: #667eea;
+}
+
+/* 预设选择器 */
+.presetSelector {
+  margin-top: -10px;
+}
+
+.presetSelect {
+  width: 100%;
+  padding: 10px 15px;
+  background: #0f0f0f;
+  border: 1px solid #444;
+  border-radius: 8px;
+  color: #fff;
+  font-size: 14px;
+  cursor: pointer;
+}
+
+.presetSelect:focus {
+  outline: none;
+  border-color: #667eea;
+}
+
+/* 等级编辑器 */
+.tierEditor {
+  background: #0f0f0f;
+  border: 1px solid #444;
+  border-radius: 8px;
+  padding: 15px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.tierEditRow {
+  display: flex;
+  gap: 10px;
+  align-items: center;
+}
+
+.tierNameInput {
+  flex: 1;
+  padding: 8px 12px;
+  background: #2a2a2a;
+  border: 1px solid #444;
+  border-radius: 6px;
+  color: #fff;
+  font-size: 14px;
+}
+
+.tierNameInput:focus {
+  outline: none;
+  border-color: #667eea;
+}
+
+.tierColorInput {
+  width: 50px;
+  height: 36px;
+  border: 1px solid #444;
+  border-radius: 6px;
+  background: transparent;
+  cursor: pointer;
+}
+
+.deleteTierButton {
+  width: 36px;
+  height: 36px;
+  background: #ff4757;
+  border: none;
+  border-radius: 6px;
+  color: white;
+  font-size: 20px;
+  font-weight: bold;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.deleteTierButton:hover {
+  background: #ff6b7a;
+  transform: scale(1.1);
+}
+
+.addTierButton {
+  padding: 10px;
+  background: #2a2a2a;
+  border: 1px dashed #667eea;
+  border-radius: 6px;
+  color: #667eea;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.3s ease;
+}
+
+.addTierButton:hover {
+  background: #333;
+  border-color: #764ba2;
+  color: #764ba2;
+}
+
+.savePresetButton {
+  padding: 10px;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  border: none;
+  border-radius: 6px;
+  color: white;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: transform 0.3s ease;
+}
+
+.savePresetButton:hover {
+  transform: translateY(-2px);
+}
+
+/* 评分层级 */
+.tiers {
+  display: flex;
+  flex-direction: column;
+  gap: 15px;
+}
+
+.tierZone {
+  border: 2px solid;
+  border-radius: 10px;
+  overflow: hidden;
+  transition: all 0.3s ease;
+}
+
+.tierZoneActive {
+  transform: scale(1.02);
+  box-shadow: 0 0 20px rgba(102, 126, 234, 0.5);
+}
+
+.tierHeader {
+  padding: 12px 15px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  color: #000;
+  font-weight: 700;
+}
+
+.tierName {
+  font-size: 18px;
+  letter-spacing: 1px;
+}
+
+.tierCount {
+  background: rgba(0, 0, 0, 0.2);
+  padding: 4px 10px;
+  border-radius: 12px;
+  font-size: 12px;
+}
+
+.tierItems {
+  background: #0f0f0f;
+  min-height: 80px;
+  padding: 10px;
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
+  gap: 10px;
+}
+
+.emptyState {
+  grid-column: 1 / -1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 80px;
+  color: #666;
+  font-size: 13px;
+  border: 2px dashed #333;
+  border-radius: 6px;
+}
+
+.tierItem {
+  background: #1a1a1a;
+  border: 1px solid #333;
+  border-radius: 8px;
+  padding: 8px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  position: relative;
+}
+
+.tierItem:hover {
+  background: #2a2a2a;
+  border-color: #555;
+  transform: translateY(-2px);
+}
+
+.tierItemImage {
+  width: 40px;
+  height: 40px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 24px;
+  background: #2a2a2a;
+  border-radius: 6px;
+}
+
+.tierItemName {
+  font-size: 11px;
+  color: #ccc;
+  text-align: center;
+  max-width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  line-height: 1.3;
+}
+
+.removeButton {
+  position: absolute;
+  top: -6px;
+  right: -6px;
+  width: 20px;
+  height: 20px;
+  background: #ff4757;
+  border: none;
+  border-radius: 50%;
+  color: white;
+  font-size: 16px;
+  line-height: 1;
+  cursor: pointer;
+  display: none;
+  align-items: center;
+  justify-content: center;
+  transition: transform 0.2s ease;
+}
+
+.tierItem:hover .removeButton {
+  display: flex;
+}
+
+.removeButton:hover {
+  transform: scale(1.2);
+}
+
+/* 详情区域 */
+.detailSection {
+  width: 400px;
+  flex-shrink: 0;
+  max-height: 100%;
+  overflow: hidden;
+}
+
+/* 响应式 */
+@media (max-width: 1200px) {
+  .container {
+    flex-direction: column;
+  }
+
+  .detailSection {
+    width: 100%;
+  }
+}
+
+@media (max-width: 768px) {
+  .tierItems {
+    grid-template-columns: repeat(auto-fill, minmax(80px, 1fr));
+  }
+}
