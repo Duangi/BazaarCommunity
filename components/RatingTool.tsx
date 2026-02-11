@@ -272,7 +272,7 @@ function TierDropZone({
 
   return (
     <div
-      ref={drop}
+      ref={drop as any}
       className={`${styles.tierZone} ${isOver ? styles.tierZoneActive : ''}`}
       style={{ borderColor: tier.color }}
     >

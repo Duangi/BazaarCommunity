@@ -1,10 +1,11 @@
+// components/ItemDetailContent.tsx
 'use client'
 
 import { Fragment } from 'react'
-import styles from './ItemDetail.module.css'
+import styles from './ItemDetail.module.css' // 继续沿用 ItemDetail 的样式
 import { renderText, ENCHANT_COLORS } from '@/lib/rendering'
 
-// 定义了组件所需的所有数据字段
+// 从 ItemDetail.tsx 复制过来的 Item 类型定义
 interface Item {
   id: string
   name_en: string
@@ -19,122 +20,22 @@ interface Item {
   cooldown?: number
   cooldown_tiers?: string
   skills?: any[]
-  skills_passive?: any[] // 新增：被动技能
+  skills_passive?: any[]
   descriptions?: any[]
   description_cn?: any
-  quests?: any // 新增：任务，可以是对象或数组
+  quests?: any
   enchantments?: Record<string, any>
-  art_key?: string // 新增：用于查找技能图片
+  art_key?: string
 }
 
-interface ItemDetailProps {
-  item: Item | null
+interface ItemDetailContentProps {
+  item: Item
 }
 
-
-
-/**
- * 根据 item 数据获取正确的图片路径
- * 模仿 PySide6 的逻辑: 优先使用 art_key (技能), 回退到 id (物品)
- * @param item - 物品/技能对象
- * @returns 图片的 URL
- */
-const getItemImageUrl = (item: Item): string => {
-  let imageName = ''
-  if (item.art_key) {
-    // 从 art_key 提取文件名, e.g., "Icon_Skill_STE_ThrillOfTheFlight.png"
-    imageName = item.art_key.split('/').pop() || ''
-    // 移除 .png 后缀并统一使用 .webp
-    imageName = imageName.replace(/\.png$/, '.webp')
-    return `/images/skill/${imageName}`
-  }
-  
-  // 如果没有 art_key, 则为物品，使用 id
-  imageName = `${item.id}.webp`
-  return `/images/card/${imageName}`
-}
-
-export default function ItemDetail({ item }: ItemDetailProps) {
-  if (!item) {
-    return (
-      <div className={styles.container}>
-        <div className={styles.placeholder}>
-          <p>👈 从右侧列表中点击或拖拽一个物品</p>
-          <p>查看详细信息</p>
-        </div>
-      </div>
-    )
-  }
-
-  const startingTierRaw = item.starting_tier || item.tier || 'Bronze'
-  const tierClass = startingTierRaw.split(' / ')[0].toLowerCase()
-
-  const tierNameMap: Record<string, string> = {
-    'bronze': '青铜+', 'silver': '白银+', 'gold': '黄金+',
-    'diamond': '钻石', // 无 '+'
-    'legendary': '传说' // 无 '+'
-  }
-  const tierLabel = tierNameMap[tierClass] || tierClass
-
-  const sizeClass = (item.size || 'Medium').split(' / ')[0].toLowerCase()
-  
-  // 英雄处理
-  const heroesRaw = item.heroes || ''
-  const heroesStr = Array.isArray(heroesRaw) ? heroesRaw[0] : heroesRaw
-  const heroEn = heroesStr.split(' / ')[0].trim()
-  const heroCn = heroesStr.split(' / ')[1]?.trim() || heroEn
-  const isCommon = heroEn.toLowerCase() === 'common'
-
-  // 标签处理
-  const getTags = () => {
-    if (item.processed_tags?.length) {
-      return item.processed_tags
-    }
-    if (typeof item.tags === 'string') {
-      return item.tags.split('|').map(t => {
-        const parts = t.trim().split('/')
-        return parts[1]?.trim() || parts[0].trim()
-      }).filter(Boolean)
-    }
-    return []
-  }
-  const displayTags = getTags()
-
+// 这是我们的“详情展示标准件”
+export default function ItemDetailContent({ item }: ItemDetailContentProps) {
   return (
-    <div className={styles.container}>
-      {/* 卡牌头部 */}
-      <div className={`${styles.cardHeader} ${styles[`tier${tierClass.charAt(0).toUpperCase() + tierClass.slice(1)}`]}`}>
-        <div className={styles.cardHeaderLeft}>
-          <div className={`${styles.imageBox} ${styles[`size${sizeClass.charAt(0).toUpperCase() + sizeClass.slice(1)}`]}`}>
-            <img src={getItemImageUrl(item)} alt={item.name_cn} className={styles.itemImage} />
-          </div>
-        </div>
-        
-        <div className={styles.cardHeaderCenter}>
-          <div className={styles.nameLine}>
-            <span className={styles.nameCn}>{item.name_cn || item.name_en}</span>
-            <span className={`${styles.tierLabel} ${styles[`tier${tierClass.charAt(0).toUpperCase() + tierClass.slice(1)}`]}`}>
-              {tierLabel}
-            </span>
-          </div>
-          <div className={styles.nameEn}>{item.name_en}</div>
-          <div className={styles.tagsLine}>
-            {displayTags.slice(0, 4).map((tag, idx) => (
-              <span key={idx} className={styles.tagBadge}>{tag}</span>
-            ))}
-          </div>
-        </div>
-
-        {/* 仅在非通用时显示英雄头像 */}
-        {!isCommon && (
-          <div className={styles.cardHeaderRight}>
-            <div className={styles.heroAvatarContainer}>
-              <img src={`/images/heroes/${heroEn}.webp`} alt={heroCn} className={styles.heroAvatar} title={`专属英雄: ${heroCn}`} />
-            </div>
-          </div>
-        )}
-      </div>
-
+    <>
       {/* 详细信息 */}
       <div className={styles.detailsContent}>
         {/* 左侧：冷却 */}
@@ -147,7 +48,6 @@ export default function ItemDetail({ item }: ItemDetailProps) {
               const ms = parseFloat(v)
               return isNaN(ms) ? "0.0" : (ms > 100 ? ms / 1000 : ms).toFixed(1)
             })
-            // React中不方便像PySide那样动态生成样式类，这里简化显示
             return (
               <div className={styles.detailsLeft}>
                 <div className={styles.cdProgression}>
@@ -180,7 +80,6 @@ export default function ItemDetail({ item }: ItemDetailProps) {
 
         {/* 右侧：技能/描述 */}
         <div className={styles.detailsRight}>
-          {/* 主动技能 (skills) 或技能描述 (descriptions) */}
           {(item.skills || item.descriptions || []).map((desc, idx) => (
             <div key={`desc-${idx}`} className={styles.skillItem}>
               🗡️ {renderText(desc)}
@@ -191,8 +90,6 @@ export default function ItemDetail({ item }: ItemDetailProps) {
               🗡️ {renderText(item.description_cn)}
             </div>
           )}
-          
-          {/* 被动技能 (skills_passive) */}
           {item.skills_passive?.map((skill, idx) => (
             <div key={`passive-${idx}`} className={`${styles.skillItem} ${styles.passive}`}>
               ⚙️ {renderText(skill)}
@@ -233,6 +130,6 @@ export default function ItemDetail({ item }: ItemDetailProps) {
           })}
         </div>
       )}
-    </div>
+    </>
   )
 }
