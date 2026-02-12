@@ -99,6 +99,8 @@ type PlannerExportPayload = {
   dayEnd: number
   hero?: string
   lineupName?: string
+  videoBv?: string
+  videoTitle?: string
   dayPlanTag?: '连胜早走' | '北伐阵容'
   strengthTag?: '版本强势' | '中规中矩' | '地沟油'
   difficultyTag?: '容易成型' | '比较困难' | '极难成型'
@@ -358,34 +360,12 @@ function createJulesSpecialSlots(day: number): SpecialSlot[] {
 }
 
 function getJulesSlotCount(day: number): number {
-  if (day >= 7) return 3
+  if (day >= 3) return 3
   if (day >= 2) return 2
   return 1
 }
 
 function syncJulesSpecialSlotsAcrossSegments(segments: Segment[]): Segment[] {
-  const jules = segments.filter((seg) => seg.hero === 'Jules')
-  if (jules.length === 0) {
-    let changed = false
-    const cleaned = segments.map((seg) => {
-      if (seg.specialSlots.length === 0) return seg
-      changed = true
-      return { ...seg, specialSlots: [] }
-    })
-    return changed ? cleaned : segments
-  }
-
-  const sorted = [...jules].sort((a, b) => a.dayFrom - b.dayFrom)
-  const templateByRank: Array<{ slot: number; type: 'fire' | 'ice' } | null> = [null, null, null]
-  for (let rank = 0; rank < 3; rank += 1) {
-    const sourceForRank = sorted.find(
-      (seg) => getJulesSlotCount(seg.dayFrom) >= rank + 1 && seg.specialSlots.length > rank
-    )
-    templateByRank[rank] = sourceForRank
-      ? { slot: sourceForRank.specialSlots[rank].slot, type: sourceForRank.specialSlots[rank].type }
-      : null
-  }
-
   let changed = false
   const next = segments.map((seg) => {
     if (seg.hero !== 'Jules') {
@@ -394,31 +374,24 @@ function syncJulesSpecialSlotsAcrossSegments(segments: Segment[]): Segment[] {
       return { ...seg, specialSlots: [] }
     }
 
-    const maxCount = getJulesSlotCount(seg.dayFrom)
     const allowedMask = getAllowedMaskByDay(seg.dayFrom)
+    const maxCount = getJulesSlotCount(seg.dayFrom)
     const used = new Set<number>()
-    const slots: SpecialSlot[] = []
-
-    for (let i = 0; i < maxCount; i += 1) {
-      const base = templateByRank[i]
-      if (!base) continue
-      let target = base.slot
-      const candidatePool = Array.from({ length: MAX_UNITS }, (_, idx) => idx).filter((idx) => allowedMask[idx])
-      const day1Pool = [3, 4, 5, 6]
-
-      if (seg.dayFrom <= 1 && i === 0 && !day1Pool.includes(target)) target = 4
-      if (!allowedMask[target] || used.has(target) || (seg.dayFrom <= 1 && i === 0 && !day1Pool.includes(target))) {
-        const fallback = (seg.dayFrom <= 1 && i === 0 ? day1Pool : candidatePool).find((idx) => !used.has(idx))
-        if (fallback === undefined) continue
-        target = fallback
-      }
-
-      used.add(target)
-      slots.push({
-        id: `jules-slot-${i + 1}`,
-        slot: target,
-        type: seg.dayFrom <= 1 && i === 0 ? 'fire' : base.type,
+    let slots = (Array.isArray(seg.specialSlots) ? seg.specialSlots : [])
+      .filter((s) => allowedMask[s.slot])
+      .filter((s) => {
+        if (used.has(s.slot)) return false
+        used.add(s.slot)
+        return true
       })
+      .slice(0, maxCount)
+
+    if (seg.dayFrom <= 1) {
+      slots = slots.slice(0, 1).map((s) => ({ ...s, type: 'fire' as const }))
+    } else if (seg.dayFrom === 2) {
+      slots = slots.slice(0, 2)
+      if (slots.length >= 1) slots[0] = { ...slots[0], type: 'fire' }
+      if (slots.length >= 2) slots[1] = { ...slots[1], type: 'ice' }
     }
 
     const same =
@@ -458,6 +431,10 @@ function getSlotIndexFromPointer(relativeX: number, boardWidth: number): number 
   return MAX_UNITS - 1
 }
 
+function clampStartByWidth(start: number, width: number): number {
+  return Math.max(0, Math.min(MAX_UNITS - width, start))
+}
+
 export default function LineupPlanner({ onSelectItem, onDraftApiChange }: LineupPlannerProps) {
   const [dayStart, setDayStart] = useState(1)
   const [dayEnd, setDayEnd] = useState(13)
@@ -478,6 +455,8 @@ export default function LineupPlanner({ onSelectItem, onDraftApiChange }: Lineup
   const [lineupName, setLineupName] = useState('')
   const [isEditingLineupName, setIsEditingLineupName] = useState(false)
   const [lineupNameDraft, setLineupNameDraft] = useState('')
+  const [videoBv, setVideoBv] = useState('')
+  const [videoTitle, setVideoTitle] = useState('')
   const [dayPlanTag, setDayPlanTag] = useState<'连胜早走' | '北伐阵容'>('连胜早走')
   const [strengthTag, setStrengthTag] = useState<'版本强势' | '中规中矩' | '地沟油'>('中规中矩')
   const [difficultyTag, setDifficultyTag] = useState<'容易成型' | '比较困难' | '极难成型'>('比较困难')
@@ -645,16 +624,24 @@ export default function LineupPlanner({ onSelectItem, onDraftApiChange }: Lineup
     }
     setSegments((prev) => {
       const idx = Math.max(0, Math.min(activeSegmentIndex, prev.length - 1))
+      const sourceSeg = prev[idx]
+      if (!sourceSeg) return prev
+      const sourceSlot = sourceSeg.specialSlots.find((s) => s.id === slotId)
+      if (!sourceSlot) return prev
+      const toggledType: 'fire' | 'ice' = sourceSlot.type === 'fire' ? 'ice' : 'fire'
+
       const next = prev.map((seg, i) => {
-        if (i !== idx) return seg
-        return {
-          ...seg,
-          specialSlots: seg.specialSlots.map((slot) =>
-            slot.id === slotId
-              ? { ...slot, type: (slot.type === 'fire' ? 'ice' : 'fire') as 'fire' | 'ice' }
-              : slot
-          ),
-        }
+        // 仅影响当前及后续阶段；前面阶段保持不变
+        if (i < idx || seg.hero !== 'Jules') return seg
+        let changed = false
+        const nextSlots = seg.specialSlots.map((slot) => {
+          if (slot.id !== slotId) return slot
+          const nextType: 'fire' | 'ice' = seg.dayFrom <= 1 ? 'fire' : toggledType
+          if (slot.type === nextType) return slot
+          changed = true
+          return { ...slot, type: nextType }
+        })
+        return changed ? { ...seg, specialSlots: nextSlots } : seg
       })
       return syncJulesSpecialSlotsAcrossSegments(next)
     })
@@ -662,12 +649,8 @@ export default function LineupPlanner({ onSelectItem, onDraftApiChange }: Lineup
 
   const removeSpecialSlot = (slotId: string) => {
     setSegments((prev) => {
-      // 删除某一“层位”时，同步删除所有时间轴该层位
-      const next = prev.map((seg) =>
-        seg.hero === 'Jules'
-          ? { ...seg, specialSlots: seg.specialSlots.filter((slot) => slot.id !== slotId) }
-          : seg
-      )
+      const idx = Math.max(0, Math.min(activeSegmentIndex, prev.length - 1))
+      const next = prev.map((seg, i) => (i === idx ? { ...seg, specialSlots: seg.specialSlots.filter((slot) => slot.id !== slotId) } : seg))
       return syncJulesSpecialSlotsAcrossSegments(next)
     })
   }
@@ -679,10 +662,6 @@ export default function LineupPlanner({ onSelectItem, onDraftApiChange }: Lineup
 
     if (!allowed[targetSlot]) {
       setDropHint(`Day${activeSegment.dayFrom} 该位置不可生成冰火位。`)
-      return
-    }
-    if (activeSegment.dayFrom <= 1 && ![3, 4, 5, 6].includes(targetSlot)) {
-      setDropHint('Day1 冰火位只能在中间四格生成。')
       return
     }
     if (activeSegment.specialSlots.some((slot) => slot.slot === targetSlot)) {
@@ -791,6 +770,8 @@ export default function LineupPlanner({ onSelectItem, onDraftApiChange }: Lineup
         dayEnd,
         hero: activeHero,
         lineupName,
+        videoBv,
+        videoTitle,
         dayPlanTag,
         strengthTag,
         difficultyTag,
@@ -828,6 +809,8 @@ export default function LineupPlanner({ onSelectItem, onDraftApiChange }: Lineup
 
       const importedHero = parsed.hero || parsed.segments[0]?.hero || 'Pygmalien'
       const importedName = typeof parsed.lineupName === 'string' ? parsed.lineupName.slice(0, 40) : ''
+      const importedBv = typeof parsed.videoBv === 'string' ? parsed.videoBv.slice(0, 20) : ''
+      const importedTitle = typeof parsed.videoTitle === 'string' ? parsed.videoTitle.slice(0, 80) : ''
       const importedDayPlan = DAY_PLAN_OPTIONS.includes(parsed.dayPlanTag as any) ? (parsed.dayPlanTag as any) : '连胜早走'
       const importedStrength = STRENGTH_OPTIONS.includes(parsed.strengthTag as any) ? (parsed.strengthTag as any) : '中规中矩'
       const importedDifficulty = DIFFICULTY_OPTIONS.includes(parsed.difficultyTag as any) ? (parsed.difficultyTag as any) : '比较困难'
@@ -864,6 +847,8 @@ export default function LineupPlanner({ onSelectItem, onDraftApiChange }: Lineup
       setDayEnd(nextEnd)
       setLineupName(importedName)
       setLineupNameDraft(importedName)
+      setVideoBv(importedBv)
+      setVideoTitle(importedTitle)
       setIsEditingLineupName(false)
       setDayPlanTag(importedDayPlan)
       setStrengthTag(importedStrength)
@@ -918,8 +903,12 @@ export default function LineupPlanner({ onSelectItem, onDraftApiChange }: Lineup
     setDayStart(nextStart)
     setDayEnd(nextEnd)
     const importedName = typeof parsed.lineupName === 'string' ? parsed.lineupName.slice(0, 40) : ''
+    const importedBv = typeof parsed.videoBv === 'string' ? parsed.videoBv.slice(0, 20) : ''
+    const importedTitle = typeof parsed.videoTitle === 'string' ? parsed.videoTitle.slice(0, 80) : ''
     setLineupName(importedName)
     setLineupNameDraft(importedName)
+    setVideoBv(importedBv)
+    setVideoTitle(importedTitle)
     setIsEditingLineupName(false)
     setDayPlanTag(DAY_PLAN_OPTIONS.includes(parsed.dayPlanTag as any) ? (parsed.dayPlanTag as any) : '连胜早走')
     setStrengthTag(STRENGTH_OPTIONS.includes(parsed.strengthTag as any) ? (parsed.strengthTag as any) : '中规中矩')
@@ -935,6 +924,23 @@ export default function LineupPlanner({ onSelectItem, onDraftApiChange }: Lineup
   }
 
   useEffect(() => {
+    const pending = localStorage.getItem('pending_editor_import_build')
+    if (!pending) return
+    try {
+      const parsed = JSON.parse(pending)
+      const payload = parsed?.lineup_payload || parsed?.snapshot || parsed
+      if (payload && Array.isArray(payload.segments)) {
+        applySnapshot(payload)
+        setDropHint('已导入社区阵容。')
+      }
+    } catch {
+      // ignore invalid import payload
+    } finally {
+      localStorage.removeItem('pending_editor_import_build')
+    }
+  }, [])
+
+  useEffect(() => {
     if (!onDraftApiChange) return
     onDraftApiChange({
       getSnapshot: () => ({
@@ -943,6 +949,8 @@ export default function LineupPlanner({ onSelectItem, onDraftApiChange }: Lineup
         dayEnd,
         hero: activeHero,
         lineupName,
+        videoBv,
+        videoTitle,
         dayPlanTag,
         strengthTag,
         difficultyTag,
@@ -954,7 +962,7 @@ export default function LineupPlanner({ onSelectItem, onDraftApiChange }: Lineup
       getContextLabel: () => activeHero,
     })
     return () => onDraftApiChange(null)
-  }, [onDraftApiChange, dayStart, dayEnd, activeHero, lineupName, dayPlanTag, strengthTag, difficultyTag, segments, activeSegmentIndex, activeBuildBySegment])
+  }, [onDraftApiChange, dayStart, dayEnd, activeHero, lineupName, videoBv, videoTitle, dayPlanTag, strengthTag, difficultyTag, segments, activeSegmentIndex, activeBuildBySegment])
 
   const beginEditLineupName = () => {
     setLineupNameDraft(lineupName)
@@ -1267,6 +1275,18 @@ export default function LineupPlanner({ onSelectItem, onDraftApiChange }: Lineup
     }))
   }
 
+  const getDragCardWidth = (dragged: DragPayload): number => {
+    if (dragged.placementId) {
+      const existing = activeBuild?.cards.find((c) => c.placementId === dragged.placementId)
+      if (existing) return existing.width
+    }
+    return dragged.width || getCardWidth(dragged.item?.size)
+  }
+
+  const centerSlotToStart = (slotIndex: number, width: number): number => {
+    return clampStartByWidth(slotIndex - Math.floor(width / 2), width)
+  }
+
   const getPreviewResult = (dragged: DragPayload, targetStart: number): PreviewResult | null => {
     if (!activeBuild) return null
     if (!dragged.placementId && dragged.sourceType === 'skills') return null
@@ -1349,7 +1369,9 @@ export default function LineupPlanner({ onSelectItem, onDraftApiChange }: Lineup
         const relativeX = Math.max(0, Math.min(overlayRect.width - 1, clientOffset.x - overlayRect.left))
         const slotIndex = getSlotIndexFromPointer(relativeX, overlayRect.width)
 
-        const preview = getPreviewResult(dragged, slotIndex)
+        const movingWidth = getDragCardWidth(dragged)
+        const targetStart = centerSlotToStart(slotIndex, movingWidth)
+        const preview = getPreviewResult(dragged, targetStart)
         if (!preview) {
           setPreviewCards(null)
           setDropHint('该位置无法放置（空间不足）。')
@@ -1372,7 +1394,9 @@ export default function LineupPlanner({ onSelectItem, onDraftApiChange }: Lineup
         const relativeX = Math.max(0, Math.min(overlayRect.width - 1, clientOffset.x - overlayRect.left))
         const slotIndex = getSlotIndexFromPointer(relativeX, overlayRect.width)
 
-        const preview = getPreviewResult(dragged, slotIndex)
+        const movingWidth = getDragCardWidth(dragged)
+        const targetStart = centerSlotToStart(slotIndex, movingWidth)
+        const preview = getPreviewResult(dragged, targetStart)
         if (!preview) {
           setPreviewCards(null)
           setDropHint('该位置无法放置（空间不足）。')
@@ -1561,6 +1585,26 @@ export default function LineupPlanner({ onSelectItem, onDraftApiChange }: Lineup
                 </button>
               ))}
             </div>
+          </div>
+          <div className={styles.metaField}>
+            <span className={styles.axisLabel}>B站 BV号</span>
+            <input
+              className={styles.planNameInput}
+              maxLength={20}
+              value={videoBv}
+              onChange={(e) => setVideoBv(e.target.value.slice(0, 20))}
+              placeholder="例如：BV1fW6zB6EwP"
+            />
+          </div>
+          <div className={styles.metaField}>
+            <span className={styles.axisLabel}>视频标题</span>
+            <input
+              className={styles.planNameInput}
+              maxLength={80}
+              value={videoTitle}
+              onChange={(e) => setVideoTitle(e.target.value.slice(0, 80))}
+              placeholder="可选：填写展示用视频标题"
+            />
           </div>
           <div className={styles.metaField}>
             <span className={styles.axisLabel}>成型难度</span>

@@ -61,7 +61,7 @@ export const renderText = (text: any) => {
     if (part.includes('/')) {
       const nums = part.split('/')
       return (
-        <span key={i} style={{ fontWeight: 'bold' }}>
+        <span key={`num-${i}`} style={{ fontWeight: 'bold' }}>
           {nums.map((n, idx) => {
             let colorIdx = idx
             if (nums.length === 2) colorIdx = idx + 2
@@ -71,7 +71,7 @@ export const renderText = (text: any) => {
             const color = tierColors[colorIdx] || '#ffd700'
             
             return (
-              <Fragment key={idx}>
+              <Fragment key={`num-${i}-${idx}`}>
                 <span style={{ color }}>{n}</span>
                 {idx < nums.length - 1 && '/'}
               </Fragment>
@@ -88,7 +88,7 @@ export const renderText = (text: any) => {
     
     return subParts.map((sub, j) => {
       if (KEYWORD_COLORS[sub]) {
-        return <span key={j} style={{ color: KEYWORD_COLORS[sub], fontWeight: 'bold' }}>{sub}</span>
+        return <span key={`kw-${i}-${j}`} style={{ color: KEYWORD_COLORS[sub], fontWeight: 'bold' }}>{sub}</span>
       }
       return sub
     })

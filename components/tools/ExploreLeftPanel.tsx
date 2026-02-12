@@ -15,6 +15,7 @@ type ExploreFilters = {
   dayPlanTag: '' | '连胜早走' | '北伐阵容'
   strengthTag: '' | '版本强势' | '中规中矩' | '地沟油'
   difficultyTag: '' | '容易成型' | '比较困难' | '极难成型'
+  specialSlots: Array<'' | 'fire' | 'ice'>
 }
 type LookupRole = 'core' | 'sub' | 'tech'
 
@@ -65,6 +66,16 @@ export default function ExploreLeftPanel({
     const next = Math.max(1, Number(dayMaxInput || filters.dayMax) + delta)
     setDayMaxInput(String(next))
     onChangeFilters({ ...filters, dayMax: next })
+  }
+
+  const cycleSpecialSlot = (idx: number) => {
+    const current = filters.specialSlots[idx] || ''
+    const nextType: '' | 'fire' | 'ice' = current === '' ? 'fire' : current === 'fire' ? 'ice' : ''
+    const selectedCount = filters.specialSlots.filter((x) => x !== '').length
+    if (current === '' && nextType !== '' && selectedCount >= 3) return
+    const next = [...filters.specialSlots]
+    next[idx] = nextType
+    onChangeFilters({ ...filters, specialSlots: next as Array<'' | 'fire' | 'ice'> })
   }
 
   return (
@@ -258,6 +269,21 @@ export default function ExploreLeftPanel({
             >
               极难成型
             </button>
+          </div>
+        </div>}
+        {!filterCollapsed && <div className={styles.fieldRow}>
+          <label>冰火位筛选（最多3个）</label>
+          <div className={styles.specialFilterRow}>
+            {filters.specialSlots.map((tp, idx) => (
+              <button
+                key={`sp-filter-${idx}`}
+                className={`${styles.specialFilterBtn} ${tp === 'fire' ? styles.specialFilterFire : tp === 'ice' ? styles.specialFilterIce : ''}`}
+                onClick={() => cycleSpecialSlot(idx)}
+                title={tp === '' ? `槽位${idx + 1}：未选择` : `槽位${idx + 1}：${tp === 'fire' ? '火位' : '冰位'}`}
+              >
+                {idx + 1}
+              </button>
+            ))}
           </div>
         </div>}
         {!filterCollapsed && <div className={styles.lookupStateRow}>

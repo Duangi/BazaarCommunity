@@ -102,6 +102,30 @@ export default function RatingTool({ onSelectItem, onDraftApiChange }: RatingToo
         console.error('加载评分失败:', e)
       }
     }
+
+    const pending = localStorage.getItem('pending_editor_import_rating')
+    if (pending) {
+      try {
+        const payload = JSON.parse(pending)
+        if (payload && typeof payload === 'object') {
+          const nextPresets = Array.isArray(payload.presets) ? payload.presets : []
+          const nextCurrent = payload.currentPreset && Array.isArray(payload.currentPreset.tiers)
+            ? payload.currentPreset
+            : {
+                id: 'default',
+                name: '默认预设',
+                tiers: DEFAULT_TIERS,
+              }
+          const nextRated = payload.ratedItems && typeof payload.ratedItems === 'object' ? payload.ratedItems : {}
+          setPresets(nextPresets)
+          setCurrentPreset(nextCurrent)
+          setRatedItems(nextRated)
+          localStorage.setItem('ratingPresets', JSON.stringify(nextPresets))
+          localStorage.setItem('ratedItems', JSON.stringify(nextRated))
+        }
+      } catch {}
+      localStorage.removeItem('pending_editor_import_rating')
+    }
   }, [])
 
   // 保存预设

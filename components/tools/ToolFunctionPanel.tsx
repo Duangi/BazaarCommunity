@@ -5,11 +5,16 @@ import RatingTool from '@/components/RatingTool'
 import LineupPlanner from '@/components/LineupPlanner'
 import styles from './ToolFunctionPanel.module.css'
 import { loadToolDraftsFromDb, saveToolDraftsToDb } from '@/lib/draftDb'
+import { cdnUrl } from '@/lib/cdn'
+import type { CommunityUserProfile } from '@/lib/draftDb'
 
 interface ToolFunctionPanelProps {
   onSelectItem: (item: any) => void
   activeView: 'rating' | 'lineup'
   onChangeView: (view: 'rating' | 'lineup') => void
+  userProfile: CommunityUserProfile
+  onSaveProfile: (profile: CommunityUserProfile) => void
+  onPublish: (mode: 'lineup' | 'rating', snapshot: any) => Promise<boolean>
 }
 
 type DraftItem = {
@@ -20,7 +25,14 @@ type DraftItem = {
   payload: any
 }
 
-export default function ToolFunctionPanel({ onSelectItem, activeView, onChangeView }: ToolFunctionPanelProps) {
+export default function ToolFunctionPanel({
+  onSelectItem,
+  activeView,
+  onChangeView,
+  userProfile,
+  onSaveProfile,
+  onPublish,
+}: ToolFunctionPanelProps) {
   const [draftApi, setDraftApi] = useState<{
     getSnapshot: () => any
     applySnapshot: (payload: any) => void
@@ -30,6 +42,12 @@ export default function ToolFunctionPanel({ onSelectItem, activeView, onChangeVi
   const [selectedDraftId, setSelectedDraftId] = useState<string>('')
   const [draftsHydrated, setDraftsHydrated] = useState(false)
   const [toast, setToast] = useState<{ text: string; tone: 'success' | 'error' } | null>(null)
+  const [profileDraft, setProfileDraft] = useState(userProfile)
+  const [publishing, setPublishing] = useState(false)
+
+  useEffect(() => {
+    setProfileDraft(userProfile)
+  }, [userProfile.nickname, userProfile.useBilibili, userProfile.bilibiliUid])
 
   useEffect(() => {
     let mounted = true
@@ -128,6 +146,31 @@ export default function ToolFunctionPanel({ onSelectItem, activeView, onChangeVi
     setToast({ text: '草稿已删除。', tone: 'success' })
   }
 
+  const saveProfile = () => {
+    const nickname = profileDraft.nickname.trim()
+    if (!nickname) {
+      setToast({ text: '昵称不能为空。', tone: 'error' })
+      return
+    }
+    onSaveProfile({
+      nickname,
+      useBilibili: profileDraft.useBilibili,
+      bilibiliUid: profileDraft.useBilibili ? profileDraft.bilibiliUid.trim() : '',
+    })
+    setToast({ text: '用户信息已保存。', tone: 'success' })
+  }
+
+  const publishCurrent = async () => {
+    if (!draftApi) {
+      setToast({ text: '当前模式尚未就绪，稍后再试。', tone: 'error' })
+      return
+    }
+    setPublishing(true)
+    const ok = await onPublish(activeView, draftApi.getSnapshot())
+    setPublishing(false)
+    setToast({ text: ok ? '发布成功。' : '发布失败，请检查 Supabase 配置。', tone: ok ? 'success' : 'error' })
+  }
+
   return (
     <div className={styles.centerPanel}>
       <div className={styles.navRail}>
@@ -150,6 +193,36 @@ export default function ToolFunctionPanel({ onSelectItem, activeView, onChangeVi
       </div>
 
       <div className={styles.workbench}>
+        <div className={styles.profileBar}>
+          <input
+            className={styles.profileInput}
+            value={profileDraft.nickname}
+            maxLength={24}
+            onChange={(e) => setProfileDraft((prev) => ({ ...prev, nickname: e.target.value }))}
+            placeholder="昵称（点赞/收藏必填）"
+          />
+          <label className={styles.biliToggle}>
+            <input
+              type="checkbox"
+              checked={profileDraft.useBilibili}
+              onChange={(e) => setProfileDraft((prev) => ({ ...prev, useBilibili: e.target.checked }))}
+            />
+            <img src={cdnUrl('images/ui/Bilibili.svg')} alt="Bilibili" className={styles.biliIcon} />
+            B站UP主
+          </label>
+          <input
+            className={styles.profileInput}
+            value={profileDraft.bilibiliUid}
+            maxLength={20}
+            disabled={!profileDraft.useBilibili}
+            onChange={(e) => setProfileDraft((prev) => ({ ...prev, bilibiliUid: e.target.value }))}
+            placeholder="B站用户ID（可选）"
+          />
+          <button className={styles.draftActionBtn} onClick={saveProfile}>保存用户信息</button>
+          <button className={styles.draftSaveBtn} onClick={publishCurrent} disabled={publishing}>
+            {publishing ? '发布中...' : '发布到社区'}
+          </button>
+        </div>
         <div className={styles.draftBar}>
           <button className={styles.draftSaveBtn} onClick={saveDraft}>保存到草稿</button>
           <select

@@ -202,6 +202,34 @@
   cursor: pointer;
 }
 
+.specialFilterRow {
+  display: grid;
+  grid-template-columns: repeat(10, minmax(0, 1fr));
+  gap: 4px;
+}
+
+.specialFilterBtn {
+  height: 24px;
+  border: 1px solid #3d3d3d;
+  background: #1f1f1f;
+  color: #bbb;
+  border-radius: 6px;
+  font-size: 11px;
+  cursor: pointer;
+}
+
+.specialFilterFire {
+  border-color: rgba(255, 150, 90, 0.75);
+  background: rgba(143, 45, 20, 0.6);
+  color: #ffd3b0;
+}
+
+.specialFilterIce {
+  border-color: rgba(130, 210, 255, 0.75);
+  background: rgba(25, 72, 127, 0.62);
+  color: #d7f2ff;
+}
+
 .lookupStateText {
   flex: 1;
   min-width: 0;
@@ -252,6 +280,8 @@
   display: flex;
   justify-content: space-between;
   align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
 }
 
 .feedHeader h2 {
@@ -262,6 +292,88 @@
 .feedHeader span {
   font-size: 12px;
   color: #999;
+}
+
+.feedHeaderRight {
+  display: inline-flex;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.scaleControl {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 12px;
+  color: #d6d6d6;
+  border: 1px solid #3b3b3b;
+  background: linear-gradient(180deg, #1f1f1f 0%, #171717 100%);
+  border-radius: 999px;
+  padding: 6px 10px;
+}
+
+.scaleText {
+  color: #bfc8d6;
+  font-size: 12px;
+}
+
+.scaleSlider {
+  width: 140px;
+  accent-color: #ffcd19;
+  cursor: pointer;
+}
+
+.scaleValue {
+  min-width: 44px;
+  text-align: right;
+  color: #ffdf7d;
+  font-weight: 700;
+}
+
+.feedScalable {
+  --feed-scale: 1.6;
+}
+
+.feedFilterBar {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+  font-size: calc(12px * var(--feed-scale));
+}
+
+.feedFilterBar label {
+  font-size: calc(12px * var(--feed-scale));
+  color: #cfcfcf;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.feedFilterBar select {
+  min-width: calc(180px * var(--feed-scale));
+  border: 1px solid #3e3e3e;
+  background: #111;
+  color: #e8e8e8;
+  border-radius: 8px;
+  padding: calc(6px * var(--feed-scale)) calc(8px * var(--feed-scale));
+  font-size: calc(12px * var(--feed-scale));
+}
+
+.feedFilterBar button {
+  border: 1px solid #3d3d3d;
+  background: #1f1f1f;
+  color: #ddd;
+  border-radius: 8px;
+  padding: calc(7px * var(--feed-scale)) calc(10px * var(--feed-scale));
+  font-size: calc(12px * var(--feed-scale));
+  cursor: pointer;
+}
+
+.loadingHint {
+  font-size: calc(12px * var(--feed-scale));
+  color: #b8c8ff;
 }
 
 .feedList {
@@ -292,63 +404,82 @@
   border: 1px solid #353535;
   background: #121212;
   border-radius: 10px;
-  padding: 10px;
+  padding: calc(10px * var(--feed-scale));
   display: flex;
   flex-direction: column;
-  gap: 8px;
+  gap: calc(8px * var(--feed-scale));
 }
 
 .feedMeta {
   display: flex;
   justify-content: space-between;
-  gap: 8px;
+  gap: calc(8px * var(--feed-scale));
 }
 
 .feedTitle {
   color: #f6f6f6;
   font-weight: 700;
-  font-size: 14px;
+  font-size: calc(14px * var(--feed-scale));
 }
 
 .feedSub {
   color: #919191;
-  font-size: 11px;
+  font-size: calc(11px * var(--feed-scale));
+}
+
+.authorLink {
+  display: inline-flex;
+  align-items: center;
+  gap: calc(4px * var(--feed-scale));
+  color: #8cc9ff;
+  font-size: calc(12px * var(--feed-scale));
+}
+
+.authorBiliIcon {
+  width: calc(12px * var(--feed-scale));
+  height: calc(12px * var(--feed-scale));
+}
+
+.videoLink {
+  color: #ffd978;
+  font-size: calc(12px * var(--feed-scale));
+  text-decoration: none;
 }
 
 .feedTags {
-  margin-top: 4px;
+  margin-top: calc(4px * var(--feed-scale));
   display: flex;
-  gap: 6px;
+  gap: calc(6px * var(--feed-scale));
   flex-wrap: wrap;
 }
 
 .feedTag {
-  font-size: 11px;
+  font-size: calc(11px * var(--feed-scale));
   color: #ffe3a0;
   border: 1px solid rgba(255, 205, 25, 0.45);
   background: rgba(255, 205, 25, 0.1);
   border-radius: 999px;
-  padding: 1px 7px;
+  padding: calc(1px * var(--feed-scale)) calc(7px * var(--feed-scale));
 }
 
 .feedStats {
   display: flex;
   flex-direction: column;
   align-items: flex-end;
-  gap: 4px;
-  font-size: 11px;
+  gap: calc(4px * var(--feed-scale));
+  font-size: calc(11px * var(--feed-scale));
   color: #d8d8d8;
 }
 
 .thumbRow {
   display: flex;
-  gap: 6px;
+  gap: calc(8px * var(--feed-scale));
   flex-wrap: wrap;
 }
 
 .thumbBtn {
   border: 1px solid #3a3a3a;
-  border-radius: 7px;
+  border-radius: calc(7px * var(--feed-scale));
   overflow: hidden;
   background: #0f0f0f;
   padding: 0;
@@ -365,18 +496,18 @@
 }
 
 .thumbSmall {
-  width: 24px;
-  height: 48px;
+  width: calc(46px * var(--feed-scale));
+  height: calc(92px * var(--feed-scale));
 }
 
 .thumbMedium {
-  width: 48px;
-  height: 48px;
+  width: calc(92px * var(--feed-scale));
+  height: calc(92px * var(--feed-scale));
 }
 
 .thumbLarge {
-  width: 72px;
-  height: 48px;
+  width: calc(138px * var(--feed-scale));
+  height: calc(92px * var(--feed-scale));
 }
 
 .roleCore {
@@ -393,5 +524,31 @@
 
 .feedActions {
   display: flex;
-  gap: 8px;
+  gap: calc(8px * var(--feed-scale));
+  flex-wrap: wrap;
+}
+
+.feedActions button {
+  font-size: calc(12px * var(--feed-scale));
+  padding: calc(7px * var(--feed-scale)) calc(10px * var(--feed-scale));
+  border-radius: calc(8px * var(--feed-scale));
+}
+
+.communityRatingBox {
+  border-radius: calc(10px * var(--feed-scale));
+  padding: calc(8px * var(--feed-scale)) calc(10px * var(--feed-scale));
+}
+
+.communityRatingTitle {
+  font-size: calc(13px * var(--feed-scale));
+}
+
+.communityRatingMeta {
+  margin-top: calc(3px * var(--feed-scale));
+  font-size: calc(11px * var(--feed-scale));
+}
+
+.activeActionBtn {
+  border-color: #ffcd19 !important;
+  color: #ffcd19 !important;
 }

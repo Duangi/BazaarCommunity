@@ -184,6 +184,71 @@ export default function ItemsList({
   enableBuildLookup = false,
   onLookupBuilds,
 }: ItemsListProps) {
+  const normalizeText = (value: any): string =>
+    (value == null ? '' : String(value)).toLowerCase().trim()
+
+  const subsequenceMatch = (text: string, query: string): boolean => {
+    if (!query) return true
+    let qi = 0
+    for (let i = 0; i < text.length && qi < query.length; i += 1) {
+      if (text[i] === query[qi]) qi += 1
+    }
+    return qi === query.length
+  }
+
+  const buildSearchBlob = (item: any): string => {
+    const parts = [
+      item?.id,
+      item?.name_cn,
+      item?.name_en,
+      item?.tags,
+      item?.hidden_tags,
+      item?.description_cn,
+      item?.descriptions ? JSON.stringify(item.descriptions) : '',
+      item?.skills ? JSON.stringify(item.skills) : '',
+      item?.skills_passive ? JSON.stringify(item.skills_passive) : '',
+      item?.quests ? JSON.stringify(item.quests) : '',
+    ]
+    return normalizeText(parts.filter(Boolean).join(' '))
+  }
+
+  const scoreByKeyword = (item: any, keyword: string): number => {
+    const query = normalizeText(keyword)
+    if (!query) return 0
+
+    const tokens = query.split(/\s+/).filter(Boolean)
+    if (tokens.length === 0) return 0
+
+    const nameCn = normalizeText(item?.name_cn)
+    const nameEn = normalizeText(item?.name_en)
+    const id = normalizeText(item?.id)
+    const blob = buildSearchBlob(item)
+
+    let score = 0
+    for (const token of tokens) {
+      let tokenScore = -1
+      const cnIdx = nameCn.indexOf(token)
+      const enIdx = nameEn.indexOf(token)
+      const idIdx = id.indexOf(token)
+      const blobIdx = blob.indexOf(token)
+
+      if (cnIdx >= 0) tokenScore = Math.max(tokenScore, 220 - Math.min(cnIdx, 80))
+      if (enIdx >= 0) tokenScore = Math.max(tokenScore, 200 - Math.min(enIdx, 80))
+      if (idIdx >= 0) tokenScore = Math.max(tokenScore, 160 - Math.min(idIdx, 80))
+      if (blobIdx >= 0) tokenScore = Math.max(tokenScore, 100 - Math.min(blobIdx, 90))
+
+      if (tokenScore < 0 && (subsequenceMatch(nameCn, token) || subsequenceMatch(nameEn, token))) {
+        tokenScore = 70
+      }
+      if (tokenScore < 0 && subsequenceMatch(blob, token)) {
+        tokenScore = 40
+      }
+      if (tokenScore < 0) return -1
+      score += tokenScore
+    }
+    return score
+  }
+
   const [activeTab, setActiveTab] = useState<'items' | 'skills'>('items')
   const [searchKeyword, setSearchKeyword] = useState('')
   const [size, setSize] = useState<'' | 'small' | 'medium' | 'large'>('')
@@ -204,6 +269,14 @@ export default function ItemsList({
   const resizeStartHeightRef = useRef(320)
 
   useEffect(() => {
+    if (activeTab === 'skills') {
+      setSize('medium')
+    } else {
+      setSize('')
+    }
+  }, [activeTab])
+
+  useEffect(() => {
     setVisibleCount(30)
     if (scrollAreaRef.current) {
       scrollAreaRef.current.scrollTop = 0
@@ -218,20 +291,11 @@ export default function ItemsList({
       !item.name_en?.includes('Medium Package')
     )
 
-    if (searchKeyword) {
-      const keyword = searchKeyword.toLowerCase()
-      result = result.filter((item: any) => {
-        const name = (item.name_cn || item.name_en || '').toLowerCase()
-        const nameEn = (item.name_en || '').toLowerCase()
-        const tags = (item.tags || '').toLowerCase()
-        return name.includes(keyword) || nameEn.includes(keyword) || tags.includes(keyword)
-      })
-    }
-
-    if (size) {
+    const effectiveSize = activeTab === 'skills' ? 'medium' : size
+    if (effectiveSize) {
       result = result.filter((item: any) => {
         const itemSize = (item.size || '').toLowerCase()
-        return itemSize.includes(size)
+        return itemSize.includes(effectiveSize)
       })
     }
 
@@ -278,7 +342,19 @@ export default function ItemsList({
       })
     }
 
+    const trimmedKeyword = searchKeyword.trim()
+    if (!trimmedKeyword) return result
+
     return result
+      .map((item: any) => ({ item, score: scoreByKeyword(item, trimmedKeyword) }))
+      .filter((x: any) => x.score >= 0)
+      .sort((a: any, b: any) => {
+        if (b.score !== a.score) return b.score - a.score
+        const aName = (a.item?.name_cn || a.item?.name_en || a.item?.id || '').toString()
+        const bName = (b.item?.name_cn || b.item?.name_en || b.item?.id || '').toString()
+        return aName.localeCompare(bName, 'zh-CN')
+      })
+      .map((x: any) => x.item)
   }, [items, skills, activeTab, searchKeyword, size, startTier, hero, selectedTags, selectedHiddenTags, matchMode])
 
   const handleScroll = (e: React.UIEvent<HTMLDivElement>) => {
@@ -413,23 +489,25 @@ export default function ItemsList({
                 />
               </div>
 
-              <div className={styles.filterRow}>
-                <div className={styles.buttonGroup}>
-                  {[
-                    { val: 'small', label: '小' },
-                    { val: 'medium', label: '中' },
-                    { val: 'large', label: '大' }
-                  ].map(opt => (
-                    <button
-                      key={opt.val}
-                      className={`${styles.toggleBtn} ${size === opt.val ? styles.active : ''}`}
-                      onClick={() => setSize(size === opt.val ? '' : opt.val as any)}
-                    >
-                      {opt.label}
-                    </button>
-                  ))}
+              {activeTab === 'items' && (
+                <div className={styles.filterRow}>
+                  <div className={styles.buttonGroup}>
+                    {[
+                      { val: 'small', label: '小' },
+                      { val: 'medium', label: '中' },
+                      { val: 'large', label: '大' }
+                    ].map(opt => (
+                      <button
+                        key={opt.val}
+                        className={`${styles.toggleBtn} ${size === opt.val ? styles.active : ''}`}
+                        onClick={() => setSize(size === opt.val ? '' : opt.val as any)}
+                      >
+                        {opt.label}
+                      </button>
+                    ))}
+                  </div>
                 </div>
-              </div>
+              )}
 
               <div className={styles.filterRow}>
                 <div className={styles.buttonGroup}>
@@ -562,7 +640,7 @@ export default function ItemsList({
               className={styles.resetBtn}
               onClick={() => {
                 setSearchKeyword('')
-                setSize('')
+                setSize(activeTab === 'skills' ? 'medium' : '')
                 setStartTier('')
                 setHero('')
                 setSelectedTags([])

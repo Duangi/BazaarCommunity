@@ -1,0 +1,75 @@
+{
+  "lineup_share_example": {
+    "uuid": "f8f6b9b3-2b8b-4d2e-9f6d-c8910e0198f7",
+    "name": "厨师Day3-7稳连胜",
+    "hero": "Jules",
+    "day_from": 3,
+    "day_to": 7,
+    "day_plan_tag": "连胜早走",
+    "strength_tag": "版本强势",
+    "difficulty_tag": "比较困难",
+    "version": "web-v1",
+    "cards_data": [
+      { "id": "a5f3616b-ad8c-434a-89d0-311698061bd4", "role": "core", "pos": 1 },
+      { "id": "81d2e9a9-1731-457d-9601-0ded9c19b28f", "role": "core", "pos": 2 },
+      { "id": "c7435ab5-dd8b-4c78-a5a4-6b2795dacaf3", "role": "sub", "pos": 3 },
+      { "id": "7fcced7f-c73b-4493-b765-457777a2401a", "role": "tech", "pos": 4 }
+    ],
+    "special_slots": [
+      { "slot": 0, "type": "fire" },
+      { "slot": 2, "type": "ice" },
+      { "slot": 7, "type": "fire" }
+    ],
+    "lineup_payload": {
+      "version": 3,
+      "dayStart": 1,
+      "dayEnd": 13,
+      "hero": "Jules",
+      "lineupName": "厨师Day3-7稳连胜",
+      "videoBv": "BV1fW6zB6EwP",
+      "videoTitle": "厨师构筑思路与替换路线",
+      "dayPlanTag": "连胜早走",
+      "strengthTag": "版本强势",
+      "difficultyTag": "比较困难",
+      "segments": []
+    },
+    "likes_count": 0,
+    "favorites_count": 0,
+    "rating_score": 0,
+    "author_name": "Duang",
+    "author_bilibili_uid": "251954263",
+    "video_bv": "BV1fW6zB6EwP",
+    "video_title": "厨师构筑思路与替换路线"
+  },
+  "rating_share_example": {
+    "uuid": "db69ab83-fc2b-4e4d-8c1b-5d8fd01da20f",
+    "name": "v0.9.3 打分 - Duang",
+    "rating_payload": {
+      "presets": [],
+      "currentPreset": {
+        "id": "default",
+        "name": "默认预设",
+        "tiers": [
+          { "id": "S", "name": "S", "color": "#ff4757" },
+          { "id": "A", "name": "A", "color": "#ffa502" }
+        ]
+      },
+      "ratedItems": {
+        "S": [
+          { "id": "a5f3616b-ad8c-434a-89d0-311698061bd4", "name_cn": "示例物品", "ratingTier": "gold" }
+        ],
+        "A": []
+      }
+    },
+    "likes_count": 0,
+    "favorites_count": 0,
+    "author_name": "Duang",
+    "author_bilibili_uid": "251954263"
+  },
+  "interaction_example": {
+    "target_uuid": "f8f6b9b3-2b8b-4d2e-9f6d-c8910e0198f7",
+    "target_type": "lineup",
+    "interaction_type": "like",
+    "nickname": "Duang"
+  }
+}
