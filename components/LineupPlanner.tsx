@@ -6,6 +6,7 @@ import styles from './LineupPlanner.module.css'
 import { resolveItemImageUrl } from '@/lib/itemImage'
 import DayRangeInput from '@/components/common/DayRangeInput'
 import { loadLineupScaleFromDb, saveLineupScaleToDb } from '@/lib/draftDb'
+import { heroAvatarUrl } from '@/lib/cdn'
 
 const MAX_UNITS = 10
 const SLOT_GAP_PX = 0
@@ -1589,7 +1590,7 @@ export default function LineupPlanner({ onSelectItem, onDraftApiChange }: Lineup
                   title={HERO_LABELS[hero]}
                 >
                   <img
-                    src={`/images/heroes/${hero.toLowerCase()}.webp`}
+                    src={heroAvatarUrl(hero.toLowerCase())}
                     alt={HERO_LABELS[hero]}
                     className={styles.heroAvatar}
                   />

@@ -3,6 +3,7 @@
 import { useState } from 'react'
 import WikiFilterPanel from '@/components/tools/WikiFilterPanel'
 import DayRangeInput from '@/components/common/DayRangeInput'
+import { heroAvatarUrl } from '@/lib/cdn'
 import styles from './ExploreMode.module.css'
 
 type ExploreFilters = {
@@ -31,12 +32,12 @@ interface ExploreLeftPanelProps {
 
 const HERO_FILTER_OPTIONS = [
   { val: '', label: '全部', avatar: '' },
-  { val: 'Pygmalien', label: '皮格马利翁', avatar: '/images/heroes/pygmalien.webp' },
-  { val: 'Jules', label: '朱尔斯', avatar: '/images/heroes/jules.webp' },
-  { val: 'Vanessa', label: '瓦内莎', avatar: '/images/heroes/vanessa.webp' },
-  { val: 'Mak', label: '马克', avatar: '/images/heroes/mak.webp' },
-  { val: 'Dooley', label: '多利', avatar: '/images/heroes/dooley.webp' },
-  { val: 'Stelle', label: '斯黛拉', avatar: '/images/heroes/stelle.webp' },
+  { val: 'Pygmalien', label: '皮格马利翁', avatar: heroAvatarUrl('pygmalien') },
+  { val: 'Jules', label: '朱尔斯', avatar: heroAvatarUrl('jules') },
+  { val: 'Vanessa', label: '瓦内莎', avatar: heroAvatarUrl('vanessa') },
+  { val: 'Mak', label: '马克', avatar: heroAvatarUrl('mak') },
+  { val: 'Dooley', label: '多利', avatar: heroAvatarUrl('dooley') },
+  { val: 'Stelle', label: '斯黛拉', avatar: heroAvatarUrl('stelle') },
 ] as const
 
 export default function ExploreLeftPanel({

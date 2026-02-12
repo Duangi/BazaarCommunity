@@ -3,6 +3,7 @@
 import styles from './ItemDetail.module.css'
 import ItemDetailContent from './ItemDetailContent'
 import ItemImage from './ItemImage'
+import { heroAvatarUrl } from '@/lib/cdn'
 
 // 定义了组件所需的所有数据字段
 interface Item {
@@ -115,7 +116,7 @@ export default function ItemDetail({ item }: ItemDetailProps) {
         {!isCommon && (
           <div className={styles.cardHeaderRight}>
             <div className={styles.heroAvatarContainer}>
-              <img src={`/images/heroes/${heroSlug}.webp`} alt={heroCn} className={styles.heroAvatar} title={`专属英雄: ${heroCn}`} />
+              <img src={heroAvatarUrl(heroSlug)} alt={heroCn} className={styles.heroAvatar} title={`专属英雄: ${heroCn}`} />
             </div>
           </div>
         )}

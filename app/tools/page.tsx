@@ -9,6 +9,7 @@ import ToolDetailPanel from '@/components/tools/ToolDetailPanel'
 import ExploreLeftPanel from '@/components/tools/ExploreLeftPanel'
 import ExploreCenterPanel from '@/components/tools/ExploreCenterPanel'
 import { CommunityBuild, createMockBuildsFromItems } from '@/lib/communityBuilds'
+import { itemsDbUrl, skillsDbUrl } from '@/lib/cdn'
 import styles from './tools.module.css'
 
 export default function ToolsPage() {
@@ -75,14 +76,14 @@ export default function ToolsPage() {
       const isValidTranslated = (item: any) => hasChineseName(item) && !hasUntranslatedDesc(item)
 
       // 加载物品数据
-      const itemsResponse = await fetch('/items_db.json')
+      const itemsResponse = await fetch(itemsDbUrl())
       const itemsData = await itemsResponse.json()
       const filteredItems = Array.isArray(itemsData) ? itemsData.filter(isValidTranslated) : []
       setItems(filteredItems)
       setCommunityBuilds(createMockBuildsFromItems(filteredItems))
 
       // 加载技能数据
-      const skillsResponse = await fetch('/skills_db.json')
+      const skillsResponse = await fetch(skillsDbUrl())
       const skillsData = await skillsResponse.json()
       const filteredSkills = Array.isArray(skillsData) ? skillsData.filter(isValidTranslated) : []
       setSkills(filteredSkills)

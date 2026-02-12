@@ -5,6 +5,7 @@ import { useDrag } from 'react-dnd'
 import styles from './ItemsList.module.css'
 import ItemDetailContent from './ItemDetailContent'
 import ItemImage from './ItemImage'
+import { heroAvatarUrl, iconUrl } from '@/lib/cdn'
 
 export interface Item {
   id: string
@@ -50,12 +51,12 @@ const HERO_COLORS: Record<string, string> = {
 }
 
 const HERO_FILTER_OPTIONS = [
-  { val: 'Pygmalien', label: '皮格马利翁', avatar: '/images/heroes/pygmalien.webp' },
-  { val: 'Jules', label: '朱尔斯', avatar: '/images/heroes/jules.webp' },
-  { val: 'Vanessa', label: '瓦内莎', avatar: '/images/heroes/vanessa.webp' },
-  { val: 'Mak', label: '马克', avatar: '/images/heroes/mak.webp' },
-  { val: 'Dooley', label: '多利', avatar: '/images/heroes/dooley.webp' },
-  { val: 'Stelle', label: '斯黛拉', avatar: '/images/heroes/stelle.webp' },
+  { val: 'Pygmalien', label: '皮格马利翁', avatar: heroAvatarUrl('pygmalien') },
+  { val: 'Jules', label: '朱尔斯', avatar: heroAvatarUrl('jules') },
+  { val: 'Vanessa', label: '瓦内莎', avatar: heroAvatarUrl('vanessa') },
+  { val: 'Mak', label: '马克', avatar: heroAvatarUrl('mak') },
+  { val: 'Dooley', label: '多利', avatar: heroAvatarUrl('dooley') },
+  { val: 'Stelle', label: '斯黛拉', avatar: heroAvatarUrl('stelle') },
 ] as const
 
 export function ItemCard({
@@ -155,7 +156,7 @@ export function ItemCard({
             ) : (
               <div className={styles.heroAvatarContainer} title={`专属英雄: ${heroZh}`}>
                 <img
-                  src={`/images/heroes/${heroSlug}.webp`}
+                  src={heroAvatarUrl(heroSlug)}
                   alt={heroZh}
                   className={styles.heroAvatar}
                 />
@@ -538,7 +539,7 @@ export default function ItemsList({
                         >
                           {index === 0 && group.icon && (
                             <img 
-                              src={`/images/icons/${group.icon}.webp`}
+                              src={iconUrl(group.icon)}
                               alt="" 
                               className={styles.tagIcon}
                             />
