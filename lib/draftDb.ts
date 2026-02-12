@@ -44,18 +44,20 @@ export async function loadToolDraftsFromDb<T = any[]>(): Promise<T | null> {
   try {
     const db = await getDb()
     const data = await db.get(STORE, DRAFTS_KEY)
-    return (data as T) || null
+    if (data) return data as T
   } catch {
-    return null
+    // ignore and fallback
   }
+  return readLocal<T>(DRAFTS_KEY)
 }
 
 export async function saveToolDraftsToDb(data: any): Promise<void> {
+  writeLocal(DRAFTS_KEY, data)
   try {
     const db = await getDb()
     await db.put(STORE, data, DRAFTS_KEY)
   } catch {
-    // ignore write failures; caller may still have localStorage fallback
+    // ignore
   }
 }
 
@@ -66,11 +68,14 @@ export async function loadLineupScaleFromDb(): Promise<number | null> {
     const n = Number(data)
     return Number.isFinite(n) ? n : null
   } catch {
-    return null
+    const local = readLocal<number>(LINEUP_SCALE_KEY)
+    const n = Number(local)
+    return Number.isFinite(n) ? n : null
   }
 }
 
 export async function saveLineupScaleToDb(scale: number): Promise<void> {
+  writeLocal(LINEUP_SCALE_KEY, scale)
   try {
     const db = await getDb()
     await db.put(STORE, scale, LINEUP_SCALE_KEY)

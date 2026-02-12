@@ -44,63 +44,118 @@ const DEFAULT_TIERS: TierConfig[] = [
   { id: 'C', name: 'C', color: '#2ed573' },
 ]
 
+type RatingStateV2 = {
+  version: 2
+  presets: Preset[]
+  currentPresetId: string
+  ratedItemsByPreset: Record<string, Record<string, RatedItem[]>>
+}
+
+const DEFAULT_PRESET: Preset = {
+  id: 'default',
+  name: '默认预设',
+  tiers: DEFAULT_TIERS,
+}
+
+const RATING_STATE_KEY = 'rating_tool_state_v2'
+
 export default function RatingTool({ onSelectItem, onDraftApiChange }: RatingToolProps) {
-  const [presets, setPresets] = useState<Preset[]>([])
-  const [currentPreset, setCurrentPreset] = useState<Preset>({
-    id: 'default',
-    name: '默认预设',
-    tiers: DEFAULT_TIERS,
+  const [presets, setPresets] = useState<Preset[]>([DEFAULT_PRESET])
+  const [currentPresetId, setCurrentPresetId] = useState<string>('default')
+  const [ratedItemsByPreset, setRatedItemsByPreset] = useState<Record<string, Record<string, RatedItem[]>>>({
+    default: {},
   })
-  const [ratedItems, setRatedItems] = useState<Record<string, RatedItem[]>>({})
   const [isEditingPreset, setIsEditingPreset] = useState(false)
   const [editingTiers, setEditingTiers] = useState(DEFAULT_TIERS)
   const [selectedRatedRef, setSelectedRatedRef] = useState<{ tierId: string; itemKey: string } | null>(null)
+  const [newPresetName, setNewPresetName] = useState('')
+
+  const currentPreset = presets.find((p) => p.id === currentPresetId) || DEFAULT_PRESET
+  const ratedItems = ratedItemsByPreset[currentPreset.id] || {}
+  const customPresets = presets.filter((p) => p.id !== 'default')
+
+  const ensureTierBuckets = (preset: Preset, input: Record<string, RatedItem[]>): Record<string, RatedItem[]> => {
+    const normalized: Record<string, RatedItem[]> = { ...input }
+    preset.tiers.forEach((tier) => {
+      if (!Array.isArray(normalized[tier.id])) normalized[tier.id] = []
+    })
+    return normalized
+  }
+
+  const persistState = (
+    nextPresets: Preset[],
+    nextCurrentPresetId: string,
+    nextRatedItemsByPreset: Record<string, Record<string, RatedItem[]>>
+  ) => {
+    const payload: RatingStateV2 = {
+      version: 2,
+      presets: nextPresets,
+      currentPresetId: nextCurrentPresetId,
+      ratedItemsByPreset: nextRatedItemsByPreset,
+    }
+    try {
+      localStorage.setItem(RATING_STATE_KEY, JSON.stringify(payload))
+    } catch {}
+  }
 
   // 确保所有层级都有初始化的数组
   useEffect(() => {
-    const updated = { ...ratedItems }
-    let needsUpdate = false
-    
-    currentPreset.tiers.forEach(tier => {
-      if (!updated[tier.id]) {
-        updated[tier.id] = []
-        needsUpdate = true
-      }
+    setRatedItemsByPreset((prev) => {
+      const bucket = ensureTierBuckets(currentPreset, prev[currentPreset.id] || {})
+      const same = JSON.stringify(bucket) === JSON.stringify(prev[currentPreset.id] || {})
+      if (same) return prev
+      const next = { ...prev, [currentPreset.id]: bucket }
+      persistState(presets.length > 0 ? presets : [DEFAULT_PRESET], currentPreset.id, next)
+      return next
     })
-    
-    if (needsUpdate) {
-      setRatedItems(updated)
-    }
-  }, [currentPreset])
+  }, [currentPreset.id, currentPreset.tiers])
 
-  // 从 localStorage 加载预设
+  // 从 localStorage 加载评分状态
   useEffect(() => {
-    const saved = localStorage.getItem('ratingPresets')
+    const saved = localStorage.getItem(RATING_STATE_KEY)
     if (saved) {
       try {
-        const parsed = JSON.parse(saved)
-        setPresets(parsed)
+        const parsed = JSON.parse(saved) as RatingStateV2
+        if (parsed?.version === 2 && Array.isArray(parsed.presets)) {
+          const mergedPresets = [DEFAULT_PRESET, ...parsed.presets.filter((p) => p.id !== 'default')]
+          setPresets(mergedPresets)
+          setCurrentPresetId(
+            mergedPresets.some((p) => p.id === parsed.currentPresetId) ? parsed.currentPresetId : 'default'
+          )
+          setRatedItemsByPreset(parsed.ratedItemsByPreset || { default: {} })
+        }
       } catch (e) {
         console.error('加载预设失败:', e)
       }
-    }
-
-    const savedRating = localStorage.getItem('ratedItems')
-    if (savedRating) {
-      try {
-        const parsed = JSON.parse(savedRating)
-        const normalized: Record<string, RatedItem[]> = {}
-        Object.entries(parsed || {}).forEach(([tierId, list]) => {
-          const arr = Array.isArray(list) ? list : []
-          normalized[tierId] = arr.map((it: any, idx: number) => ({
-            ...it,
-            _ratedKey: it?._ratedKey || `${it?.id || 'item'}-legacy-${idx}`,
-          }))
-        })
-        setRatedItems(normalized)
-      } catch (e) {
-        console.error('加载评分失败:', e)
+    } else {
+      // 兼容旧数据结构
+      const legacyPresetsRaw = localStorage.getItem('ratingPresets')
+      const legacyRatedRaw = localStorage.getItem('ratedItems')
+      const loadedPresets = [DEFAULT_PRESET]
+      if (legacyPresetsRaw) {
+        try {
+          const parsed = JSON.parse(legacyPresetsRaw)
+          if (Array.isArray(parsed)) loadedPresets.push(...parsed.filter((p: Preset) => p.id !== 'default'))
+        } catch {}
       }
+      let legacyRated: Record<string, RatedItem[]> = {}
+      if (legacyRatedRaw) {
+        try {
+          const parsed = JSON.parse(legacyRatedRaw)
+          Object.entries(parsed || {}).forEach(([tierId, list]) => {
+            const arr = Array.isArray(list) ? list : []
+            legacyRated[tierId] = arr.map((it: any, idx: number) => ({
+              ...it,
+              _ratedKey: it?._ratedKey || `${it?.id || 'item'}-legacy-${idx}`,
+            }))
+          })
+        } catch {}
+      }
+      const nextByPreset = { default: legacyRated }
+      setPresets(loadedPresets)
+      setCurrentPresetId('default')
+      setRatedItemsByPreset(nextByPreset)
+      persistState(loadedPresets, 'default', nextByPreset)
     }
 
     const pending = localStorage.getItem('pending_editor_import_rating')
@@ -108,55 +163,77 @@ export default function RatingTool({ onSelectItem, onDraftApiChange }: RatingToo
       try {
         const payload = JSON.parse(pending)
         if (payload && typeof payload === 'object') {
-          const nextPresets = Array.isArray(payload.presets) ? payload.presets : []
-          const nextCurrent = payload.currentPreset && Array.isArray(payload.currentPreset.tiers)
-            ? payload.currentPreset
+          const nextPresetsRaw = Array.isArray(payload.presets) ? payload.presets : []
+          const nextPresets = [DEFAULT_PRESET, ...nextPresetsRaw.filter((p: Preset) => p.id !== 'default')]
+          const nextCurrentId = payload.currentPresetId || payload.currentPreset?.id || 'default'
+          const nextRatedByPreset = payload.ratedItemsByPreset && typeof payload.ratedItemsByPreset === 'object'
+            ? payload.ratedItemsByPreset
             : {
-                id: 'default',
-                name: '默认预设',
-                tiers: DEFAULT_TIERS,
+                [nextCurrentId]: payload.ratedItems && typeof payload.ratedItems === 'object' ? payload.ratedItems : {},
               }
-          const nextRated = payload.ratedItems && typeof payload.ratedItems === 'object' ? payload.ratedItems : {}
           setPresets(nextPresets)
-          setCurrentPreset(nextCurrent)
-          setRatedItems(nextRated)
-          localStorage.setItem('ratingPresets', JSON.stringify(nextPresets))
-          localStorage.setItem('ratedItems', JSON.stringify(nextRated))
+          setCurrentPresetId(nextPresets.some((p) => p.id === nextCurrentId) ? nextCurrentId : 'default')
+          setRatedItemsByPreset(nextRatedByPreset)
+          persistState(nextPresets, nextCurrentId, nextRatedByPreset)
         }
       } catch {}
       localStorage.removeItem('pending_editor_import_rating')
     }
   }, [])
 
-  // 保存预设
+  useEffect(() => {
+    if (presets.length === 0) return
+    persistState(presets, currentPresetId, ratedItemsByPreset)
+  }, [presets, currentPresetId, ratedItemsByPreset])
+
   const savePreset = () => {
+    const trimmedName = newPresetName.trim() || `自定义预设 ${customPresets.length + 1}`
     const newPreset: Preset = {
-      id: Date.now().toString(),
-      name: '自定义预设 ' + (presets.length + 1),
-      tiers: editingTiers,
+      id: `preset-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`,
+      name: trimmedName,
+      tiers: editingTiers.map((t) => ({ ...t })),
     }
-    const updatedPresets = [...presets, newPreset]
+    const updatedPresets = [...presets.filter((p) => p.id !== newPreset.id), newPreset]
     setPresets(updatedPresets)
-    setCurrentPreset(newPreset)
-    
-    // 初始化新等级的空数组
-    const updatedRatedItems = { ...ratedItems }
-    editingTiers.forEach(tier => {
-      if (!updatedRatedItems[tier.id]) {
-        updatedRatedItems[tier.id] = []
-      }
-    })
-    setRatedItems(updatedRatedItems)
-    
-    localStorage.setItem('ratingPresets', JSON.stringify(updatedPresets))
-    localStorage.setItem('ratedItems', JSON.stringify(updatedRatedItems))
+    setCurrentPresetId(newPreset.id)
+    const existing = ratedItemsByPreset[newPreset.id] || {}
+    const updatedRatedItemsByPreset = {
+      ...ratedItemsByPreset,
+      [newPreset.id]: ensureTierBuckets(newPreset, existing),
+    }
+    setRatedItemsByPreset(updatedRatedItemsByPreset)
+    persistState(updatedPresets, newPreset.id, updatedRatedItemsByPreset)
     setIsEditingPreset(false)
+    setNewPresetName('')
+  }
+
+  const renamePreset = () => {
+    if (currentPreset.id === 'default') return
+    const nextName = window.prompt('重命名预设', currentPreset.name)
+    if (!nextName?.trim()) return
+    const updated = presets.map((p) => (p.id === currentPreset.id ? { ...p, name: nextName.trim() } : p))
+    setPresets(updated)
+    persistState(updated, currentPresetId, ratedItemsByPreset)
+  }
+
+  const deletePreset = () => {
+    if (currentPreset.id === 'default') return
+    const ok = window.confirm(`确认删除预设“${currentPreset.name}”？`)
+    if (!ok) return
+    const updatedPresets = presets.filter((p) => p.id !== currentPreset.id)
+    const nextRatedByPreset = { ...ratedItemsByPreset }
+    delete nextRatedByPreset[currentPreset.id]
+    setPresets(updatedPresets)
+    setCurrentPresetId('default')
+    setRatedItemsByPreset(nextRatedByPreset)
+    persistState(updatedPresets, 'default', nextRatedByPreset)
   }
 
   // 更新评分：允许一条卡在多个等级存在，但同一等级不重复
   const updateRating = (tierId: string, item: RatedItem) => {
-    setRatedItems((prev) => {
-      const updated = { ...prev }
+    setRatedItemsByPreset((prevByPreset) => {
+      const currentBucket = { ...(prevByPreset[currentPreset.id] || {}) }
+      const updated = { ...currentBucket }
       const tierItems = Array.isArray(updated[tierId]) ? [...updated[tierId]] : []
 
       // 同一层级内：同卡 + 同卡牌等级 去重
@@ -171,44 +248,49 @@ export default function RatingTool({ onSelectItem, onDraftApiChange }: RatingToo
       }
 
       updated[tierId] = tierItems
-      localStorage.setItem('ratedItems', JSON.stringify(updated))
-      return updated
+      const nextByPreset = { ...prevByPreset, [currentPreset.id]: updated }
+      persistState(presets, currentPresetId, nextByPreset)
+      return nextByPreset
     })
   }
 
   // 移除评分
   const removeRating = (tierId: string, removeIndex: number) => {
-    setRatedItems((prev) => {
-      const updated = { ...prev }
+    setRatedItemsByPreset((prevByPreset) => {
+      const currentBucket = { ...(prevByPreset[currentPreset.id] || {}) }
+      const updated = { ...currentBucket }
       const tierItems = Array.isArray(updated[tierId]) ? [...updated[tierId]] : []
       const target = tierItems[removeIndex]
       updated[tierId] = tierItems.filter((_, idx) => idx !== removeIndex)
       if (target?._ratedKey && selectedRatedRef?.itemKey === target._ratedKey && selectedRatedRef?.tierId === tierId) {
         setSelectedRatedRef(null)
       }
-      localStorage.setItem('ratedItems', JSON.stringify(updated))
-      return updated
+      const nextByPreset = { ...prevByPreset, [currentPreset.id]: updated }
+      persistState(presets, currentPresetId, nextByPreset)
+      return nextByPreset
     })
   }
 
   const updateRatedItemLevel = (tierId: string, itemKey: string, nextTier: string | null) => {
-    setRatedItems((prev) => {
-      const updated = { ...prev }
+    setRatedItemsByPreset((prevByPreset) => {
+      const currentBucket = { ...(prevByPreset[currentPreset.id] || {}) }
+      const updated = { ...currentBucket }
       const tierItems = Array.isArray(updated[tierId]) ? [...updated[tierId]] : []
       const index = tierItems.findIndex((it) => it._ratedKey === itemKey)
-      if (index < 0) return prev
+      if (index < 0) return prevByPreset
 
       const target = tierItems[index]
       const normalizedNext = nextTier || null
       const duplicateExists = tierItems.some(
         (it, idx) => idx !== index && it.id === target.id && (it.ratingTier || null) === normalizedNext
       )
-      if (duplicateExists) return prev
+      if (duplicateExists) return prevByPreset
 
       tierItems[index] = { ...target, ratingTier: normalizedNext }
       updated[tierId] = tierItems
-      localStorage.setItem('ratedItems', JSON.stringify(updated))
-      return updated
+      const nextByPreset = { ...prevByPreset, [currentPreset.id]: updated }
+      persistState(presets, currentPresetId, nextByPreset)
+      return nextByPreset
     })
   }
 
@@ -216,31 +298,30 @@ export default function RatingTool({ onSelectItem, onDraftApiChange }: RatingToo
     if (!onDraftApiChange) return
     onDraftApiChange({
       getSnapshot: () => ({
+        version: 2,
         presets,
+        currentPresetId,
         currentPreset,
+        ratedItemsByPreset,
         ratedItems,
       }),
       applySnapshot: (payload: any) => {
         if (!payload || typeof payload !== 'object') return
-        const nextPresets = Array.isArray(payload.presets) ? payload.presets : []
-        const nextCurrent = payload.currentPreset && Array.isArray(payload.currentPreset.tiers)
-          ? payload.currentPreset
-          : {
-              id: 'default',
-              name: '默认预设',
-              tiers: DEFAULT_TIERS,
-            }
-        const nextRated = payload.ratedItems && typeof payload.ratedItems === 'object' ? payload.ratedItems : {}
+        const nextPresetsRaw = Array.isArray(payload.presets) ? payload.presets : []
+        const nextPresets = [DEFAULT_PRESET, ...nextPresetsRaw.filter((p: Preset) => p.id !== 'default')]
+        const nextCurrentId = payload.currentPresetId || payload.currentPreset?.id || 'default'
+        const nextRatedByPreset = payload.ratedItemsByPreset && typeof payload.ratedItemsByPreset === 'object'
+          ? payload.ratedItemsByPreset
+          : { [nextCurrentId]: payload.ratedItems && typeof payload.ratedItems === 'object' ? payload.ratedItems : {} }
         setPresets(nextPresets)
-        setCurrentPreset(nextCurrent)
-        setRatedItems(nextRated)
-        localStorage.setItem('ratingPresets', JSON.stringify(nextPresets))
-        localStorage.setItem('ratedItems', JSON.stringify(nextRated))
+        setCurrentPresetId(nextPresets.some((p) => p.id === nextCurrentId) ? nextCurrentId : 'default')
+        setRatedItemsByPreset(nextRatedByPreset)
+        persistState(nextPresets, nextCurrentId, nextRatedByPreset)
       },
       getContextLabel: () => '卡牌评分',
     })
     return () => onDraftApiChange(null)
-  }, [onDraftApiChange, presets, currentPreset, ratedItems])
+  }, [onDraftApiChange, presets, currentPresetId, currentPreset, ratedItemsByPreset, ratedItems])
 
   return (
     <div className={styles.container}>
@@ -255,26 +336,25 @@ export default function RatingTool({ onSelectItem, onDraftApiChange }: RatingToo
           </button>
         </div>
 
-        {/* 预设选择 */}
-        {presets.length > 0 && (
-          <div className={styles.presetSelector}>
-            <select
-              value={currentPreset.id}
-              onChange={(e) => {
-                const preset = presets.find(p => p.id === e.target.value)
-                if (preset) setCurrentPreset(preset)
-              }}
-              className={styles.presetSelect}
-            >
-              <option value="default">默认预设 (SABC)</option>
-              {presets.map(preset => (
-                <option key={preset.id} value={preset.id}>
-                  {preset.name}
-                </option>
-              ))}
-            </select>
-          </div>
-        )}
+        <div className={styles.presetSelector}>
+          <select
+            value={currentPreset.id}
+            onChange={(e) => setCurrentPresetId(e.target.value)}
+            className={styles.presetSelect}
+          >
+            {presets.map(preset => (
+              <option key={preset.id} value={preset.id}>
+                {preset.id === 'default' ? '默认预设 (SABC)' : preset.name}
+              </option>
+            ))}
+          </select>
+          <button className={styles.presetActionBtn} onClick={renamePreset} disabled={currentPreset.id === 'default'}>
+            重命名预设
+          </button>
+          <button className={styles.presetDeleteBtn} onClick={deletePreset} disabled={currentPreset.id === 'default'}>
+            删除预设
+          </button>
+        </div>
 
         {/* 等级编辑 */}
         {isEditingPreset && (
@@ -327,6 +407,13 @@ export default function RatingTool({ onSelectItem, onDraftApiChange }: RatingToo
             >
               + 新增等级
             </button>
+            <input
+              className={styles.tierNameInput}
+              value={newPresetName}
+              maxLength={30}
+              onChange={(e) => setNewPresetName(e.target.value)}
+              placeholder={`预设名称（默认：自定义预设 ${customPresets.length + 1}）`}
+            />
             <button onClick={savePreset} className={styles.savePresetButton}>
               保存为新预设
             </button>

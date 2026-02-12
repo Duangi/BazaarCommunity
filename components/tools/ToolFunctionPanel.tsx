@@ -45,6 +45,13 @@ export default function ToolFunctionPanel({
   const [profileDraft, setProfileDraft] = useState(userProfile)
   const [publishing, setPublishing] = useState(false)
 
+  const persistDrafts = (nextDrafts: DraftItem[]) => {
+    try {
+      localStorage.setItem('tool_drafts_v1', JSON.stringify(nextDrafts))
+    } catch {}
+    saveToolDraftsToDb(nextDrafts)
+  }
+
   useEffect(() => {
     setProfileDraft(userProfile)
   }, [userProfile.nickname, userProfile.useBilibili, userProfile.bilibiliUid])
@@ -80,8 +87,7 @@ export default function ToolFunctionPanel({
 
   useEffect(() => {
     if (!draftsHydrated) return
-    localStorage.setItem('tool_drafts_v1', JSON.stringify(drafts))
-    saveToolDraftsToDb(drafts)
+    persistDrafts(drafts)
   }, [drafts, draftsHydrated])
 
   useEffect(() => {
@@ -110,7 +116,11 @@ export default function ToolFunctionPanel({
       createdAt: Date.now(),
       payload: draftApi.getSnapshot(),
     }
-    setDrafts((prev) => [item, ...prev])
+    setDrafts((prev) => {
+      const next = [item, ...prev]
+      persistDrafts(next)
+      return next
+    })
     setSelectedDraftId(item.id)
     setToast({ text: '草稿已保存。', tone: 'success' })
   }
@@ -130,7 +140,11 @@ export default function ToolFunctionPanel({
     if (!target) return
     const next = window.prompt('重命名草稿', target.name)
     if (!next?.trim()) return
-    setDrafts((prev) => prev.map((d) => (d.id === target.id ? { ...d, name: next.trim() } : d)))
+    setDrafts((prev) => {
+      const nextDrafts = prev.map((d) => (d.id === target.id ? { ...d, name: next.trim() } : d))
+      persistDrafts(nextDrafts)
+      return nextDrafts
+    })
   }
 
   const deleteDraft = () => {
@@ -141,7 +155,11 @@ export default function ToolFunctionPanel({
     }
     const ok = window.confirm(`确认删除草稿“${target.name}”？此操作不可恢复。`)
     if (!ok) return
-    setDrafts((prev) => prev.filter((d) => d.id !== target.id))
+    setDrafts((prev) => {
+      const nextDrafts = prev.filter((d) => d.id !== target.id)
+      persistDrafts(nextDrafts)
+      return nextDrafts
+    })
     setSelectedDraftId('')
     setToast({ text: '草稿已删除。', tone: 'success' })
   }
