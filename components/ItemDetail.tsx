@@ -1,8 +1,8 @@
 'use client'
 
-import { Fragment } from 'react'
 import styles from './ItemDetail.module.css'
-import { renderText, ENCHANT_COLORS } from '@/lib/rendering'
+import ItemDetailContent from './ItemDetailContent'
+import ItemImage from './ItemImage'
 
 // 定义了组件所需的所有数据字段
 interface Item {
@@ -33,34 +33,13 @@ interface ItemDetailProps {
 
 
 
-/**
- * 根据 item 数据获取正确的图片路径
- * 模仿 PySide6 的逻辑: 优先使用 art_key (技能), 回退到 id (物品)
- * @param item - 物品/技能对象
- * @returns 图片的 URL
- */
-const getItemImageUrl = (item: Item): string => {
-  let imageName = ''
-  if (item.art_key) {
-    // 从 art_key 提取文件名, e.g., "Icon_Skill_STE_ThrillOfTheFlight.png"
-    imageName = item.art_key.split('/').pop() || ''
-    // 移除 .png 后缀并统一使用 .webp
-    imageName = imageName.replace(/\.png$/, '.webp')
-    return `/images/skill/${imageName}`
-  }
-  
-  // 如果没有 art_key, 则为物品，使用 id
-  imageName = `${item.id}.webp`
-  return `/images/card/${imageName}`
-}
-
 export default function ItemDetail({ item }: ItemDetailProps) {
   if (!item) {
     return (
       <div className={styles.container}>
         <div className={styles.placeholder}>
-          <p>👈 从右侧列表中点击或拖拽一个物品</p>
-          <p>查看详细信息</p>
+          <p>请从左侧百科搜索或中间功能区选择卡牌/技能</p>
+          <p>右侧会显示对应详情</p>
         </div>
       </div>
     )
@@ -82,8 +61,9 @@ export default function ItemDetail({ item }: ItemDetailProps) {
   const heroesRaw = item.heroes || ''
   const heroesStr = Array.isArray(heroesRaw) ? heroesRaw[0] : heroesRaw
   const heroEn = heroesStr.split(' / ')[0].trim()
+  const heroSlug = heroEn.toLowerCase()
   const heroCn = heroesStr.split(' / ')[1]?.trim() || heroEn
-  const isCommon = heroEn.toLowerCase() === 'common'
+  const isCommon = !heroEn || heroSlug === 'common'
 
   // 标签处理
   const getTags = () => {
@@ -106,7 +86,13 @@ export default function ItemDetail({ item }: ItemDetailProps) {
       <div className={`${styles.cardHeader} ${styles[`tier${tierClass.charAt(0).toUpperCase() + tierClass.slice(1)}`]}`}>
         <div className={styles.cardHeaderLeft}>
           <div className={`${styles.imageBox} ${styles[`size${sizeClass.charAt(0).toUpperCase() + sizeClass.slice(1)}`]}`}>
-            <img src={getItemImageUrl(item)} alt={item.name_cn} className={styles.itemImage} />
+            <ItemImage
+              item={item}
+              alt={item.name_cn || item.name_en}
+              className={styles.itemImage}
+              fallbackClassName={styles.imageFallback}
+              loading="eager"
+            />
           </div>
         </div>
         
@@ -129,110 +115,13 @@ export default function ItemDetail({ item }: ItemDetailProps) {
         {!isCommon && (
           <div className={styles.cardHeaderRight}>
             <div className={styles.heroAvatarContainer}>
-              <img src={`/images/heroes/${heroEn}.webp`} alt={heroCn} className={styles.heroAvatar} title={`专属英雄: ${heroCn}`} />
+              <img src={`/images/heroes/${heroSlug}.webp`} alt={heroCn} className={styles.heroAvatar} title={`专属英雄: ${heroCn}`} />
             </div>
           </div>
         )}
       </div>
 
-      {/* 详细信息 */}
-      <div className={styles.detailsContent}>
-        {/* 左侧：冷却 */}
-        {(() => {
-          const cdTiersRaw = item.cooldown_tiers
-          const hasProgression = typeof cdTiersRaw === 'string' && cdTiersRaw.includes('/')
-          
-          if (hasProgression) {
-            const cdVals = cdTiersRaw.split('/').map(v => {
-              const ms = parseFloat(v)
-              return isNaN(ms) ? "0.0" : (ms > 100 ? ms / 1000 : ms).toFixed(1)
-            })
-            // React中不方便像PySide那样动态生成样式类，这里简化显示
-            return (
-              <div className={styles.detailsLeft}>
-                <div className={styles.cdProgression}>
-                  {cdVals.map((v, i) => (
-                    <Fragment key={i}>
-                      <div className={styles.cdStep}>{v}</div>
-                      {i < cdVals.length - 1 && <div className={styles.cdArrow}>→</div>}
-                    </Fragment>
-                  ))}
-                  <div className={styles.cdUnit}>秒</div>
-                </div>
-              </div>
-            )
-          }
-          
-          if (item.cooldown !== undefined && item.cooldown > 0) {
-            const cdValue = (item.cooldown > 100 ? item.cooldown / 1000 : item.cooldown).toFixed(1)
-            return (
-              <div className={styles.detailsLeft}>
-                <div className={styles.cdDisplay}>
-                  <div className={styles.cdValue}>{cdValue}</div>
-                  <div className={styles.cdUnit}>秒</div>
-                </div>
-              </div>
-            )
-          }
-          
-          return <div className={styles.detailsLeft}></div> // 占位
-        })()}
-
-        {/* 右侧：技能/描述 */}
-        <div className={styles.detailsRight}>
-          {/* 主动技能 (skills) 或技能描述 (descriptions) */}
-          {(item.skills || item.descriptions || []).map((desc, idx) => (
-            <div key={`desc-${idx}`} className={styles.skillItem}>
-              🗡️ {renderText(desc)}
-            </div>
-          ))}
-          {!item.skills && !item.descriptions && item.description_cn && (
-            <div className={styles.skillItem}>
-              🗡️ {renderText(item.description_cn)}
-            </div>
-          )}
-          
-          {/* 被动技能 (skills_passive) */}
-          {item.skills_passive?.map((skill, idx) => (
-            <div key={`passive-${idx}`} className={`${styles.skillItem} ${styles.passive}`}>
-              ⚙️ {renderText(skill)}
-            </div>
-          ))}
-        </div>
-      </div>
-      
-      {/* 任务区域 */}
-      {item.quests && (
-        <div className={styles.questsSection}>
-          {(Array.isArray(item.quests) ? item.quests : [item.quests]).map((quest, index) => (
-            <div key={index} className={styles.questItem}>
-              <div className={styles.questHeader}>📜 任务 {index + 1}:</div>
-              {quest.cn_target && <div className={styles.questTarget}>→ {renderText(quest.cn_target || quest.en_target)}</div>}
-              {quest.cn_reward && <div className={styles.questReward}>✨ {renderText(quest.cn_reward || quest.en_reward)}</div>}
-            </div>
-          ))}
-        </div>
-      )}
-
-      {/* 附魔区域 */}
-      {item.enchantments && Object.keys(item.enchantments).length > 0 && (
-        <div className={styles.itemEnchantmentsRow}>
-          {Object.entries(item.enchantments).map(([enchKey, ench]) => {
-            const name = ench.name_cn || enchKey
-            const effect = ench.effect_cn || ench.effect_en || ''
-            const color = ENCHANT_COLORS[name] || '#ffcd19'
-            
-            return (
-              <div key={enchKey} className={styles.enchantItem}>
-                <span className={styles.enchantBadge} style={{ '--enc-clr': color } as React.CSSProperties}>
-                  {name}
-                </span>
-                <span className={styles.enchantEffect}>{renderText(effect)}</span>
-              </div>
-            )
-          })}
-        </div>
-      )}
+      <ItemDetailContent item={item} />
     </div>
   )
 }

@@ -1,9 +1,10 @@
 'use client'
 
-import { useState, useMemo, useRef, useEffect, Fragment } from 'react'
+import { useState, useMemo, useRef, useEffect } from 'react'
 import { useDrag } from 'react-dnd'
 import styles from './ItemsList.module.css'
-import { ENCHANT_COLORS, renderText } from '@/lib/rendering'
+import ItemDetailContent from './ItemDetailContent'
+import ItemImage from './ItemImage'
 
 export interface Item {
   id: string
@@ -25,12 +26,15 @@ export interface Item {
   descriptions?: any[]
   description_cn?: any
   displayImg?: string
+  art_key?: string
 }
 
 interface ItemsListProps {
   items: Item[]
   skills: any[]
   onSelectItem: (item: Item) => void
+  enableBuildLookup?: boolean
+  onLookupBuilds?: (item: Item) => void
 }
 
 
@@ -45,10 +49,29 @@ const HERO_COLORS: Record<string, string> = {
   'Stelle': '#FFE74C'
 }
 
-export function ItemCard({ item, onClick, isExpanded }: { item: Item; onClick: () => void; isExpanded: boolean }) {
+const HERO_FILTER_OPTIONS = [
+  { val: 'Pygmalien', label: '皮格马利翁', avatar: '/images/heroes/pygmalien.webp' },
+  { val: 'Jules', label: '朱尔斯', avatar: '/images/heroes/jules.webp' },
+  { val: 'Vanessa', label: '瓦内莎', avatar: '/images/heroes/vanessa.webp' },
+  { val: 'Mak', label: '马克', avatar: '/images/heroes/mak.webp' },
+  { val: 'Dooley', label: '多利', avatar: '/images/heroes/dooley.webp' },
+  { val: 'Stelle', label: '斯黛拉', avatar: '/images/heroes/stelle.webp' },
+] as const
+
+export function ItemCard({
+  item,
+  onClick,
+  isExpanded,
+  sourceType,
+}: {
+  item: Item
+  onClick: () => void
+  isExpanded: boolean
+  sourceType: 'items' | 'skills'
+}) {
   const [{ isDragging }, drag] = useDrag(() => ({
     type: 'ITEM',
-    item: { item },
+    item: { item, sourceType },
     collect: (monitor) => ({
       isDragging: monitor.isDragging(),
     }),
@@ -68,11 +91,13 @@ export function ItemCard({ item, onClick, isExpanded }: { item: Item; onClick: (
   // 处理 heroes 字段（可能是字符串或数组）
   const heroesStr = typeof item.heroes === 'string' ? item.heroes : (Array.isArray(item.heroes) ? item.heroes[0] : '')
   const heroKey = heroesStr ? heroesStr.split(' / ')[0].trim() : 'Common'
+  const heroSlug = heroKey.toLowerCase()
   // 技能英雄显示只要中文名（斜杠后的部分），没有就退回英文
   const heroZh = heroesStr
     ? (heroesStr.split(' / ')[1]?.trim() || heroesStr.split(' / ')[0].trim())
     : '通用'
   const heroColor = HERO_COLORS[heroKey]
+  const isCommon = !heroKey || heroSlug === 'common'
 
   // 处理标签（技能和物品的结构可能不同）
   const getTags = () => {
@@ -100,7 +125,12 @@ export function ItemCard({ item, onClick, isExpanded }: { item: Item; onClick: (
       <div className={`${styles.itemCard} ${styles[`tier${tierClass.charAt(0).toUpperCase() + tierClass.slice(1)}`]}`}>
         <div className={styles.cardLeft}>
           <div className={`${styles.imageBox} ${styles[`size${sizeClass.charAt(0).toUpperCase() + sizeClass.slice(1)}`]}`}>
-            <div className={styles.placeholder}>🎴</div>
+            <ItemImage
+              item={item}
+              alt={item.name_cn || item.name_en}
+              className={styles.itemImage}
+              fallbackClassName={styles.placeholder}
+            />
           </div>
         </div>
 
@@ -120,7 +150,17 @@ export function ItemCard({ item, onClick, isExpanded }: { item: Item; onClick: (
 
         <div className={styles.cardRight}>
           <div className={styles.topRightGroup}>
-            <span className={styles.heroBadge} style={{ color: heroColor }}>{heroZh}</span>
+            {isCommon ? (
+              <span className={styles.heroBadge} style={{ color: heroColor }}>{heroZh}</span>
+            ) : (
+              <div className={styles.heroAvatarContainer} title={`专属英雄: ${heroZh}`}>
+                <img
+                  src={`/images/heroes/${heroSlug}.webp`}
+                  alt={heroZh}
+                  className={styles.heroAvatar}
+                />
+              </div>
+            )}
           </div>
           <div className={styles.expandChevron}>{isExpanded ? '▴' : '▾'}</div>
         </div>
@@ -129,116 +169,20 @@ export function ItemCard({ item, onClick, isExpanded }: { item: Item; onClick: (
       {/* 展开的详情 */}
       {isExpanded && (
         <div className={styles.itemDetailsV2}>
-          <div className={styles.detailsContent}>
-            {/* 冷却时间显示 */}
-            {(() => {
-              const cdTiersRaw = item.cooldown_tiers
-              const availTiersRaw = item.available_tiers
-              const hasProgression = cdTiersRaw && typeof cdTiersRaw === 'string' && cdTiersRaw.includes('/')
-              
-              if (hasProgression) {
-                const cdVals = cdTiersRaw.split('/').map((v: string) => {
-                  const ms = parseFloat(v)
-                  if (isNaN(ms)) return "0.0"
-                  return (ms > 100 ? ms / 1000 : ms).toFixed(1)
-                })
-                const availTiers = (availTiersRaw || '').split('/').map((t: string) => t.toLowerCase().trim())
-                const tierSequence = ['bronze', 'silver', 'gold', 'diamond', 'legendary']
-                
-                return (
-                  <div className={styles.detailsLeft}>
-                    <div className={styles.cdProgression}>
-                      {cdVals.map((v: string, i: number) => {
-                        let tierName = 'gold'
-                        if (availTiers[i]) {
-                          tierName = availTiers[i]
-                        } else {
-                          if (cdVals.length === 2) tierName = i === 0 ? 'gold' : 'diamond'
-                          else tierName = tierSequence[i] || 'gold'
-                        }
-                        
-                        return (
-                          <Fragment key={i}>
-                            <div className={`${styles.cdStep} ${styles[`val${tierName.charAt(0).toUpperCase() + tierName.slice(1)}`]}`}>
-                              {v}
-                            </div>
-                            {i < cdVals.length - 1 && <div className={styles.cdArrow}>↓</div>}
-                          </Fragment>
-                        )
-                      })}
-                      <div className={styles.cdUnit}>秒</div>
-                    </div>
-                  </div>
-                )
-              }
-              
-              // 单个CD值显示
-              if (item.cooldown !== undefined && item.cooldown > 0) {
-                return (
-                  <div className={styles.detailsLeft}>
-                    <div className={styles.cdDisplay}>
-                      <div className={styles.cdValue}>{(item.cooldown > 100 ? item.cooldown / 1000 : item.cooldown).toFixed(1)}</div>
-                      <div className={styles.cdUnit}>秒</div>
-                    </div>
-                  </div>
-                )
-              }
-              
-              return null
-            })()}
-
-            {/* 技能/描述 */}
-            <div className={styles.detailsRight}>
-              {/* 如果是物品，显示 skills */}
-              {item.skills && item.skills.length > 0 && item.skills.map((skill: any, idx: number) => (
-                <div key={idx} className={styles.skillItem}>
-                  {renderText(skill)}
-                </div>
-              ))}
-              {/* 如果是技能，显示 descriptions 或 description_cn */}
-              {!item.skills && item.descriptions && item.descriptions.length > 0 && item.descriptions.map((desc: any, idx: number) => (
-                <div key={idx} className={styles.skillItem}>
-                  {renderText(desc)}
-                </div>
-              ))}
-              {/* 如果是技能且没有 descriptions 数组，显示 description_cn */}
-              {!item.skills && !item.descriptions && item.description_cn && (
-                <div className={styles.skillItem}>
-                  {renderText(item.description_cn)}
-                </div>
-              )}
-            </div>
-          </div>
-          
-          {/* 附魔区域 */}
-          {item.enchantments && Object.keys(item.enchantments).length > 0 && (
-            <div className={styles.itemEnchantmentsRow}>
-              {Object.entries(item.enchantments).map(([enchKey, ench]: [string, any]) => {
-                const name = ench.name_cn || enchKey
-                const effect = ench.effect_cn || ench.effect_en || ''
-                const color = ENCHANT_COLORS[name] || '#ffcd19'
-                
-                return (
-                  <div key={enchKey} className={styles.enchantItem}>
-                    <span 
-                      className={styles.enchantBadge}
-                      style={{ '--enc-clr': color } as React.CSSProperties}
-                    >
-                      {name}
-                    </span>
-                    <span className={styles.enchantEffect}>{renderText(effect)}</span>
-                  </div>
-                )
-              })}
-            </div>
-          )}
+          <ItemDetailContent item={item as any} />
         </div>
       )}
     </div>
   )
 }
 
-export default function ItemsList({ items, skills, onSelectItem }: ItemsListProps) {
+export default function ItemsList({
+  items,
+  skills,
+  onSelectItem,
+  enableBuildLookup = false,
+  onLookupBuilds,
+}: ItemsListProps) {
   const [activeTab, setActiveTab] = useState<'items' | 'skills'>('items')
   const [searchKeyword, setSearchKeyword] = useState('')
   const [size, setSize] = useState<'' | 'small' | 'medium' | 'large'>('')
@@ -246,11 +190,17 @@ export default function ItemsList({ items, skills, onSelectItem }: ItemsListProp
   const [hero, setHero] = useState<string>('')
   const [selectedTags, setSelectedTags] = useState<string[]>([])
   const [selectedHiddenTags, setSelectedHiddenTags] = useState<string[]>([])
-  const [matchMode, setMatchMode] = useState<'all' | 'any'>('all')
+  const [matchMode, setMatchMode] = useState<'all' | 'any'>('any')
   const [isFilterCollapsed, setIsFilterCollapsed] = useState(false)
   const [visibleCount, setVisibleCount] = useState(30)
   const [expandedItems, setExpandedItems] = useState<Set<string>>(new Set())
+  const [lookupTarget, setLookupTarget] = useState<Item | null>(null)
+  const [filterHeight, setFilterHeight] = useState(320)
+  const [isResizing, setIsResizing] = useState(false)
   const scrollAreaRef = useRef<HTMLDivElement>(null)
+  const containerRef = useRef<HTMLDivElement>(null)
+  const resizeStartYRef = useRef(0)
+  const resizeStartHeightRef = useRef(320)
 
   useEffect(() => {
     setVisibleCount(30)
@@ -349,8 +299,59 @@ export default function ItemsList({ items, skills, onSelectItem }: ItemsListProp
     setExpandedItems(newExpanded)
   }
 
+  const handleResizeStart = (e: React.MouseEvent<HTMLDivElement>) => {
+    if (isFilterCollapsed) return
+    setIsResizing(true)
+    resizeStartYRef.current = e.clientY
+    resizeStartHeightRef.current = filterHeight
+  }
+
+  const handleResizeEnter = () => {
+    if (!isResizing) document.body.style.cursor = 'ns-resize'
+  }
+
+  const handleResizeLeave = () => {
+    if (!isResizing) document.body.style.cursor = ''
+  }
+
+  useEffect(() => {
+    if (!isResizing) return
+
+    const originalBodyCursor = document.body.style.cursor
+    const originalBodySelect = document.body.style.userSelect
+    document.body.style.cursor = 'ns-resize'
+    document.body.style.userSelect = 'none'
+
+    const onMouseMove = (e: MouseEvent) => {
+      const deltaY = e.clientY - resizeStartYRef.current
+      const containerHeight = containerRef.current?.clientHeight || 0
+      const minFilterHeight = 140
+      const minListHeight = 220
+      const maxFilterHeight = Math.max(minFilterHeight, containerHeight - minListHeight)
+      const nextHeight = Math.min(
+        maxFilterHeight,
+        Math.max(minFilterHeight, resizeStartHeightRef.current + deltaY)
+      )
+      setFilterHeight(nextHeight)
+    }
+
+    const onMouseUp = () => {
+      setIsResizing(false)
+    }
+
+    window.addEventListener('mousemove', onMouseMove)
+    window.addEventListener('mouseup', onMouseUp)
+
+    return () => {
+      document.body.style.cursor = originalBodyCursor
+      document.body.style.userSelect = originalBodySelect
+      window.removeEventListener('mousemove', onMouseMove)
+      window.removeEventListener('mouseup', onMouseUp)
+    }
+  }, [isResizing])
+
   return (
-    <div className={styles.container}>
+    <div ref={containerRef} className={styles.container}>
       {/* 顶部标签 */}
       <div className={styles.tabs}>
         <button
@@ -368,7 +369,10 @@ export default function ItemsList({ items, skills, onSelectItem }: ItemsListProp
       </div>
 
       {/* 搜索过滤器 */}
-      <div className={styles.searchBoxContainer}>
+      <div
+        className={styles.searchBoxContainer}
+        style={isFilterCollapsed ? undefined : { height: `${filterHeight}px` }}
+      >
         <div className={styles.filterContent}>
           <div className={styles.filterHeader}>
             <div className={styles.filterHeaderLeft}>
@@ -446,22 +450,21 @@ export default function ItemsList({ items, skills, onSelectItem }: ItemsListProp
                   ))}
                 </div>
 
-                <div className={styles.buttonGroup}>
-                  {[
-                    { val: 'Common', label: '通用' },
-                    { val: 'Pygmalien', label: '猪' },
-                    { val: 'Jules', label: '朱尔斯' },
-                    { val: 'Vanessa', label: '瓦内莎' },
-                    { val: 'Mak', label: '马克' },
-                    { val: 'Dooley', label: '多利' },
-                    { val: 'Stelle', label: '斯黛尔' }
-                  ].map(opt => (
+                <div className={styles.heroFilterGroup}>
+                  <button
+                    className={`${styles.toggleBtn} ${styles.heroCommonBtn} ${hero === 'Common' ? styles.active : ''}`}
+                    onClick={() => setHero(hero === 'Common' ? '' : 'Common')}
+                  >
+                    通用
+                  </button>
+                  {HERO_FILTER_OPTIONS.map((opt) => (
                     <button
                       key={opt.val}
-                      className={`${styles.toggleBtn} ${hero === opt.val ? styles.active : ''}`}
+                      className={`${styles.heroFilterBtn} ${hero === opt.val ? styles.heroFilterBtnActive : ''}`}
                       onClick={() => setHero(hero === opt.val ? '' : opt.val)}
+                      title={opt.label}
                     >
-                      {opt.label}
+                      <img src={opt.avatar} alt={opt.label} className={styles.heroFilterAvatar} />
                     </button>
                   ))}
                 </div>
@@ -535,7 +538,7 @@ export default function ItemsList({ items, skills, onSelectItem }: ItemsListProp
                         >
                           {index === 0 && group.icon && (
                             <img 
-                              src={`/images/${group.icon}.webp`}
+                              src={`/images/icons/${group.icon}.webp`}
                               alt="" 
                               className={styles.tagIcon}
                             />
@@ -571,7 +574,36 @@ export default function ItemsList({ items, skills, onSelectItem }: ItemsListProp
         </div>
       </div>
 
+      {!isFilterCollapsed && (
+        <div
+          className={`${styles.resizeBar} ${isResizing ? styles.resizing : ''}`}
+          onMouseDown={handleResizeStart}
+          onMouseEnter={handleResizeEnter}
+          onMouseLeave={handleResizeLeave}
+          title="上下拖动调整过滤器高度"
+        >
+          <div className={styles.resizeBarGrip} />
+        </div>
+      )}
+
       {/* 物品列表 */}
+      {enableBuildLookup && (
+        <div className={styles.lookupActionBar}>
+          <div className={styles.lookupTargetName}>
+            {lookupTarget ? `当前选中：${lookupTarget.name_cn || lookupTarget.name_en || lookupTarget.id}` : '先在列表中选一张卡'}
+          </div>
+          <button
+            className={styles.lookupBuildBtn}
+            disabled={!lookupTarget || !onLookupBuilds}
+            onClick={() => {
+              if (!lookupTarget || !onLookupBuilds) return
+              onLookupBuilds(lookupTarget)
+            }}
+          >
+            🔍 寻找包含此卡的阵容
+          </button>
+        </div>
+      )}
       <div 
         ref={scrollAreaRef}
         className={styles.itemsList}
@@ -581,9 +613,11 @@ export default function ItemsList({ items, skills, onSelectItem }: ItemsListProp
           <ItemCard
             key={item.id}
             item={item}
+            sourceType={activeTab}
             onClick={() => {
               toggleExpand(item.id)
               onSelectItem(item)
+              setLookupTarget(item)
             }}
             isExpanded={expandedItems.has(item.id)}
           />

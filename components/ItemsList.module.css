@@ -44,11 +44,17 @@
   border-bottom: 1px solid rgba(255, 255, 255, 0.1);
   background: #2b2621;
   box-shadow: 0 4px 6px rgba(0, 0, 0, 0.3);
+  display: flex;
+  flex-direction: column;
+  min-height: 140px;
+  flex-shrink: 0;
 }
 
 .filterContent {
   display: flex;
   flex-direction: column;
+  height: 100%;
+  min-height: 0;
 }
 
 .filterHeader {
@@ -107,8 +113,41 @@
   display: flex;
   flex-direction: column;
   gap: 8px;
-  max-height: 400px;
+  flex: 1;
+  min-height: 0;
   overflow-y: auto;
+}
+
+.resizeBar {
+  height: 14px;
+  flex-shrink: 0;
+  cursor: ns-resize;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: #191612;
+  border-top: 1px solid rgba(255, 205, 25, 0.12);
+  border-bottom: 1px solid rgba(255, 205, 25, 0.12);
+  transition: background 0.15s ease;
+}
+
+.resizeBar * {
+  cursor: ns-resize;
+}
+
+.resizeBar:hover {
+  background: #231e17;
+}
+
+.resizeBar.resizing {
+  background: #2b2419;
+}
+
+.resizeBarGrip {
+  width: 48px;
+  height: 4px;
+  border-radius: 999px;
+  background: rgba(255, 205, 25, 0.65);
 }
 
 .filterRow {
@@ -138,6 +177,45 @@
   display: flex;
   gap: 6px;
   flex-wrap: wrap;
+}
+
+.heroFilterGroup {
+  display: flex;
+  gap: 6px;
+  flex-wrap: wrap;
+  align-items: center;
+}
+
+.heroCommonBtn {
+  padding: 6px 10px;
+}
+
+.heroFilterBtn {
+  width: 32px;
+  height: 32px;
+  border-radius: 8px;
+  padding: 0;
+  border: 1px solid #7d6b4a;
+  background: rgba(0, 0, 0, 0.2);
+  cursor: pointer;
+  overflow: hidden;
+}
+
+.heroFilterBtn:hover {
+  border-color: #d4af37;
+  box-shadow: 0 0 8px rgba(212, 175, 55, 0.3);
+}
+
+.heroFilterBtnActive {
+  border-color: #ffcc00;
+  box-shadow: inset 0 0 8px rgba(255, 204, 0, 0.2), 0 0 12px rgba(255, 204, 0, 0.3);
+}
+
+.heroFilterAvatar {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
 }
 
 .toggleBtn {
@@ -253,9 +331,44 @@
 /* ==================== 物品列表 ==================== */
 .itemsList {
   flex: 1;
-  max-height: calc(100vh - 500px);
+  min-height: 0;
   overflow-y: auto;
   padding: 10px;
+}
+
+.lookupActionBar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  padding: 8px 10px;
+  border-top: 1px solid rgba(255, 255, 255, 0.08);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+  background: #14110d;
+}
+
+.lookupTargetName {
+  font-size: 12px;
+  color: #b6b6b6;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.lookupBuildBtn {
+  border: 1px solid #8a6b11;
+  background: #2a210d;
+  color: #ffe39b;
+  border-radius: 8px;
+  padding: 6px 10px;
+  font-size: 12px;
+  cursor: pointer;
+  flex-shrink: 0;
+}
+
+.lookupBuildBtn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
 }
 
 /* ==================== 物品卡片 ==================== */
@@ -414,6 +527,22 @@
   padding: 2px 6px;
   border-radius: 4px;
   background: rgba(255, 255, 255, 0.05);
+}
+
+.heroAvatarContainer {
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  overflow: hidden;
+  border: 1px solid rgba(255, 255, 255, 0.25);
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.35);
+}
+
+.heroAvatar {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
 }
 
 .expandChevron {

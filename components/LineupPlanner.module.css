@@ -1,0 +1,1018 @@
+.container {
+  display: block;
+  height: auto;
+}
+
+.planSection {
+  flex: 1;
+  background: #1a1a1a;
+  border: 1px solid #333;
+  border-radius: 12px;
+  padding: 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  overflow-y: auto;
+}
+
+.sectionHeader {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.headerActions {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.sectionTitle {
+  font-size: 20px;
+  font-weight: 700;
+  color: #fff;
+}
+
+.planMetaBox {
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 10px;
+  padding: 10px;
+  background: rgba(255, 255, 255, 0.02);
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.metaField {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.planNameRow {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+  min-width: 220px;
+  flex: 1;
+}
+
+.planNameText {
+  min-height: 30px;
+  display: inline-flex;
+  align-items: center;
+  padding: 0 8px;
+  border-radius: 8px;
+  color: #ececec;
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.planNameInput {
+  min-width: 220px;
+  flex: 1;
+  max-width: 420px;
+  border: 1px solid #434343;
+  border-radius: 8px;
+  background: #111;
+  color: #ececec;
+  font-size: 13px;
+  padding: 7px 9px;
+}
+
+.planNameInput:focus {
+  outline: none;
+  border-color: #67d9d6;
+}
+
+.nameActionBtn {
+  border: 1px solid #4a4a4a;
+  background: #1c1c1c;
+  color: #e4e4e4;
+  border-radius: 8px;
+  padding: 6px 10px;
+  font-size: 12px;
+  cursor: pointer;
+}
+
+.nameActionBtn:hover {
+  border-color: #67d9d6;
+  color: #d9fffd;
+}
+
+.metaBtnRow {
+  display: flex;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+
+.capacityText {
+  font-size: 12px;
+  color: #ffcd19;
+  background: rgba(255, 205, 25, 0.1);
+  border: 1px solid rgba(255, 205, 25, 0.3);
+  border-radius: 999px;
+  padding: 4px 10px;
+}
+
+.axisConfigRow {
+  display: flex;
+  gap: 10px;
+  align-items: center;
+  flex-wrap: wrap;
+  padding: 10px;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 10px;
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.03) 0%, rgba(0, 0, 0, 0.08) 100%);
+}
+
+.axisLabel {
+  font-size: 12px;
+  color: #d6d6d6;
+}
+
+.axisDash {
+  color: #838383;
+  font-size: 12px;
+}
+
+.dayInputGroup {
+  display: inline-flex;
+  border-radius: 10px;
+  overflow: hidden;
+  border: 1px solid #4a4a4a;
+  background: #111;
+  height: 38px;
+}
+
+.dayInput {
+  width: 82px;
+  border: none;
+  background: transparent;
+  color: #efefef;
+  font-size: 14px;
+  padding: 0 10px;
+  appearance: textfield;
+  -moz-appearance: textfield;
+}
+
+.dayInput:focus {
+  outline: none;
+}
+
+.dayInput::-webkit-outer-spin-button,
+.dayInput::-webkit-inner-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
+}
+
+.dayStepper {
+  width: 28px;
+  border-left: 1px solid #3f3f3f;
+  display: flex;
+  flex-direction: column;
+}
+
+.stepBtn {
+  flex: 1;
+  border: none;
+  background: #1f1f1f;
+  color: #d8d8d8;
+  font-size: 12px;
+  line-height: 1;
+  cursor: pointer;
+}
+
+.stepBtn:hover {
+  background: #2b2b2b;
+}
+
+.axisApplyButton,
+.addSplitButton,
+.addBuildBtn {
+  border: none;
+  border-radius: 999px;
+  padding: 8px 14px;
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.2px;
+  cursor: pointer;
+  transition: transform 0.12s ease, filter 0.12s ease;
+}
+
+.axisApplyButton {
+  color: #122547;
+  background: linear-gradient(135deg, #84b4ff 0%, #b3d0ff 100%);
+}
+
+.addSplitButton {
+  color: #2b1800;
+  background: linear-gradient(135deg, #ffd56f 0%, #ffb84d 100%);
+}
+
+.addBuildBtn {
+  color: #1d1d1d;
+  background: linear-gradient(135deg, #8ef0b2 0%, #67d9d6 100%);
+}
+
+.axisApplyButton:hover,
+.addSplitButton:hover,
+.addBuildBtn:hover {
+  transform: translateY(-1px);
+  filter: brightness(1.04);
+}
+
+.axisApplyButton:disabled,
+.addSplitButton:disabled,
+.addBuildBtn:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+  transform: none;
+  filter: none;
+}
+
+.timelineWrap {
+  background: #111;
+  border: 1px solid #2d2d2d;
+  border-radius: 10px;
+  padding: 14px 12px 10px 12px;
+}
+
+.timelineTrack {
+  position: relative;
+  height: 44px;
+  border-radius: 8px;
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.03) 0%, rgba(0, 0, 0, 0.15) 100%);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  overflow: visible;
+}
+
+.timelineSegment {
+  position: absolute;
+  top: 5px;
+  height: 32px;
+  border-radius: 7px;
+  border: 1px solid rgba(141, 156, 255, 0.3);
+  background: linear-gradient(135deg, rgba(72, 88, 168, 0.28) 0%, rgba(47, 53, 90, 0.32) 100%);
+  color: #c6d1ff;
+  font-size: 11px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  white-space: nowrap;
+  cursor: pointer;
+  transition: 120ms ease;
+  user-select: none;
+}
+
+.activeTimelineSegment {
+  border-color: rgba(255, 205, 25, 0.75);
+  color: #fff3c7;
+  box-shadow: 0 0 0 1px rgba(255, 205, 25, 0.18) inset;
+}
+
+.splitHandle {
+  position: absolute;
+  top: -17px;
+  transform: translateX(-50%);
+  border: none;
+  background: transparent;
+  cursor: ew-resize;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+  color: #b7c3ff;
+}
+
+.splitHandle * {
+  cursor: ew-resize;
+}
+
+.handleDot {
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  background: #9aabff;
+  border: 2px solid #273059;
+  box-shadow: 0 0 0 2px rgba(154, 171, 255, 0.18);
+}
+
+.handleLabel {
+  font-size: 10px;
+  line-height: 1;
+  background: rgba(18, 22, 36, 0.95);
+  border: 1px solid rgba(154, 171, 255, 0.33);
+  border-radius: 999px;
+  padding: 1px 5px;
+}
+
+.axisTickRow {
+  margin-top: 8px;
+  display: flex;
+  justify-content: space-between;
+  color: #868686;
+  font-size: 11px;
+}
+
+.timelineActions {
+  margin-top: 10px;
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.tabBar {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.tabButton {
+  border: 1px solid #444;
+  background: #202020;
+  color: #b7b7b7;
+  border-radius: 8px;
+  padding: 7px 12px;
+  font-size: 13px;
+  cursor: pointer;
+}
+
+.activeTab {
+  border-color: #667eea;
+  color: #fff;
+  background: linear-gradient(135deg, rgba(102, 126, 234, 0.22) 0%, rgba(118, 75, 162, 0.25) 100%);
+}
+
+.cardUnit,
+.borderEditor,
+.skillsSection,
+.metaSection {
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 10px;
+  padding: 10px;
+  background: rgba(255, 255, 255, 0.02);
+}
+
+.buildBar {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  flex-wrap: wrap;
+  margin-bottom: 8px;
+}
+
+.buildPills {
+  display: flex;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+
+.buildIndexHint {
+  font-size: 12px;
+  color: #8f8f8f;
+}
+
+.sizeControl {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  background: rgba(0, 0, 0, 0.25);
+  border: 1px solid #3a3a3a;
+  border-radius: 8px;
+  padding: 4px 6px;
+}
+
+.sizeBtn {
+  width: 22px;
+  height: 22px;
+  border: 1px solid #555;
+  border-radius: 6px;
+  background: #1d1d1d;
+  color: #ddd;
+  font-size: 13px;
+  cursor: pointer;
+  line-height: 1;
+}
+
+.sizeValue {
+  min-width: 42px;
+  text-align: center;
+  font-size: 12px;
+  color: #ddd;
+}
+
+.buildPill {
+  position: relative;
+  border: 1px solid #555;
+  background: #202020;
+  color: #d5d5d5;
+  border-radius: 999px;
+  padding: 5px 20px 5px 10px;
+  font-size: 12px;
+  cursor: pointer;
+}
+
+.buildPillActive {
+  border-color: #67d9d6;
+  color: #d8fffd;
+  background: rgba(103, 217, 214, 0.16);
+}
+
+.buildDeleteBtn {
+  position: absolute;
+  right: 3px;
+  top: 2px;
+  width: 14px;
+  height: 14px;
+  border-radius: 50%;
+  border: none;
+  background: rgba(0, 0, 0, 0.5);
+  color: #fff;
+  font-size: 11px;
+  line-height: 1;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.buildDeleteBtn:hover {
+  background: rgba(255, 71, 87, 0.9);
+}
+
+.boardHint {
+  font-size: 12px;
+  color: #8f8f8f;
+  margin-bottom: 6px;
+}
+
+.heroBar {
+  display: flex;
+  gap: 10px;
+  align-items: center;
+  flex-wrap: wrap;
+  margin-bottom: 10px;
+}
+
+.heroButtons {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.heroBtn {
+  width: 42px;
+  height: 42px;
+  border: 1px solid #4e4e4e;
+  background: linear-gradient(180deg, #222 0%, #171717 100%);
+  border-radius: 10px;
+  padding: 0;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.05);
+}
+
+.heroBtnActive {
+  border-color: #ffcd19;
+  box-shadow:
+    0 0 0 1px rgba(255, 205, 25, 0.55),
+    0 0 14px rgba(255, 205, 25, 0.22),
+    inset 0 0 0 1px rgba(255, 255, 255, 0.12);
+}
+
+.heroAvatar {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+
+.lineupBoard {
+  --slot-height: 72px;
+  --slot-unit-width: 36px;
+  border: 1px solid #3e3e3e;
+  border-radius: 10px;
+  padding: 10px;
+  background: radial-gradient(circle at 50% -20%, rgba(102, 126, 234, 0.16), transparent 55%), #101010;
+  position: relative;
+  width: calc(var(--slot-unit-width) * 10 + 20px);
+  max-width: 100%;
+  padding-bottom: 18px;
+}
+
+.boardGrid,
+.cardsOverlay {
+  display: grid;
+  grid-template-columns: repeat(10, var(--slot-unit-width));
+  gap: 0;
+  width: calc(var(--slot-unit-width) * 10);
+}
+
+.boardGrid {
+  height: var(--slot-height);
+}
+
+.cardsOverlay {
+  position: absolute;
+  left: 10px;
+  top: 10px;
+  height: var(--slot-height);
+  pointer-events: none;
+}
+
+.slotCell {
+  height: var(--slot-height);
+  border: 1px dashed rgba(255, 255, 255, 0.15);
+  border-radius: 8px;
+  color: #666;
+  font-size: 11px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  user-select: none;
+}
+
+.slotCellDisabled {
+  border-style: solid;
+  border-color: rgba(255, 87, 87, 0.25);
+  background: repeating-linear-gradient(
+    -45deg,
+    rgba(255, 87, 87, 0.12) 0px,
+    rgba(255, 87, 87, 0.12) 6px,
+    rgba(120, 26, 26, 0.18) 6px,
+    rgba(120, 26, 26, 0.18) 12px
+  );
+  color: #ff9e9e;
+}
+
+.placedCard {
+  position: relative;
+  height: var(--slot-height);
+  border: 2px solid var(--border-tier, #cd7f32);
+  border-radius: 8px;
+  cursor: grab;
+  overflow: hidden;
+  box-shadow: 0 0 0 1px rgba(0, 0, 0, 0.35) inset;
+  pointer-events: auto;
+}
+
+.placedCardSelected {
+  box-shadow: 0 0 0 2px rgba(255, 255, 255, 0.6), 0 0 0 1px rgba(0, 0, 0, 0.35) inset;
+}
+
+.previewCard {
+  opacity: 0.72;
+  outline: 1px dashed rgba(255, 255, 255, 0.7);
+  outline-offset: -3px;
+}
+
+.dragging {
+  opacity: 0.45;
+}
+
+.placedImage {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  display: block;
+  background: rgba(0, 0, 0, 0.4);
+}
+
+.cardRoleTags {
+  position: absolute;
+  left: 4px;
+  bottom: 4px;
+  display: flex;
+  gap: 4px;
+  z-index: 2;
+}
+
+.cardRoleTags .skillTag {
+  position: static;
+}
+
+.specialSlotsRow {
+  position: absolute;
+  left: 10px;
+  top: calc(10px + var(--slot-height) - 2px);
+  display: grid;
+  grid-template-columns: repeat(10, var(--slot-unit-width));
+  gap: 0;
+  width: calc(var(--slot-unit-width) * 10);
+  pointer-events: auto;
+}
+
+.specialSlotCell {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  height: 14px;
+  pointer-events: auto;
+}
+
+.specialBadge {
+  width: calc(var(--slot-unit-width) - 4px);
+  height: 6px;
+  border-radius: 3px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  position: relative;
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  backdrop-filter: blur(2px);
+  box-shadow:
+    inset 0 -1px 2px rgba(0, 0, 0, 0.5),
+    inset 0 1px 1px rgba(255, 255, 255, 0.14),
+    0 0 3px rgba(0, 0, 0, 0.35);
+  cursor: pointer;
+}
+
+.specialBadge::before {
+  content: '';
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  transform: translate(-50%, -50%);
+}
+
+.specialRemoveBtn {
+  position: absolute;
+  right: -7px;
+  top: -8px;
+  width: 12px;
+  height: 12px;
+  border: none;
+  border-radius: 999px;
+  background: rgba(22, 22, 22, 0.9);
+  color: #fff;
+  font-size: 10px;
+  line-height: 1;
+  display: none;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  padding: 0;
+}
+
+.specialBadge:hover .specialRemoveBtn {
+  display: inline-flex;
+}
+
+.specialAddBtn {
+  width: 10px;
+  height: 10px;
+  border: 1px solid rgba(255, 255, 255, 0.28);
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.05);
+  color: rgba(226, 226, 226, 0.8);
+  font-size: 9px;
+  line-height: 1;
+  padding: 0;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.specialAddBtn:hover {
+  border-color: rgba(255, 255, 255, 0.45);
+  background: rgba(255, 255, 255, 0.12);
+  color: #fff;
+}
+
+.badgeFire {
+  background:
+    radial-gradient(circle at 50% 48%, rgba(255, 135, 79, 0.75) 0%, rgba(255, 64, 24, 0.52) 55%, rgba(122, 22, 4, 0.35) 100%),
+    linear-gradient(180deg, rgba(255, 118, 73, 0.44) 0%, rgba(122, 22, 4, 0.42) 100%);
+  border-color: rgba(255, 160, 90, 0.5);
+  box-shadow:
+    inset 0 -1px 2px rgba(0, 0, 0, 0.5),
+    inset 0 1px 1px rgba(255, 235, 216, 0.16),
+    0 0 8px rgba(255, 94, 34, 0.4);
+}
+
+.badgeIce {
+  background:
+    radial-gradient(circle at 50% 48%, rgba(126, 215, 255, 0.72) 0%, rgba(56, 157, 255, 0.5) 55%, rgba(12, 55, 120, 0.36) 100%),
+    linear-gradient(180deg, rgba(92, 188, 255, 0.42) 0%, rgba(10, 63, 132, 0.4) 100%);
+  border-color: rgba(128, 210, 255, 0.5);
+  box-shadow:
+    inset 0 -1px 2px rgba(0, 0, 0, 0.5),
+    inset 0 1px 1px rgba(228, 248, 255, 0.18),
+    0 0 8px rgba(42, 152, 255, 0.38);
+}
+
+.badgeFire::before {
+  width: 2px;
+  height: 2px;
+  border-radius: 50%;
+  background: #ffd8b6;
+  box-shadow:
+    0 0 5px rgba(255, 155, 97, 0.95),
+    0 -1px 2px rgba(255, 104, 26, 0.8);
+}
+
+.badgeIce::before {
+  width: 4px;
+  height: 4px;
+  background: rgba(220, 247, 255, 0.95);
+  clip-path: polygon(25% 0%, 75% 0%, 100% 50%, 75% 100%, 25% 100%, 0% 50%);
+  box-shadow: 0 0 4px rgba(136, 214, 255, 0.95);
+}
+
+.removeButton,
+.skillRemove {
+  position: absolute;
+  right: 2px;
+  top: 2px;
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  border: none;
+  background: rgba(0, 0, 0, 0.65);
+  color: #fff;
+  font-size: 12px;
+  line-height: 1;
+  cursor: pointer;
+  display: none;
+}
+
+.placedCard:hover .removeButton,
+.skillChip:hover .skillRemove {
+  display: block;
+}
+
+.toastHint {
+  position: fixed;
+  top: 14px;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 420;
+  font-size: 12px;
+  color: #ffe9e9;
+  background: rgba(186, 47, 47, 0.94);
+  border: 1px solid rgba(255, 170, 170, 0.45);
+  border-radius: 8px;
+  padding: 8px 12px;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.38);
+  animation: toastInOut 1.6s ease forwards;
+}
+
+.toastError {
+  color: #ffe9e9;
+  background: rgba(186, 47, 47, 0.94);
+  border: 1px solid rgba(255, 170, 170, 0.45);
+}
+
+.toastSuccess {
+  color: #e8ffe8;
+  background: rgba(40, 148, 68, 0.95);
+  border: 1px solid rgba(142, 255, 164, 0.45);
+}
+
+@keyframes toastInOut {
+  0% {
+    opacity: 0;
+    transform: translateX(-50%) translateY(-8px);
+  }
+  12% {
+    opacity: 1;
+    transform: translateX(-50%) translateY(0);
+  }
+  82% {
+    opacity: 1;
+    transform: translateX(-50%) translateY(0);
+  }
+  100% {
+    opacity: 0;
+    transform: translateX(-50%) translateY(-6px);
+  }
+}
+
+.borderEditorTitle,
+.skillsHeader {
+  font-size: 12px;
+  color: #bcbcbc;
+  margin-bottom: 8px;
+}
+
+.borderHint,
+.skillEmpty,
+.modeHint {
+  font-size: 12px;
+  color: #8d8d8d;
+}
+
+.borderSwatches {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.borderSwatch {
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  border-radius: 999px;
+  background: #161616;
+  color: #dedede;
+  padding: 5px 10px;
+  font-size: 12px;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  cursor: pointer;
+}
+
+.borderSwatchActive {
+  border-color: var(--tier-clr);
+  box-shadow: 0 0 0 1px color-mix(in srgb, var(--tier-clr), transparent 30%);
+}
+
+.swatchDot {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  background: var(--tier-clr);
+  border: 1px solid rgba(0, 0, 0, 0.5);
+}
+
+.skillDropZone {
+  border: 1px dashed rgba(255, 255, 255, 0.25);
+  border-radius: 10px;
+  min-height: 84px;
+  padding: 8px;
+  transition: border-color 0.15s ease, background 0.15s ease;
+}
+
+.skillDropActive {
+  border-color: #67d9d6;
+  background: rgba(103, 217, 214, 0.08);
+}
+
+.skillDropBlocked {
+  border-color: #ff8f96;
+  background: rgba(255, 143, 150, 0.08);
+}
+
+.skillList {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  min-height: 54px;
+}
+
+.skillChip {
+  position: relative;
+  width: 54px;
+  height: 54px;
+  border: 1px solid #4a4a4a;
+  border-radius: 8px;
+  overflow: hidden;
+  background: #161616;
+  padding: 0;
+  cursor: pointer;
+}
+
+.skillChipSelected {
+  box-shadow: 0 0 0 2px rgba(255, 255, 255, 0.6);
+}
+
+.skillImage {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+
+.skillTag {
+  position: absolute;
+  left: 3px;
+  bottom: 3px;
+  padding: 1px 6px;
+  border-radius: 5px;
+  font-size: 11px;
+  font-weight: 700;
+  border: 1px solid transparent;
+  box-shadow: 0 1px 5px rgba(0, 0, 0, 0.45);
+}
+
+.skillCore {
+  color: #ffe6bf;
+  border-color: rgba(255, 208, 128, 0.95);
+  background: rgba(131, 72, 10, 0.9);
+}
+
+.skillImportant {
+  color: #d9f3ff;
+  border-color: rgba(154, 218, 255, 0.95);
+  background: rgba(12, 78, 116, 0.9);
+}
+
+.skillOptional {
+  color: #e3ffd7;
+  border-color: rgba(196, 248, 176, 0.95);
+  background: rgba(26, 94, 43, 0.9);
+}
+
+.roleSetRow {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  flex-wrap: wrap;
+  margin-top: 8px;
+}
+
+.metaLabel {
+  font-size: 12px;
+  color: #b8b8b8;
+}
+
+.roleBtn {
+  border: 1px solid #444;
+  background: #1a1a1a;
+  color: #c8c8c8;
+  border-radius: 7px;
+  padding: 6px 10px;
+  font-size: 12px;
+  cursor: pointer;
+}
+
+.roleBtnActive {
+  border-color: #ffcd19;
+  color: #ffecb2;
+  background: rgba(255, 205, 25, 0.12);
+}
+
+.metaItem {
+  display: grid;
+  grid-template-columns: 72px 1fr;
+  gap: 10px;
+  align-items: start;
+  font-size: 13px;
+}
+
+.metaName {
+  color: #a5a5a5;
+}
+
+.metaValue {
+  color: #ececec;
+  line-height: 1.5;
+}
+
+.metaGrid3 {
+  display: grid;
+  gap: 6px;
+  margin-top: 8px;
+}
+
+.strategySection {
+  margin-top: 10px;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 10px;
+  padding: 10px;
+  background: rgba(255, 255, 255, 0.02);
+}
+
+.strategyHeader {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 8px;
+}
+
+.strategyCount {
+  font-size: 12px;
+  color: #969696;
+}
+
+.strategyInput {
+  width: 100%;
+  min-height: 88px;
+  resize: vertical;
+  border: 1px solid #424242;
+  border-radius: 8px;
+  background: #121212;
+  color: #e8e8e8;
+  font-size: 13px;
+  line-height: 1.45;
+  padding: 8px 10px;
+}
+
+.strategyInput:focus {
+  outline: none;
+  border-color: #67d9d6;
+  box-shadow: 0 0 0 1px rgba(103, 217, 214, 0.3);
+}
+
+@media (max-width: 1200px) {
+  .lineupBoard {
+    --slot-height: 62px;
+    --slot-unit-width: 31px;
+  }
+}

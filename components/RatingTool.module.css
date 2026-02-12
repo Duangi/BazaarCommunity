@@ -1,8 +1,6 @@
 .container {
-  display: flex;
-  gap: 20px;
-  height: 100%;
-  max-height: calc(100vh - 140px);
+  display: block;
+  height: auto;
 }
 
 /* 评分区域 */
@@ -210,8 +208,9 @@
   background: #0f0f0f;
   min-height: 80px;
   padding: 10px;
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-start;
   gap: 10px;
 }
 
@@ -231,14 +230,17 @@
   background: #1a1a1a;
   border: 1px solid #333;
   border-radius: 8px;
-  padding: 8px;
+  padding: 6px;
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 6px;
+  gap: 4px;
   cursor: pointer;
   transition: all 0.3s ease;
   position: relative;
+  width: calc(var(--card-width, 44px) + 14px);
+  min-width: fit-content;
+  flex: 0 0 auto;
 }
 
 .tierItem:hover {
@@ -247,26 +249,76 @@
   transform: translateY(-2px);
 }
 
-.tierItemImage {
-  width: 40px;
-  height: 40px;
+.tierItemImageWrap {
+  height: 52px;
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: 24px;
   background: #2a2a2a;
   border-radius: 6px;
+  overflow: hidden;
+  flex-shrink: 0;
+  border: 2px solid var(--rating-border, transparent);
+}
+
+.tierItemImageWrap.sizeSmall {
+  width: 26px;
+}
+
+.tierItemImageWrap.sizeMedium {
+  width: 52px;
+}
+
+.tierItemImageWrap.sizeLarge {
+  width: 78px;
+}
+
+.tierItemImage {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  display: block;
+}
+
+.tierItemImageFallback {
+  font-size: 22px;
 }
 
 .tierItemName {
-  font-size: 11px;
+  font-size: 10px;
   color: #ccc;
   text-align: center;
   max-width: 100%;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
-  line-height: 1.3;
+  line-height: 1.2;
+}
+
+.ratingLevelEditor {
+  width: 100%;
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 4px;
+  margin-top: 2px;
+}
+
+.ratingLevelBtn {
+  border: 1px solid #4b4b4b;
+  background: #252525;
+  color: #bdbdbd;
+  border-radius: 4px;
+  font-size: 10px;
+  padding: 1px 5px;
+  line-height: 1.4;
+  cursor: pointer;
+}
+
+.ratingLevelBtnActive {
+  border-color: #ffd700;
+  color: #fff2b8;
+  background: rgba(255, 215, 0, 0.18);
 }
 
 .removeButton {
@@ -296,27 +348,9 @@
   transform: scale(1.2);
 }
 
-/* 详情区域 */
-.detailSection {
-  width: 400px;
-  flex-shrink: 0;
-  max-height: 100%;
-  overflow: hidden;
-}
-
 /* 响应式 */
 @media (max-width: 1200px) {
-  .container {
-    flex-direction: column;
-  }
-
-  .detailSection {
-    width: 100%;
-  }
 }
 
 @media (max-width: 768px) {
-  .tierItems {
-    grid-template-columns: repeat(auto-fill, minmax(80px, 1fr));
-  }
 }

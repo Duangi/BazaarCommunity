@@ -1,0 +1,164 @@
+.centerPanel {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  gap: 12px;
+  align-items: flex-start;
+}
+
+.navRail {
+  width: 56px;
+  flex-shrink: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 8px 6px;
+  border: 1px solid #333;
+  border-radius: 12px;
+  background: #131313;
+  position: sticky;
+  top: 92px;
+}
+
+.railBtn {
+  border: 1px solid #3d3d3d;
+  background: #1f1f1f;
+  color: #aaa;
+  border-radius: 10px;
+  padding: 6px 2px;
+  cursor: pointer;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+}
+
+.railBtnActive {
+  border-color: #667eea;
+  color: #fff;
+  background: linear-gradient(135deg, rgba(102, 126, 234, 0.24) 0%, rgba(118, 75, 162, 0.25) 100%);
+}
+
+.railIcon {
+  width: 20px;
+  height: 20px;
+  border-radius: 6px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 12px;
+  background: rgba(255, 255, 255, 0.08);
+}
+
+.railText {
+  font-size: 11px;
+  line-height: 1;
+}
+
+.workbench {
+  flex: 1;
+  min-width: 0;
+}
+
+.draftBar {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 8px;
+  padding: 8px;
+  border: 1px solid #343434;
+  border-radius: 10px;
+  background: #121212;
+}
+
+.draftSaveBtn,
+.draftActionBtn {
+  border: 1px solid #4a4232;
+  background: #1f1f1f;
+  color: #ddd;
+  border-radius: 8px;
+  padding: 7px 10px;
+  font-size: 12px;
+  cursor: pointer;
+}
+
+.draftDeleteBtn {
+  border: 1px solid #7b2d2d;
+  background: #2a1515;
+  color: #ffb0b0;
+  border-radius: 8px;
+  padding: 7px 10px;
+  font-size: 12px;
+  cursor: pointer;
+}
+
+.draftSaveBtn {
+  border-color: #8a6b11;
+  color: #ffd978;
+}
+
+.draftSelect {
+  flex: 1;
+  min-width: 160px;
+  border: 1px solid #3e3e3e;
+  background: #111;
+  color: #e8e8e8;
+  border-radius: 8px;
+  padding: 7px 9px;
+  font-size: 12px;
+}
+
+.draftActionBtn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.draftDeleteBtn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.draftToast {
+  position: fixed;
+  top: 14px;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 500;
+  border-radius: 8px;
+  padding: 8px 12px;
+  font-size: 12px;
+  border: 1px solid transparent;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.35);
+}
+
+.toastSuccess {
+  color: #e8ffe8;
+  background: rgba(40, 148, 68, 0.95);
+  border-color: rgba(142, 255, 164, 0.45);
+}
+
+.toastError {
+  color: #ffe9e9;
+  background: rgba(186, 47, 47, 0.94);
+  border-color: rgba(255, 170, 170, 0.45);
+}
+
+@media (max-width: 1200px) {
+  .centerPanel {
+    flex-direction: column;
+  }
+
+  .navRail {
+    width: 100%;
+    position: static;
+    flex-direction: row;
+  }
+
+  .railBtn {
+    flex-direction: row;
+    justify-content: center;
+    gap: 6px;
+    flex: 1;
+    padding: 8px 10px;
+  }
+}

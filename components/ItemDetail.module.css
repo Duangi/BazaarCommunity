@@ -73,6 +73,10 @@
   font-size: 24px;
 }
 
+.imageFallback {
+  font-size: 24px;
+}
+
 .itemImage {
   width: 100%;
   height: 100%;
@@ -146,6 +150,22 @@
   border-radius: 4px;
   background: rgba(255, 255, 255, 0.05);
   color: #E0E0E0;
+}
+
+.heroAvatarContainer {
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  overflow: hidden;
+  border: 1px solid rgba(255, 255, 255, 0.22);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.38);
+}
+
+.heroAvatar {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
 }
 
 /* ==================== 详细信息 ==================== */
@@ -230,6 +250,54 @@
   color: #ddd;
 }
 
+.skillItem.passive {
+  color: #b7efff;
+  background: rgba(0, 236, 195, 0.08);
+  border: 1px solid rgba(0, 236, 195, 0.22);
+  border-radius: 8px;
+  padding: 6px 10px;
+}
+
+/* ==================== 任务区域 ==================== */
+.questsSection {
+  margin-top: 8px;
+  padding-top: 10px;
+  border-top: 1px solid rgba(255, 255, 255, 0.06);
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.questItem {
+  background: linear-gradient(180deg, rgba(74, 84, 129, 0.2) 0%, rgba(34, 37, 56, 0.25) 100%);
+  border: 1px solid rgba(144, 152, 254, 0.28);
+  border-left: 3px solid #9098fe;
+  border-radius: 9px;
+  padding: 10px 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.questHeader {
+  font-size: 12px;
+  font-weight: 700;
+  color: #c7ceff;
+  letter-spacing: 0.2px;
+}
+
+.questTarget {
+  font-size: 13px;
+  line-height: 1.7;
+  color: #e3e8ff;
+}
+
+.questReward {
+  font-size: 13px;
+  line-height: 1.7;
+  color: #ffe79d;
+}
+
 /* ==================== 附魔区域 ==================== */
 .itemEnchantmentsRow {
   padding-top: 12px;
@@ -283,4 +351,20 @@
 
 .container::-webkit-scrollbar-thumb:hover {
   background: #666;
+}
+
+@media (max-width: 768px) {
+  .questItem {
+    padding: 9px 10px;
+    gap: 5px;
+  }
+
+  .questHeader {
+    font-size: 11px;
+  }
+
+  .questTarget,
+  .questReward {
+    font-size: 12px;
+  }
 }
