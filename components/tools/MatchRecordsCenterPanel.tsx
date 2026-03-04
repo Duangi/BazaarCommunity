@@ -288,7 +288,7 @@ export default function MatchRecordsCenterPanel({
     <div className={styles.panel}>
       <div className={styles.header}>
         <h2 className={styles.title}>对局记录</h2>
-        <span className={styles.count}>{summaries.length} 局 / {total || records.length} 条</span>
+        <span className={styles.count}>{summaries.length} 局 / {total || summaries.length} 局</span>
       </div>
       <div
         ref={boxRef}
@@ -312,9 +312,7 @@ export default function MatchRecordsCenterPanel({
               : summary.matchVictory === false
                 ? '失败收官'
                 : (summary.wins > summary.losses ? '优势收官' : '惜败收官')
-          const exactTotal = Math.max(0, summary.wins + summary.losses)
-          const maxFlow = 24
-          const flowList = summary.flowSequence.slice(0, maxFlow)
+          const flowList = summary.flowSequence
           const latest = summary.latestBattle
           const canEditTitle = onlyMine && !!currentUserId && currentUserId === summary.authorUserId && !!summary.matchId && !!onUpdateMatchTitle
           const displayTitle = summary.matchTitle || `${summary.hero} · Day${summary.lastDay} · ${summary.wins}胜${summary.losses}负`
@@ -347,12 +345,6 @@ export default function MatchRecordsCenterPanel({
                           {b === 'win' ? '✓' : '✗'}
                         </span>
                       ))}
-                      {summary.flowSequence.length > flowList.length && (
-                        <span className={styles.flowMore}>+{summary.flowSequence.length - flowList.length}</span>
-                      )}
-                      {summary.flowSequence.length <= flowList.length && exactTotal > flowList.length && (
-                        <span className={styles.flowMore}>+{exactTotal - flowList.length}</span>
-                      )}
                     </div>
                   </div>
                 </div>

@@ -54,6 +54,32 @@ function mapRecordRow(row: any): CommunityGameRecord {
   }
 }
 
+function normalizeText(input: any): string {
+  return String(input || '').trim()
+}
+
+function extractMetaValue(meta: any, keys: string[]): string {
+  if (!meta || typeof meta !== 'object') return ''
+  for (const key of keys) {
+    const value = normalizeText((meta as any)?.[key])
+    if (value) return value
+  }
+  return ''
+}
+
+function buildMatchGroupKey(row: any): string {
+  const meta = (row?.meta && typeof row.meta === 'object') ? row.meta : {}
+  const author = normalizeText(row?.author_user_id || row?.authorUserId || '')
+  const matchId = extractMetaValue(meta, ['match_id', 'matchId', 'run_id', 'runId'])
+  if (author && matchId) return `${author}::match:${matchId}`
+
+  const start = extractMetaValue(meta, ['start_time', 'match_start_time', 'matchStartTime'])
+  if (author && start) return `${author}::start:${start}`
+
+  const playedOn = normalizeText(row?.played_on || row?.playedOn || '')
+  return `${author}::date:${playedOn}`
+}
+
 export async function fetchUserProfile(userId: string): Promise<CommunityProfile | null> {
   const client = getClient()
   if (!client || !userId) return null
@@ -232,8 +258,6 @@ export async function fetchGameRecordsPage(
   const client = getClient()
   const page = Math.max(1, Number(params.page || 1))
   const pageSize = Math.min(100, Math.max(1, Number(params.pageSize || 20)))
-  const from = (page - 1) * pageSize
-  const to = from + pageSize - 1
   if (!client) return { items: [], total: 0, page, pageSize, hasMore: false }
 
   let candidateUserIds: string[] | null = null
@@ -265,26 +289,52 @@ export async function fetchGameRecordsPage(
     return { items: [], total: 0, page, pageSize, hasMore: false }
   }
 
+  // 按整局分页，避免同一局被拆到不同页，导致展开只能看到部分天数。
+  const MAX_SCAN_ROWS = 5000
   let query = client
     .from('community_game_records')
-    .select('id,author_user_id,author_name,played_on,result,day_index,screenshot_url,note,meta,created_at', { count: 'exact' })
+    .select('id,author_user_id,author_name,played_on,result,day_index,screenshot_url,note,meta,created_at')
     .order('played_on', { ascending: false })
     .order('created_at', { ascending: false })
-    .range(from, to)
+    .range(0, MAX_SCAN_ROWS - 1)
 
   if (candidateUserIds) query = query.in('author_user_id', candidateUserIds)
 
-  const { data, error, count } = await query
+  const { data, error } = await query
   if (error || !Array.isArray(data)) return { items: [], total: 0, page, pageSize, hasMore: false }
 
-  const items = data.map(mapRecordRow)
-  const total = Number(count || 0)
+  const grouped = new Map<string, any[]>()
+  data.forEach((row: any) => {
+    const key = buildMatchGroupKey(row)
+    const list = grouped.get(key) || []
+    list.push(row)
+    grouped.set(key, list)
+  })
+
+  const groups = Array.from(grouped.entries())
+    .map(([key, rows]) => {
+      const sortedRows = [...rows].sort((a, b) => {
+        const dayDelta = Number(b?.day_index || 0) - Number(a?.day_index || 0)
+        if (dayDelta !== 0) return dayDelta
+        return +new Date(b?.created_at || b?.played_on || 0) - +new Date(a?.created_at || a?.played_on || 0)
+      })
+      const latest = sortedRows[0]
+      const latestTs = +new Date(latest?.created_at || latest?.played_on || 0)
+      return { key, rows: sortedRows, latestTs }
+    })
+    .sort((a, b) => b.latestTs - a.latestTs)
+
+  const total = groups.length
+  const from = (page - 1) * pageSize
+  const to = from + pageSize
+  const pageGroups = groups.slice(from, to)
+  const items = pageGroups.flatMap((group) => group.rows).map(mapRecordRow)
   return {
     items,
     total,
     page,
     pageSize,
-    hasMore: from + items.length < total,
+    hasMore: to < total,
   }
 }
 
