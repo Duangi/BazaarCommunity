@@ -44,6 +44,7 @@ type MatchSummary = {
   matchVictory: boolean | null
   wins: number
   losses: number
+  flowSequence: Array<'win' | 'lose'>
   lastDay: number
   latestBattle: CommunityGameRecord
   battles: CommunityGameRecord[]
@@ -147,6 +148,52 @@ function deriveScore(latestMeta: Record<string, any>, battles: CommunityGameReco
   return { wins, losses: battles.length - wins }
 }
 
+function parseMatchFlow(latestMeta: Record<string, any>, battles: CommunityGameRecord[]): Array<'win' | 'lose'> {
+  const raw = latestMeta.match_flow ?? latestMeta.matchFlow
+  if (Array.isArray(raw) && raw.length > 0) {
+    const normalized = raw
+      .map((entry: any, index: number) => {
+        if (typeof entry === 'string') {
+          const token = entry.trim().toLowerCase()
+          if (token === 'win' || token === 'w') return { day: null as number | null, order: index, result: 'win' as const }
+          if (token === 'lose' || token === 'loss' || token === 'l') return { day: null as number | null, order: index, result: 'lose' as const }
+          return null
+        }
+        const day = toNumber(entry?.day ?? entry?.dayIndex)
+        const resultToken = String(entry?.result || entry?.outcome || entry?.victory || '').trim().toLowerCase()
+        if (resultToken === 'win' || resultToken === 'w' || resultToken === 'true' || resultToken === '1') {
+          return { day, order: index, result: 'win' as const }
+        }
+        if (resultToken === 'lose' || resultToken === 'loss' || resultToken === 'l' || resultToken === 'false' || resultToken === '0') {
+          return { day, order: index, result: 'lose' as const }
+        }
+        if (typeof entry?.victory === 'boolean') {
+          return { day, order: index, result: entry.victory ? 'win' as const : 'lose' as const }
+        }
+        return null
+      })
+      .filter(Boolean) as Array<{ day: number | null; order: number; result: 'win' | 'lose' }>
+    const parsed = normalized
+      .sort((a, b) => {
+        const da = a.day ?? Number.MAX_SAFE_INTEGER
+        const db = b.day ?? Number.MAX_SAFE_INTEGER
+        if (da !== db) return da - db
+        return a.order - b.order
+      })
+      .map((entry) => entry.result)
+    if (parsed.length > 0) return parsed
+  }
+
+  return [...battles]
+    .sort((a, b) => {
+      if (a.dayIndex !== b.dayIndex) return a.dayIndex - b.dayIndex
+      const ta = String(asObject(a.meta).battle_start_time || asObject(a.meta).start_time || a.createdAt || '')
+      const tb = String(asObject(b.meta).battle_start_time || asObject(b.meta).start_time || b.createdAt || '')
+      return ta.localeCompare(tb)
+    })
+    .map((b) => (b.result === 'win' ? 'win' : 'lose') as 'win' | 'lose')
+}
+
 function buildSummaries(records: CommunityGameRecord[], usersById: Record<string, CommunityPublicUser>): MatchSummary[] {
   const grouped = new Map<string, CommunityGameRecord[]>()
   records.forEach((record) => {
@@ -177,6 +224,7 @@ function buildSummaries(records: CommunityGameRecord[], usersById: Record<string
     const isFinished = toBoolean(latestMeta.is_finished) ?? true
     const matchVictory = toBoolean(latestMeta.match_victory ?? latestMeta.matchVictory ?? latestMeta.victory)
     const score = deriveScore(latestMeta, sorted)
+    const flowSequence = parseMatchFlow(latestMeta, sorted)
     const inferredDay = toNumber(latestMeta.match_days ?? latestMeta.matchDays) ?? 0
     const lastDay = Math.max(
       Math.max(...sorted.map((x) => Math.max(0, Number(x.dayIndex || 0))), 0),
@@ -199,6 +247,7 @@ function buildSummaries(records: CommunityGameRecord[], usersById: Record<string
       matchVictory,
       wins: score.wins,
       losses: score.losses,
+      flowSequence,
       lastDay,
       latestBattle: latest,
       battles: sorted,
@@ -265,14 +314,7 @@ export default function MatchRecordsCenterPanel({
                 : (summary.wins > summary.losses ? '优势收官' : '惜败收官')
           const exactTotal = Math.max(0, summary.wins + summary.losses)
           const maxFlow = 24
-          const fallbackFlow: Array<'win' | 'lose'> = [
-            ...Array.from({ length: Math.max(0, summary.wins) }, () => 'win' as const),
-            ...Array.from({ length: Math.max(0, summary.losses) }, () => 'lose' as const),
-          ]
-          const battleFlow: Array<'win' | 'lose'> = [...summary.battles]
-            .sort((a, b) => a.dayIndex - b.dayIndex)
-            .map((b) => (b.result === 'win' ? 'win' : 'lose') as 'win' | 'lose')
-          const flowList = (battleFlow.length >= exactTotal && exactTotal > 0 ? battleFlow : fallbackFlow).slice(0, maxFlow)
+          const flowList = summary.flowSequence.slice(0, maxFlow)
           const latest = summary.latestBattle
           const canEditTitle = onlyMine && !!currentUserId && currentUserId === summary.authorUserId && !!summary.matchId && !!onUpdateMatchTitle
           const displayTitle = summary.matchTitle || `${summary.hero} · Day${summary.lastDay} · ${summary.wins}胜${summary.losses}负`
@@ -305,7 +347,10 @@ export default function MatchRecordsCenterPanel({
                           {b === 'win' ? '✓' : '✗'}
                         </span>
                       ))}
-                      {exactTotal > flowList.length && (
+                      {summary.flowSequence.length > flowList.length && (
+                        <span className={styles.flowMore}>+{summary.flowSequence.length - flowList.length}</span>
+                      )}
+                      {summary.flowSequence.length <= flowList.length && exactTotal > flowList.length && (
                         <span className={styles.flowMore}>+{exactTotal - flowList.length}</span>
                       )}
                     </div>
