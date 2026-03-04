@@ -18,6 +18,7 @@ const HERO_OPTIONS = [
 
 type MatchRecordFilters = {
   onlyFollowing: boolean
+  onlyMine: boolean
   uploaderMainHero: string
   uploaderUserId: string
 }
@@ -84,6 +85,17 @@ export default function MatchRecordsLeftPanel({
               onChange={(e) => onChangeRecordFilters({ ...recordFilters, onlyFollowing: e.target.checked })}
             />
             <span>仅关注玩家</span>
+          </label>
+        </div>
+        <div className={styles.row}>
+          <label className={styles.checkbox}>
+            <input
+              type="checkbox"
+              checked={recordFilters.onlyMine}
+              disabled={!currentUserId}
+              onChange={(e) => onChangeRecordFilters({ ...recordFilters, onlyMine: e.target.checked })}
+            />
+            <span>仅我上传</span>
           </label>
         </div>
         <div className={styles.rowLabel}>上传者主玩英雄</div>

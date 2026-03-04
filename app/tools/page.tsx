@@ -41,6 +41,7 @@ import {
   toggleInteraction,
 } from '@/lib/communitySupabase'
 import {
+  deleteUserGameRecord,
   fetchAllPublicProfiles,
   fetchFollowersCount,
   fetchFollowingProfiles,
@@ -71,6 +72,7 @@ type ExploreFilters = {
 
 type MatchRecordFilters = {
   onlyFollowing: boolean
+  onlyMine: boolean
   uploaderMainHero: string
   uploaderUserId: string
 }
@@ -103,6 +105,7 @@ const defaultExploreFilters: ExploreFilters = {
 
 const defaultRecordFilters: MatchRecordFilters = {
   onlyFollowing: false,
+  onlyMine: false,
   uploaderMainHero: '',
   uploaderUserId: '',
 }
@@ -238,7 +241,7 @@ export default function ToolsPage() {
       setFollowingUsers([])
       setFollowersCount(0)
       setExploreFilters((prev) => ({ ...prev, followingOnly: false }))
-      setRecordFilters((prev) => ({ ...prev, onlyFollowing: false }))
+      setRecordFilters((prev) => ({ ...prev, onlyFollowing: false, onlyMine: false }))
       return
     }
 
@@ -319,13 +322,17 @@ export default function ToolsPage() {
   const loadRecordsFirstPage = async () => {
     setRecordsLoading(true)
     try {
+      const uploaderUserId =
+        recordFilters.onlyMine && authUserId
+          ? authUserId
+          : (recordFilters.uploaderUserId || undefined)
       const page = await fetchGameRecordsPage({
         page: FIRST_PAGE,
         pageSize: PAGE_SIZE,
         viewerUserId: authUserId || undefined,
         onlyFollowing: recordFilters.onlyFollowing,
         uploaderMainHero: recordFilters.uploaderMainHero || undefined,
-        uploaderUserId: recordFilters.uploaderUserId || undefined,
+        uploaderUserId,
       })
       setRecords(page.items || [])
       setRecordsPage(page.page)
@@ -382,13 +389,17 @@ export default function ToolsPage() {
     setRecordsLoadingMore(true)
     try {
       const nextPage = recordsPage + 1
+      const uploaderUserId =
+        recordFilters.onlyMine && authUserId
+          ? authUserId
+          : (recordFilters.uploaderUserId || undefined)
       const page = await fetchGameRecordsPage({
         page: nextPage,
         pageSize: PAGE_SIZE,
         viewerUserId: authUserId || undefined,
         onlyFollowing: recordFilters.onlyFollowing,
         uploaderMainHero: recordFilters.uploaderMainHero || undefined,
-        uploaderUserId: recordFilters.uploaderUserId || undefined,
+        uploaderUserId,
       })
       setRecords((prev) => mergeById(prev, page.items))
       setRecordsPage(page.page)
@@ -504,7 +515,7 @@ export default function ToolsPage() {
   useEffect(() => {
     if (appMode !== 'records') return
     loadRecordsFirstPage()
-  }, [appMode, recordFilters.onlyFollowing, recordFilters.uploaderMainHero, recordFilters.uploaderUserId, authUserId])
+  }, [appMode, recordFilters.onlyFollowing, recordFilters.onlyMine, recordFilters.uploaderMainHero, recordFilters.uploaderUserId, authUserId])
 
   useEffect(() => {
     if (!globalToast) return
@@ -677,6 +688,28 @@ export default function ToolsPage() {
     await refreshFollowingState(authUserId)
     await loadPublicUsers()
     showGlobalToast(enabled ? '已关注该玩家。' : '已取消关注。', 'success')
+  }
+
+  const handleDeleteRecord = async (record: CommunityGameRecord): Promise<boolean> => {
+    if (!authUserId) {
+      showGlobalToast('请先登录后再删除记录。', 'error')
+      return false
+    }
+    if (record.authorUserId !== authUserId) {
+      showGlobalToast('只能删除自己上传的记录。', 'error')
+      return false
+    }
+    if (!window.confirm(`确认删除这条战绩记录？\nDay${record.dayIndex} · ${record.result === 'win' ? '胜利' : '失败'}`)) {
+      return false
+    }
+    const ok = await deleteUserGameRecord(record.id, authUserId)
+    if (!ok) {
+      showGlobalToast('删除失败，请检查 Supabase RLS 策略。', 'error')
+      return false
+    }
+    showGlobalToast('已删除该记录。', 'success')
+    await loadRecordsFirstPage()
+    return true
   }
 
   useEffect(() => {
@@ -924,6 +957,8 @@ export default function ToolsPage() {
               <MatchRecordDetailPanel
                 record={selectedRecord}
                 user={selectedRecord ? usersById[selectedRecord.authorUserId] : null}
+                currentUserId={authUserId}
+                onDeleteRecord={handleDeleteRecord}
               />
             ) : (
               <ToolDetailPanel item={selectedItem} />

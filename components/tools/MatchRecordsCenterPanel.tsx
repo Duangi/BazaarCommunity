@@ -3,6 +3,7 @@
 import { useMemo, useRef, useState } from 'react'
 import { CommunityGameRecord, CommunityPublicUser } from '@/lib/communityBuilds'
 import { cdnUrl, heroAvatarUrl } from '@/lib/cdn'
+import RecordScreenshotImage from '@/components/tools/RecordScreenshotImage'
 import styles from './MatchRecordsCenterPanel.module.css'
 
 interface MatchRecordsCenterPanelProps {
@@ -245,7 +246,7 @@ export default function MatchRecordsCenterPanel({
                   </div>
                 </div>
                 <div className={styles.cardRight}>
-                  <img src={latest.screenshotUrl} alt={`${summary.authorName}-Day${summary.lastDay}`} className={styles.latestShot} />
+                  <RecordScreenshotImage src={latest.screenshotUrl} alt={`${summary.authorName}-Day${summary.lastDay}`} className={styles.latestShot} />
                   <span className={styles.arrow}>{open ? '▴' : '▾'}</span>
                 </div>
               </button>
@@ -270,7 +271,7 @@ export default function MatchRecordsCenterPanel({
                           </span>
                           <span className={styles.battleTime}>{battleTime}</span>
                           <span className={styles.battleDuration}>{duration != null ? `${duration.toFixed(1)}s` : '--'}</span>
-                          <img src={battle.screenshotUrl} alt={`day${battle.dayIndex}`} className={styles.battleShot} />
+                          <RecordScreenshotImage src={battle.screenshotUrl} alt={`day${battle.dayIndex}`} className={styles.battleShot} />
                         </button>
 
                         {(selfCards.length > 0 || enemyCards.length > 0) && (
@@ -327,4 +328,3 @@ export default function MatchRecordsCenterPanel({
     </div>
   )
 }
-

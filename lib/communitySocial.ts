@@ -306,3 +306,14 @@ export async function fetchUserGameRecords(userId: string, limit = 80): Promise<
   })
   return page.items
 }
+
+export async function deleteUserGameRecord(recordId: string, userId: string): Promise<boolean> {
+  const client = getClient()
+  if (!client || !recordId || !userId) return false
+  const { error } = await client
+    .from('community_game_records')
+    .delete()
+    .eq('id', recordId)
+    .eq('author_user_id', userId)
+  return !error
+}

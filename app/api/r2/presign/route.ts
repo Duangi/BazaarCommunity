@@ -17,6 +17,24 @@ function sanitizeFileName(raw: string): string {
   return file.replace(/[^\w.\-]+/g, '_').slice(0, 120) || 'image.webp'
 }
 
+function sanitizeFolderSegment(raw: string): string {
+  const seg = String(raw || '')
+    .trim()
+    .replace(/[^a-zA-Z0-9_\-\u4e00-\u9fa5]+/g, '_')
+    .replace(/^_+|_+$/g, '')
+    .slice(0, 50)
+  return seg
+}
+
+function sanitizeFolder(raw: string): string {
+  const input = String(raw || 'match-records').replace(/^\/+|\/+$/g, '')
+  const segments = input
+    .split('/')
+    .map((seg) => sanitizeFolderSegment(seg))
+    .filter(Boolean)
+  return segments.join('/') || 'match-records'
+}
+
 export async function OPTIONS() {
   return new NextResponse(null, { status: 204, headers: CORS_HEADERS })
 }
@@ -44,7 +62,7 @@ export async function POST(request: NextRequest) {
     const body = await request.json()
     const fileName = sanitizeFileName(String(body?.fileName || 'image.webp'))
     const contentType = String(body?.contentType || 'image/webp')
-    const folder = String(body?.folder || 'match-records').replace(/^\/+|\/+$/g, '')
+    const folder = sanitizeFolder(String(body?.folder || 'match-records'))
 
     const dateKey = new Date().toISOString().slice(0, 10)
     const key = `${folder}/${dateKey}/${randomUUID()}-${fileName}`

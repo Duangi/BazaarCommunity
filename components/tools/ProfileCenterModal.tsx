@@ -3,6 +3,8 @@
 import { useEffect, useMemo, useState } from 'react'
 import { CommunityGameRecord, CommunityPublicUser } from '@/lib/communityBuilds'
 import { heroAvatarUrl } from '@/lib/cdn'
+import RecordScreenshotImage from '@/components/tools/RecordScreenshotImage'
+import { resolveScreenshotOpenUrl } from '@/lib/recordScreenshot'
 import styles from './ProfileCenterModal.module.css'
 
 const HERO_OPTIONS = [
@@ -200,8 +202,8 @@ export default function ProfileCenterModal({
               ) : (
                 <div className={styles.recordsGrid}>
                   {records.map((record) => (
-                    <a key={record.id} href={record.screenshotUrl} target="_blank" rel="noreferrer" className={styles.recordCard}>
-                      <img src={record.screenshotUrl} alt={`${record.authorName}-day${record.dayIndex}`} />
+                    <a key={record.id} href={resolveScreenshotOpenUrl(record.screenshotUrl)} target="_blank" rel="noreferrer" className={styles.recordCard}>
+                      <RecordScreenshotImage src={record.screenshotUrl} alt={`${record.authorName}-day${record.dayIndex}`} />
                       <div className={styles.recordMeta}>
                         <span>{record.playedOn}</span>
                         <span>Day{record.dayIndex}</span>

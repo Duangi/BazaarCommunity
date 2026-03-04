@@ -2,11 +2,15 @@
 
 import { CommunityGameRecord, CommunityPublicUser } from '@/lib/communityBuilds'
 import { cdnUrl, heroAvatarUrl } from '@/lib/cdn'
+import RecordScreenshotImage from '@/components/tools/RecordScreenshotImage'
+import { resolveScreenshotOpenUrl } from '@/lib/recordScreenshot'
 import styles from './MatchRecordDetailPanel.module.css'
 
 interface MatchRecordDetailPanelProps {
   record: CommunityGameRecord | null
   user?: CommunityPublicUser | null
+  currentUserId?: string
+  onDeleteRecord?: (record: CommunityGameRecord) => Promise<boolean>
 }
 
 type BattleCard = {
@@ -42,7 +46,12 @@ function pickCards(meta: Record<string, any>, enemy = false): BattleCard[] {
     .filter((x: BattleCard) => !!x.template_id || !!x.image)
 }
 
-export default function MatchRecordDetailPanel({ record, user }: MatchRecordDetailPanelProps) {
+export default function MatchRecordDetailPanel({
+  record,
+  user,
+  currentUserId = '',
+  onDeleteRecord,
+}: MatchRecordDetailPanelProps) {
   if (!record) {
     return (
       <div className={styles.panel}>
@@ -56,6 +65,8 @@ export default function MatchRecordDetailPanel({ record, user }: MatchRecordDeta
   const duration = Number(meta.duration || 0)
   const selfCards = pickCards(meta, false)
   const enemyCards = pickCards(meta, true)
+  const canDelete = !!currentUserId && currentUserId === record.authorUserId
+  const openUrl = resolveScreenshotOpenUrl(record.screenshotUrl)
 
   return (
     <div className={styles.panel}>
@@ -70,7 +81,7 @@ export default function MatchRecordDetailPanel({ record, user }: MatchRecordDeta
         </div>
       </div>
 
-      <img src={record.screenshotUrl} alt={`${record.authorName}-detail`} className={styles.image} />
+      <RecordScreenshotImage src={record.screenshotUrl} alt={`${record.authorName}-detail`} className={styles.image} />
 
       {(selfCards.length > 0 || enemyCards.length > 0) && (
         <div className={styles.lineupWrap}>
@@ -110,10 +121,22 @@ export default function MatchRecordDetailPanel({ record, user }: MatchRecordDeta
       )}
 
       {record.note && <div className={styles.note}>{record.note}</div>}
-      <a href={record.screenshotUrl} target="_blank" rel="noreferrer" className={styles.openBtn}>
-        打开原图
-      </a>
+      <div className={styles.actionRow}>
+        <a href={openUrl} target="_blank" rel="noreferrer" className={styles.openBtn}>
+          打开原图
+        </a>
+        {canDelete && (
+          <button
+            className={styles.deleteBtn}
+            onClick={async () => {
+              if (!onDeleteRecord) return
+              await onDeleteRecord(record)
+            }}
+          >
+            删除本条
+          </button>
+        )}
+      </div>
     </div>
   )
 }
-
