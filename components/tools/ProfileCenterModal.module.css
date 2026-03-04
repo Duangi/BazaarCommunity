@@ -1,0 +1,264 @@
+.mask {
+  position: fixed;
+  inset: 0;
+  z-index: 460;
+  background: rgba(0, 0, 0, 0.55);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+}
+
+.modal {
+  width: min(980px, 96vw);
+  max-height: 88vh;
+  border: 1px solid #3c3c3c;
+  border-radius: 14px;
+  background: #121212;
+  display: flex;
+  flex-direction: column;
+}
+
+.header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 12px 14px;
+  border-bottom: 1px solid #2f2f2f;
+}
+
+.title {
+  margin: 0;
+  font-size: 16px;
+  color: #fff;
+}
+
+.closeBtn {
+  width: 28px;
+  height: 28px;
+  border: 1px solid #3f3f3f;
+  border-radius: 8px;
+  background: #1d1d1d;
+  color: #ddd;
+  cursor: pointer;
+}
+
+.tabRow {
+  padding: 10px 14px 0;
+  display: flex;
+  gap: 8px;
+}
+
+.tabRow button {
+  border: 1px solid #3d3d3d;
+  background: #1f1f1f;
+  color: #ccc;
+  border-radius: 8px;
+  padding: 7px 12px;
+  cursor: pointer;
+  font-size: 12px;
+}
+
+.tabActive {
+  border-color: #ffcd19 !important;
+  color: #ffcd19 !important;
+}
+
+.body {
+  padding: 14px;
+  overflow: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.formRow {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.formRow label {
+  color: #a8a8a8;
+  font-size: 12px;
+}
+
+.formRow input {
+  border: 1px solid #3d3d3d;
+  background: #0f0f0f;
+  color: #f0f0f0;
+  border-radius: 8px;
+  height: 34px;
+  padding: 0 10px;
+  font-size: 13px;
+}
+
+.checkboxRow {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  color: #ddd;
+}
+
+.heroRow {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.heroBtn {
+  width: 38px;
+  height: 38px;
+  border-radius: 10px;
+  border: 1px solid #3d3d3d;
+  background: #171717;
+  overflow: hidden;
+  padding: 0;
+  cursor: pointer;
+}
+
+.heroBtn img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.heroBtnActive {
+  border-color: #ffcd19;
+  box-shadow: 0 0 0 1px rgba(255, 205, 25, 0.35);
+}
+
+.statLine {
+  color: #d5d5d5;
+  font-size: 13px;
+}
+
+.footer {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.saveBtn {
+  border: 1px solid #8b6e17;
+  background: #2a2010;
+  color: #ffd978;
+  border-radius: 8px;
+  padding: 8px 12px;
+  cursor: pointer;
+  font-size: 12px;
+}
+
+.hint {
+  color: #8ae0a6;
+  font-size: 12px;
+}
+
+.followLayout {
+  display: grid;
+  grid-template-columns: 240px 1fr;
+  gap: 10px;
+  padding: 12px 14px 14px;
+  overflow: hidden;
+  min-height: 420px;
+}
+
+.followList {
+  border: 1px solid #2e2e2e;
+  border-radius: 10px;
+  background: #101010;
+  overflow: auto;
+  padding: 8px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.followUserBtn {
+  border: 1px solid #2f2f2f;
+  background: #181818;
+  border-radius: 8px;
+  padding: 6px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  color: #ddd;
+  cursor: pointer;
+  text-align: left;
+}
+
+.followUserBtn img {
+  width: 34px;
+  height: 34px;
+  border-radius: 8px;
+  object-fit: cover;
+}
+
+.followUserBtnActive {
+  border-color: #ffcd19;
+}
+
+.followSub {
+  color: #999;
+  font-size: 11px;
+}
+
+.recordsPane {
+  border: 1px solid #2e2e2e;
+  border-radius: 10px;
+  background: #101010;
+  padding: 10px;
+  overflow: auto;
+}
+
+.recordsTitle {
+  color: #ececec;
+  font-size: 13px;
+  margin-bottom: 8px;
+}
+
+.recordsGrid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 8px;
+}
+
+.recordCard {
+  border: 1px solid #2d2d2d;
+  border-radius: 8px;
+  overflow: hidden;
+  background: #131313;
+  text-decoration: none;
+}
+
+.recordCard img {
+  width: 100%;
+  height: 140px;
+  object-fit: cover;
+  display: block;
+}
+
+.recordMeta {
+  padding: 6px 8px;
+  display: flex;
+  gap: 8px;
+  font-size: 11px;
+  color: #bdbdbd;
+}
+
+.empty {
+  color: #888;
+  font-size: 12px;
+  padding: 14px 8px;
+}
+
+@media (max-width: 900px) {
+  .followLayout {
+    grid-template-columns: 1fr;
+    min-height: 0;
+  }
+
+  .recordsGrid {
+    grid-template-columns: 1fr;
+  }
+}

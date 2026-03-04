@@ -10,6 +10,7 @@ export type CommunityBuild = {
   id: string
   name: string
   hero: string
+  season: number
   dayPlanTag?: '连胜早走' | '北伐阵容'
   strengthTag?: '版本强势' | '中规中矩' | '地沟油'
   difficultyTag?: '容易成型' | '比较困难' | '极难成型'
@@ -23,6 +24,7 @@ export type CommunityBuild = {
   cards_data: BuildCardData[]
   notes?: string
   authorName?: string
+  authorUserId?: string
   authorBilibiliUid?: string
   videoBv?: string
   videoTitle?: string
@@ -33,12 +35,57 @@ export type CommunityBuild = {
 export type CommunityRatingShare = {
   id: string
   name: string
+  season: number
   likes: number
   favorites?: number
   publishedAt: string
   authorName?: string
+  authorUserId?: string
   authorBilibiliUid?: string
   ratingPayload: any
+}
+
+export type CommunityPageResult<T> = {
+  items: T[]
+  total: number
+  page: number
+  pageSize: number
+  hasMore: boolean
+}
+
+export type CommunityProfile = {
+  userId: string
+  nickname: string
+  useBilibili: boolean
+  bilibiliUid?: string
+  mainHeroes?: string[]
+  gameUsername?: string
+  lastLoginIssuedAt?: number
+}
+
+export type CommunityPublicUser = {
+  userId: string
+  nickname: string
+  useBilibili: boolean
+  bilibiliUid?: string
+  mainHeroes: string[]
+  gameUsername?: string
+  followersCount: number
+  createdAt?: string
+  lastLoginAt?: string
+}
+
+export type CommunityGameRecord = {
+  id: string
+  authorUserId: string
+  authorName: string
+  playedOn: string
+  result: 'win' | 'lose'
+  dayIndex: number
+  screenshotUrl: string
+  note?: string
+  meta?: any
+  createdAt: string
 }
 
 const HEROES = ['Pygmalien', 'Jules', 'Vanessa', 'Mak', 'Dooley', 'Stelle']
@@ -69,6 +116,7 @@ export function createMockBuildsFromItems(items: any[]): CommunityBuild[] {
       id: `mock-${i + 1}`,
       name: `${hero} Day${dayFrom}-${dayTo} 构筑 ${i + 1}`,
       hero,
+      season: 11,
       dayPlanTag: i % 2 === 0 ? '连胜早走' : '北伐阵容',
       strengthTag: i % 3 === 0 ? '版本强势' : i % 3 === 1 ? '中规中矩' : '地沟油',
       difficultyTag: i % 3 === 0 ? '容易成型' : i % 3 === 1 ? '比较困难' : '极难成型',
@@ -97,6 +145,7 @@ export function createMockRatingsFromItems(items: any[]): CommunityRatingShare[]
   return Array.from({ length: 8 }).map((_, idx) => ({
     id: `mock-rating-${idx + 1}`,
     name: `社区评分样例 ${idx + 1}`,
+    season: 11,
     likes: 10 + idx * 7,
     favorites: 3 + idx * 4,
     publishedAt: new Date(Date.now() - idx * 3600 * 1000 * 18).toISOString(),

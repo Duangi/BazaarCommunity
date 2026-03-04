@@ -534,6 +534,83 @@
   border-radius: calc(8px * var(--feed-scale));
 }
 
+.followBtn {
+  margin-top: calc(6px * var(--feed-scale));
+  border: 1px solid #3d3d3d;
+  background: #1f1f1f;
+  color: #ddd;
+  border-radius: calc(8px * var(--feed-scale));
+  padding: calc(5px * var(--feed-scale)) calc(10px * var(--feed-scale));
+  font-size: calc(11px * var(--feed-scale));
+  cursor: pointer;
+}
+
+.paginationRow {
+  display: flex;
+  justify-content: center;
+  padding: calc(10px * var(--feed-scale)) 0;
+}
+
+.loadMoreBtn {
+  border: 1px solid #6b5717;
+  background: linear-gradient(135deg, rgba(255, 205, 25, 0.2), rgba(134, 92, 7, 0.28));
+  color: #ffe2a6;
+  border-radius: calc(10px * var(--feed-scale));
+  padding: calc(8px * var(--feed-scale)) calc(16px * var(--feed-scale));
+  font-size: calc(12px * var(--feed-scale));
+  cursor: pointer;
+}
+
+.loadMoreBtn:disabled {
+  opacity: 0.7;
+  cursor: not-allowed;
+}
+
+.followRecordBox {
+  border: 1px solid rgba(255, 205, 25, 0.35);
+  background: rgba(255, 205, 25, 0.06);
+  border-radius: calc(10px * var(--feed-scale));
+  padding: calc(8px * var(--feed-scale));
+}
+
+.followRecordTitle {
+  font-size: calc(12px * var(--feed-scale));
+  color: #ffe4a0;
+  margin-bottom: calc(6px * var(--feed-scale));
+}
+
+.followRecordList {
+  display: flex;
+  flex-direction: column;
+  gap: calc(6px * var(--feed-scale));
+}
+
+.followRecordItem {
+  display: flex;
+  align-items: center;
+  gap: calc(8px * var(--feed-scale));
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: calc(8px * var(--feed-scale));
+  padding: calc(6px * var(--feed-scale));
+  background: rgba(16, 16, 16, 0.7);
+}
+
+.followRecordImg {
+  width: calc(76px * var(--feed-scale));
+  height: calc(42px * var(--feed-scale));
+  object-fit: cover;
+  border-radius: calc(6px * var(--feed-scale));
+  border: 1px solid rgba(255, 255, 255, 0.12);
+}
+
+.followRecordMeta {
+  display: flex;
+  flex-direction: column;
+  gap: calc(2px * var(--feed-scale));
+  color: #d7d7d7;
+  font-size: calc(11px * var(--feed-scale));
+}
+
 .communityRatingBox {
   border-radius: calc(10px * var(--feed-scale));
   padding: calc(8px * var(--feed-scale)) calc(10px * var(--feed-scale));

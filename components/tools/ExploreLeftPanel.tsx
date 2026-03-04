@@ -7,10 +7,12 @@ import { heroAvatarUrl } from '@/lib/cdn'
 import styles from './ExploreMode.module.css'
 
 type ExploreFilters = {
+  season: number | ''
   hero: string
   dayMin: number
   dayMax: number
   sort: 'hot' | 'new'
+  followingOnly: boolean
   lookupRoles: Array<'core' | 'sub' | 'tech'>
   dayPlanTag: '' | '连胜早走' | '北伐阵容'
   strengthTag: '' | '版本强势' | '中规中矩' | '地沟油'
@@ -29,6 +31,8 @@ interface ExploreLeftPanelProps {
   onResetAll: () => void
   onSelectItem: (item: any) => void
   onLookupBuilds: (item: any) => void
+  canUseFollowingFilter: boolean
+  seasonOptions: number[]
 }
 
 const HERO_FILTER_OPTIONS = [
@@ -51,6 +55,8 @@ export default function ExploreLeftPanel({
   onResetAll,
   onSelectItem,
   onLookupBuilds,
+  canUseFollowingFilter,
+  seasonOptions,
 }: ExploreLeftPanelProps) {
   const [dayMinInput, setDayMinInput] = useState(String(filters.dayMin))
   const [dayMaxInput, setDayMaxInput] = useState(String(filters.dayMax))
@@ -90,6 +96,26 @@ export default function ExploreLeftPanel({
             {filterCollapsed ? '展开' : '收起'}
           </button>
         </div>
+        {!filterCollapsed && <div className={styles.fieldRow}>
+          <label>赛季</label>
+          <div className={styles.inlineButtons}>
+            <button
+              className={filters.season === '' ? styles.activeBtn : ''}
+              onClick={() => onChangeFilters({ ...filters, season: '' })}
+            >
+              全部
+            </button>
+            {seasonOptions.map((s) => (
+              <button
+                key={`season-filter-${s}`}
+                className={filters.season === s ? styles.activeBtn : ''}
+                onClick={() => onChangeFilters({ ...filters, season: s })}
+              >
+                S{s}
+              </button>
+            ))}
+          </div>
+        </div>}
         {!filterCollapsed && <div className={styles.fieldRow}>
           <label>英雄</label>
           <div className={styles.heroFilterGroup}>
@@ -140,6 +166,25 @@ export default function ExploreLeftPanel({
               onClick={() => onChangeFilters({ ...filters, sort: 'new' })}
             >
               最新
+            </button>
+          </div>
+        </div>}
+        {!filterCollapsed && <div className={styles.fieldRow}>
+          <label>作者过滤</label>
+          <div className={styles.inlineButtons}>
+            <button
+              className={!filters.followingOnly ? styles.activeBtn : ''}
+              onClick={() => onChangeFilters({ ...filters, followingOnly: false })}
+            >
+              全部作者
+            </button>
+            <button
+              className={filters.followingOnly ? styles.activeBtn : ''}
+              disabled={!canUseFollowingFilter}
+              onClick={() => onChangeFilters({ ...filters, followingOnly: true })}
+              title={canUseFollowingFilter ? '仅看我关注的人' : '请先登录后使用'}
+            >
+              仅看关注
             </button>
           </div>
         </div>}

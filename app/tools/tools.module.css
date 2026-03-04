@@ -30,6 +30,12 @@
   min-width: 0;
 }
 
+.navRight {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+}
+
 .logo {
   color: #667eea;
   text-decoration: none;
@@ -58,6 +64,16 @@
   border-radius: 10px;
   border: 1px solid #3a3324;
   background: rgba(16, 14, 10, 0.9);
+}
+
+.profileEntryBtn {
+  border: 1px solid #4a4232;
+  background: #201c14;
+  color: #ccb98f;
+  border-radius: 8px;
+  padding: 7px 12px;
+  font-size: 12px;
+  cursor: pointer;
 }
 
 .modeBtn {
@@ -174,6 +190,41 @@
   padding-right: 4px;
 }
 
+.globalToast {
+  position: fixed;
+  top: 78px;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 320;
+  min-width: 220px;
+  max-width: min(80vw, 560px);
+  padding: 10px 16px;
+  border-radius: 10px;
+  border: 1px solid transparent;
+  text-align: center;
+  font-size: 13px;
+  font-weight: 600;
+  box-shadow: 0 12px 26px rgba(0, 0, 0, 0.38);
+}
+
+.globalToastSuccess {
+  background: rgba(21, 56, 34, 0.96);
+  border-color: rgba(70, 186, 117, 0.85);
+  color: #d8ffe6;
+}
+
+.globalToastError {
+  background: rgba(65, 24, 24, 0.96);
+  border-color: rgba(255, 112, 112, 0.88);
+  color: #ffe2e2;
+}
+
+.globalToastInfo {
+  background: rgba(33, 31, 24, 0.96);
+  border-color: rgba(255, 205, 25, 0.72);
+  color: #ffe7a4;
+}
+
 /* 响应式设计 */
 @media (max-width: 1200px) {
   .mainContent {
@@ -237,6 +288,10 @@
   .modeSwitch {
     gap: 6px;
     padding: 5px;
+  }
+
+  .navRight {
+    gap: 6px;
   }
 
   .modeBtn {

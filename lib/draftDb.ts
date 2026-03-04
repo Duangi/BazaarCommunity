@@ -9,6 +9,7 @@ const USER_PROFILE_KEY = 'community_user_profile_v1'
 const USER_REACTIONS_KEY = 'community_user_reactions_v1'
 const FAVORITE_LINEUPS_KEY = 'community_favorite_lineups_v1'
 const FAVORITE_RATINGS_KEY = 'community_favorite_ratings_v1'
+const LOGIN_SESSION_KEY = 'community_login_session_v1'
 
 function readLocal<T = any>(key: string): T | null {
   try {
@@ -88,9 +89,16 @@ export type CommunityUserProfile = {
   nickname: string
   useBilibili: boolean
   bilibiliUid: string
+  mainHeroes?: string[]
 }
 
 export type CommunityUserReactions = Record<string, { liked?: boolean; favorited?: boolean }>
+export type CommunityLoginSession = {
+  key: string
+  userId: string
+  username: string
+  issuedAt: number
+}
 
 export async function loadCommunityProfileFromDb(): Promise<CommunityUserProfile | null> {
   try {
@@ -177,6 +185,41 @@ export async function saveFavoriteRatingIdsToDb(ids: string[]): Promise<void> {
   try {
     const db = await getDb()
     await db.put(STORE, ids, FAVORITE_RATINGS_KEY)
+  } catch {
+    // ignore
+  }
+}
+
+export async function loadCommunityLoginSessionFromDb(): Promise<CommunityLoginSession | null> {
+  try {
+    const db = await getDb()
+    const data = await db.get(STORE, LOGIN_SESSION_KEY)
+    if (data) return data as CommunityLoginSession
+  } catch {
+    // ignore and fallback
+  }
+  return readLocal<CommunityLoginSession>(LOGIN_SESSION_KEY)
+}
+
+export async function saveCommunityLoginSessionToDb(session: CommunityLoginSession | null): Promise<void> {
+  if (!session) {
+    try {
+      if (typeof window !== 'undefined') window.localStorage.removeItem(LOGIN_SESSION_KEY)
+    } catch {
+      // ignore
+    }
+    try {
+      const db = await getDb()
+      await db.delete(STORE, LOGIN_SESSION_KEY)
+    } catch {
+      // ignore
+    }
+    return
+  }
+  writeLocal(LOGIN_SESSION_KEY, session)
+  try {
+    const db = await getDb()
+    await db.put(STORE, session, LOGIN_SESSION_KEY)
   } catch {
     // ignore
   }

@@ -5,16 +5,17 @@ import RatingTool from '@/components/RatingTool'
 import LineupPlanner from '@/components/LineupPlanner'
 import styles from './ToolFunctionPanel.module.css'
 import { loadToolDraftsFromDb, saveToolDraftsToDb } from '@/lib/draftDb'
-import { cdnUrl } from '@/lib/cdn'
-import type { CommunityUserProfile } from '@/lib/draftDb'
 
 interface ToolFunctionPanelProps {
   onSelectItem: (item: any) => void
   activeView: 'rating' | 'lineup'
   onChangeView: (view: 'rating' | 'lineup') => void
-  userProfile: CommunityUserProfile
-  onSaveProfile: (profile: CommunityUserProfile) => void
-  onPublish: (mode: 'lineup' | 'rating', snapshot: any) => Promise<boolean>
+  profileName: string
+  requireLoginToPublish?: boolean
+  onPublish: (mode: 'lineup' | 'rating', snapshot: any, season: number) => Promise<boolean>
+  seasonOptions: number[]
+  selectedSeason: number
+  onChangeSeason: (season: number) => void
 }
 
 type DraftItem = {
@@ -29,9 +30,12 @@ export default function ToolFunctionPanel({
   onSelectItem,
   activeView,
   onChangeView,
-  userProfile,
-  onSaveProfile,
+  profileName,
+  requireLoginToPublish = false,
   onPublish,
+  seasonOptions,
+  selectedSeason,
+  onChangeSeason,
 }: ToolFunctionPanelProps) {
   const [draftApi, setDraftApi] = useState<{
     getSnapshot: () => any
@@ -42,7 +46,6 @@ export default function ToolFunctionPanel({
   const [selectedDraftId, setSelectedDraftId] = useState<string>('')
   const [draftsHydrated, setDraftsHydrated] = useState(false)
   const [toast, setToast] = useState<{ text: string; tone: 'success' | 'error' } | null>(null)
-  const [profileDraft, setProfileDraft] = useState(userProfile)
   const [publishing, setPublishing] = useState(false)
 
   const persistDrafts = (nextDrafts: DraftItem[]) => {
@@ -51,10 +54,6 @@ export default function ToolFunctionPanel({
     } catch {}
     saveToolDraftsToDb(nextDrafts)
   }
-
-  useEffect(() => {
-    setProfileDraft(userProfile)
-  }, [userProfile.nickname, userProfile.useBilibili, userProfile.bilibiliUid])
 
   useEffect(() => {
     let mounted = true
@@ -164,27 +163,13 @@ export default function ToolFunctionPanel({
     setToast({ text: '草稿已删除。', tone: 'success' })
   }
 
-  const saveProfile = () => {
-    const nickname = profileDraft.nickname.trim()
-    if (!nickname) {
-      setToast({ text: '昵称不能为空。', tone: 'error' })
-      return
-    }
-    onSaveProfile({
-      nickname,
-      useBilibili: profileDraft.useBilibili,
-      bilibiliUid: profileDraft.useBilibili ? profileDraft.bilibiliUid.trim() : '',
-    })
-    setToast({ text: '用户信息已保存。', tone: 'success' })
-  }
-
   const publishCurrent = async () => {
     if (!draftApi) {
       setToast({ text: '当前模式尚未就绪，稍后再试。', tone: 'error' })
       return
     }
     setPublishing(true)
-    const ok = await onPublish(activeView, draftApi.getSnapshot())
+    const ok = await onPublish(activeView, draftApi.getSnapshot(), selectedSeason)
     setPublishing(false)
     setToast({ text: ok ? '发布成功。' : '发布失败，请检查 Supabase 配置。', tone: ok ? 'success' : 'error' })
   }
@@ -212,31 +197,20 @@ export default function ToolFunctionPanel({
 
       <div className={styles.workbench}>
         <div className={styles.profileBar}>
-          <input
-            className={styles.profileInput}
-            value={profileDraft.nickname}
-            maxLength={24}
-            onChange={(e) => setProfileDraft((prev) => ({ ...prev, nickname: e.target.value }))}
-            placeholder="昵称（点赞/收藏必填）"
-          />
-          <label className={styles.biliToggle}>
-            <input
-              type="checkbox"
-              checked={profileDraft.useBilibili}
-              onChange={(e) => setProfileDraft((prev) => ({ ...prev, useBilibili: e.target.checked }))}
-            />
-            <img src={cdnUrl('images/ui/Bilibili.svg')} alt="Bilibili" className={styles.biliIcon} />
-            B站UP主
-          </label>
-          <input
-            className={styles.profileInput}
-            value={profileDraft.bilibiliUid}
-            maxLength={20}
-            disabled={!profileDraft.useBilibili}
-            onChange={(e) => setProfileDraft((prev) => ({ ...prev, bilibiliUid: e.target.value }))}
-            placeholder="B站用户ID（可选）"
-          />
-          <button className={styles.draftActionBtn} onClick={saveProfile}>保存用户信息</button>
+          <div className={styles.publishAuthor}>
+            发布者：{profileName || '未设置昵称'}
+            {requireLoginToPublish && <span className={styles.publishHint}>（需先登录）</span>}
+          </div>
+          <select
+            className={styles.draftSelect}
+            value={String(selectedSeason)}
+            onChange={(e) => onChangeSeason(Number(e.target.value))}
+            title="发布赛季"
+          >
+            {seasonOptions.map((s) => (
+              <option key={`season-${s}`} value={s}>赛季 S{s}</option>
+            ))}
+          </select>
           <button className={styles.draftSaveBtn} onClick={publishCurrent} disabled={publishing}>
             {publishing ? '发布中...' : '发布到社区'}
           </button>

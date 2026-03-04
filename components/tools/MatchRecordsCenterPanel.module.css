@@ -1,0 +1,303 @@
+.panel {
+  border: 1px solid #333;
+  border-radius: 12px;
+  background: #171717;
+  height: calc(100vh - 92px - 20px);
+  display: flex;
+  flex-direction: column;
+}
+
+.header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 12px;
+  border-bottom: 1px solid #2d2d2d;
+}
+
+.title {
+  margin: 0;
+  color: #fff;
+  font-size: 18px;
+}
+
+.count {
+  color: #999;
+  font-size: 12px;
+}
+
+.list {
+  flex: 1;
+  overflow: auto;
+  padding: 10px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.empty {
+  color: #888;
+  font-size: 12px;
+  padding: 16px;
+}
+
+.card {
+  border: 1px solid rgba(255, 205, 25, 0.18);
+  border-left: 4px solid rgba(255, 205, 25, 0.42);
+  border-radius: 10px;
+  background: #141210;
+  overflow: hidden;
+}
+
+.cardOpen {
+  border-color: rgba(255, 205, 25, 0.4);
+}
+
+.cardHead {
+  width: 100%;
+  border: none;
+  background: transparent;
+  color: inherit;
+  text-align: left;
+  cursor: pointer;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 12px;
+  padding: 12px;
+}
+
+.cardLeft {
+  min-width: 0;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.heroAvatarWrap {
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  overflow: hidden;
+  border: 1px solid rgba(255, 205, 25, 0.45);
+  flex-shrink: 0;
+}
+
+.heroAvatar {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.titleBlock {
+  min-width: 0;
+}
+
+.cardTitle {
+  color: #ffdd7f;
+  font-size: 16px;
+  font-weight: 800;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.cardSub {
+  margin-top: 2px;
+  font-size: 12px;
+  color: #a7a7a7;
+}
+
+.flowRow {
+  margin-top: 6px;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.flowDot {
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 8px;
+  font-weight: 700;
+}
+
+.flowWin {
+  background: #00ecc3;
+  color: #000;
+}
+
+.flowLose {
+  border: 2px solid #f5503d;
+  background: transparent;
+  color: #f5503d;
+}
+
+.flowMore {
+  color: #888;
+  font-size: 11px;
+  margin-left: 4px;
+}
+
+.cardRight {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.latestShot {
+  width: 128px;
+  height: 74px;
+  object-fit: cover;
+  border-radius: 8px;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+}
+
+.arrow {
+  color: rgba(255, 205, 25, 0.9);
+  font-size: 13px;
+}
+
+.cardBody {
+  border-top: 1px solid rgba(255, 255, 255, 0.08);
+  background: rgba(0, 0, 0, 0.24);
+  padding: 10px 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.battleBlock {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.battleRow {
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 8px;
+  background: rgba(0, 0, 0, 0.25);
+  color: inherit;
+  width: 100%;
+  cursor: pointer;
+  text-align: left;
+  display: grid;
+  grid-template-columns: 88px 64px 64px 72px 110px;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 10px;
+}
+
+.battleRowActive {
+  border-color: rgba(255, 205, 25, 0.65);
+  box-shadow: 0 0 0 1px rgba(255, 205, 25, 0.24);
+}
+
+.battleDay {
+  color: #ffdd7f;
+  font-weight: 700;
+}
+
+.battleResult {
+  font-weight: 700;
+}
+
+.battleWin {
+  color: #00ecc3;
+}
+
+.battleLose {
+  color: #f5503d;
+}
+
+.battleTime {
+  color: #a2a2a2;
+  font-size: 12px;
+}
+
+.battleDuration {
+  color: #b5b5b5;
+  font-size: 12px;
+}
+
+.battleShot {
+  width: 100%;
+  height: 58px;
+  border-radius: 6px;
+  object-fit: cover;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+}
+
+.lineupWrap {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 8px;
+  padding: 0 4px 4px 4px;
+}
+
+.lineupGroup {
+  border: 1px dashed rgba(255, 255, 255, 0.14);
+  border-radius: 8px;
+  padding: 6px;
+}
+
+.lineupLabel {
+  color: #a8a8a8;
+  font-size: 11px;
+  margin-bottom: 5px;
+}
+
+.lineupRow {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.lineupCard {
+  width: 58px;
+  height: 34px;
+  border-radius: 6px;
+  object-fit: cover;
+  border: 1px solid rgba(255, 255, 255, 0.16);
+  background: rgba(0, 0, 0, 0.3);
+}
+
+.loadMoreBtn {
+  border: 1px solid #5b4a1c;
+  background: #251f11;
+  color: #ffdf8e;
+  border-radius: 8px;
+  padding: 8px 12px;
+  cursor: pointer;
+  font-size: 12px;
+}
+
+@media (max-width: 1200px) {
+  .panel {
+    height: 820px;
+  }
+
+  .cardHead {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  .cardRight {
+    width: 100%;
+    justify-content: space-between;
+  }
+
+  .latestShot {
+    width: 160px;
+    height: 90px;
+  }
+
+  .battleRow {
+    grid-template-columns: 1fr 1fr;
+    gap: 6px;
+  }
+}

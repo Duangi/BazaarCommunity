@@ -1,0 +1,80 @@
+.authWrap {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.userBadge {
+  max-width: 220px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  border: 1px solid #3b3b3b;
+  background: rgba(20, 20, 20, 0.9);
+  color: #dfdfdf;
+  border-radius: 8px;
+  padding: 6px 10px;
+  font-size: 12px;
+}
+
+.authBtn {
+  border: 1px solid #4a4232;
+  background: #201c14;
+  color: #ccb98f;
+  border-radius: 8px;
+  padding: 7px 12px;
+  font-size: 12px;
+  cursor: pointer;
+}
+
+.authPopover {
+  position: absolute;
+  top: calc(100% + 8px);
+  right: 0;
+  width: 320px;
+  border: 1px solid #3b3120;
+  border-radius: 10px;
+  background: rgba(12, 12, 12, 0.95);
+  padding: 10px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.45);
+}
+
+.authInput {
+  border: 1px solid #3e3e3e;
+  background: #111;
+  color: #e6e6e6;
+  border-radius: 8px;
+  padding: 8px 9px;
+  font-size: 12px;
+}
+
+.authInput:focus {
+  outline: none;
+  border-color: #b29239;
+}
+
+.authActions {
+  display: flex;
+  gap: 8px;
+}
+
+.authActionBtn {
+  flex: 1;
+  border: 1px solid #4a4232;
+  background: #201c14;
+  color: #ccb98f;
+  border-radius: 8px;
+  padding: 7px 8px;
+  font-size: 12px;
+  cursor: pointer;
+}
+
+.authHint {
+  color: #dfd1a2;
+  font-size: 11px;
+  line-height: 1.35;
+}
