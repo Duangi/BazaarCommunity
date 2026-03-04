@@ -1,9 +1,9 @@
 'use client'
 
+import { useState } from 'react'
 import { CommunityGameRecord, CommunityPublicUser } from '@/lib/communityBuilds'
 import { cdnUrl, heroAvatarUrl } from '@/lib/cdn'
 import RecordScreenshotImage from '@/components/tools/RecordScreenshotImage'
-import { resolveScreenshotOpenUrl } from '@/lib/recordScreenshot'
 import styles from './MatchRecordDetailPanel.module.css'
 
 interface MatchRecordDetailPanelProps {
@@ -66,7 +66,8 @@ export default function MatchRecordDetailPanel({
   const selfCards = pickCards(meta, false)
   const enemyCards = pickCards(meta, true)
   const canDelete = !!currentUserId && currentUserId === record.authorUserId
-  const openUrl = resolveScreenshotOpenUrl(record.screenshotUrl)
+  const [previewOpen, setPreviewOpen] = useState(false)
+  const matchTitle = String(meta.match_title || meta.matchTitle || '').trim()
 
   return (
     <div className={styles.panel}>
@@ -75,13 +76,19 @@ export default function MatchRecordDetailPanel({
           <span>{user?.nickname || record.authorName || '匿名'}</span>
           <img src={heroAvatarUrl(hero.toLowerCase())} alt={hero} className={styles.heroAvatar} />
         </div>
+        {matchTitle && <div className={styles.title}>{matchTitle}</div>}
         <div className={styles.sub}>
           {record.playedOn} · Day{record.dayIndex} · {record.result === 'win' ? '胜利' : '失败'}
           {Number.isFinite(duration) && duration > 0 ? ` · ${duration.toFixed(1)}s` : ''}
         </div>
       </div>
 
-      <RecordScreenshotImage src={record.screenshotUrl} alt={`${record.authorName}-detail`} className={styles.image} />
+      <RecordScreenshotImage
+        src={record.screenshotUrl}
+        alt={`${record.authorName}-detail`}
+        className={styles.image}
+        onClick={() => setPreviewOpen(true)}
+      />
 
       {(selfCards.length > 0 || enemyCards.length > 0) && (
         <div className={styles.lineupWrap}>
@@ -122,9 +129,6 @@ export default function MatchRecordDetailPanel({
 
       {record.note && <div className={styles.note}>{record.note}</div>}
       <div className={styles.actionRow}>
-        <a href={openUrl} target="_blank" rel="noreferrer" className={styles.openBtn}>
-          打开原图
-        </a>
         {canDelete && (
           <button
             className={styles.deleteBtn}
@@ -137,6 +141,15 @@ export default function MatchRecordDetailPanel({
           </button>
         )}
       </div>
+
+      {previewOpen && (
+        <div className={styles.previewMask} onClick={() => setPreviewOpen(false)}>
+          <div className={styles.previewInner} onClick={(e) => e.stopPropagation()}>
+            <button className={styles.previewClose} onClick={() => setPreviewOpen(false)}>×</button>
+            <RecordScreenshotImage src={record.screenshotUrl} alt="record-preview" className={styles.previewImage} />
+          </div>
+        </div>
+      )}
     </div>
   )
 }

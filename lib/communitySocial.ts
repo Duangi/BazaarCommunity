@@ -317,3 +317,49 @@ export async function deleteUserGameRecord(recordId: string, userId: string): Pr
     .eq('author_user_id', userId)
   return !error
 }
+
+type UpdateMatchTitleParams = {
+  userId: string
+  matchId: string
+  title: string
+}
+
+export async function updateUserMatchTitle(params: UpdateMatchTitleParams): Promise<boolean> {
+  const client = getClient()
+  if (!client) return false
+  const userId = String(params.userId || '').trim()
+  const matchId = String(params.matchId || '').trim()
+  const title = String(params.title || '').trim().slice(0, 60)
+  if (!userId || !matchId) return false
+
+  const queryByKey = async (key: 'match_id' | 'matchId') => {
+    const { data, error } = await client
+      .from('community_game_records')
+      .select('id,meta')
+      .eq('author_user_id', userId)
+      .contains('meta', { [key]: matchId })
+      .limit(300)
+    return { data, error }
+  }
+
+  let result = await queryByKey('match_id')
+  if ((!result.data || result.data.length === 0) && !result.error) {
+    result = await queryByKey('matchId')
+  }
+  if (result.error || !Array.isArray(result.data) || result.data.length === 0) return false
+
+  for (const row of result.data) {
+    const currentMeta = (row?.meta && typeof row.meta === 'object') ? { ...row.meta } : {}
+    if (title) currentMeta.match_title = title
+    else delete currentMeta.match_title
+
+    const { error } = await client
+      .from('community_game_records')
+      .update({ meta: currentMeta })
+      .eq('id', row.id)
+      .eq('author_user_id', userId)
+    if (error) return false
+  }
+
+  return true
+}

@@ -49,11 +49,19 @@
   font-size: 12px;
 }
 
+.title {
+  margin-top: 5px;
+  color: #ffdd8d;
+  font-size: 13px;
+  font-weight: 700;
+}
+
 .image {
   width: 100%;
   border-radius: 10px;
   border: 1px solid rgba(255, 255, 255, 0.12);
   object-fit: cover;
+  cursor: zoom-in;
 }
 
 .lineupWrap {
@@ -97,21 +105,10 @@
   line-height: 1.6;
 }
 
-.openBtn {
-  border: 1px solid #5d4b1a;
-  background: #251f11;
-  color: #ffdd8d;
-  border-radius: 8px;
-  padding: 8px 10px;
-  font-size: 12px;
-  text-decoration: none;
-  text-align: center;
-}
-
 .actionRow {
   margin-top: 10px;
-  display: grid;
-  grid-template-columns: 1fr auto;
+  display: flex;
+  justify-content: flex-end;
   gap: 8px;
 }
 
@@ -122,5 +119,49 @@
   border-radius: 8px;
   padding: 8px 12px;
   font-size: 12px;
+  cursor: pointer;
+}
+
+.previewMask {
+  position: fixed;
+  inset: 0;
+  z-index: 2400;
+  background: rgba(0, 0, 0, 0.86);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 24px;
+}
+
+.previewInner {
+  position: relative;
+  width: min(96vw, 1600px);
+  max-height: 92vh;
+  border: 1px solid rgba(255, 205, 25, 0.45);
+  border-radius: 10px;
+  background: #050505;
+  overflow: hidden;
+}
+
+.previewImage {
+  display: block;
+  width: 100%;
+  max-height: 92vh;
+  object-fit: contain;
+  background: #000;
+}
+
+.previewClose {
+  position: absolute;
+  top: 10px;
+  right: 10px;
+  width: 32px;
+  height: 32px;
+  border-radius: 8px;
+  border: 1px solid rgba(255, 255, 255, 0.35);
+  background: rgba(0, 0, 0, 0.55);
+  color: #fff;
+  font-size: 20px;
+  line-height: 1;
   cursor: pointer;
 }

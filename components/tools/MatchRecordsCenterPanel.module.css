@@ -149,17 +149,9 @@
   gap: 10px;
 }
 
-.latestShot {
-  width: 128px;
-  height: 74px;
-  object-fit: cover;
-  border-radius: 8px;
-  border: 1px solid rgba(255, 255, 255, 0.12);
-}
-
 .arrow {
   color: rgba(255, 205, 25, 0.9);
-  font-size: 13px;
+  font-size: 16px;
 }
 
 .cardBody {
@@ -169,6 +161,52 @@
   display: flex;
   flex-direction: column;
   gap: 8px;
+}
+
+.titleEditRow {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  border: 1px dashed rgba(255, 205, 25, 0.35);
+  border-radius: 8px;
+  padding: 8px;
+  background: rgba(255, 205, 25, 0.07);
+}
+
+.titleHint {
+  color: #e8d8a9;
+  font-size: 12px;
+  flex: 1;
+  min-width: 0;
+}
+
+.titleEditInput {
+  flex: 1;
+  min-width: 0;
+  border: 1px solid rgba(255, 255, 255, 0.16);
+  background: #121212;
+  color: #f3f3f3;
+  border-radius: 6px;
+  padding: 6px 8px;
+  font-size: 12px;
+}
+
+.titleActionBtn,
+.titleActionBtnGhost {
+  border: 1px solid #5b4a1c;
+  background: #251f11;
+  color: #ffdf8e;
+  border-radius: 6px;
+  padding: 5px 8px;
+  font-size: 12px;
+  cursor: pointer;
+  white-space: nowrap;
+}
+
+.titleActionBtnGhost {
+  border-color: #3f3f3f;
+  background: #181818;
+  color: #c5c5c5;
 }
 
 .battleBlock {
@@ -190,6 +228,7 @@
   align-items: center;
   gap: 8px;
   padding: 8px 10px;
+  cursor: pointer;
 }
 
 .battleRowActive {
@@ -230,6 +269,7 @@
   border-radius: 6px;
   object-fit: cover;
   border: 1px solid rgba(255, 255, 255, 0.12);
+  cursor: zoom-in;
 }
 
 .lineupWrap {
@@ -276,6 +316,50 @@
   font-size: 12px;
 }
 
+.previewMask {
+  position: fixed;
+  inset: 0;
+  z-index: 2000;
+  background: rgba(0, 0, 0, 0.85);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 24px;
+}
+
+.previewInner {
+  position: relative;
+  width: min(96vw, 1600px);
+  max-height: 92vh;
+  border: 1px solid rgba(255, 205, 25, 0.45);
+  border-radius: 10px;
+  background: #0a0a0a;
+  overflow: hidden;
+}
+
+.previewImage {
+  display: block;
+  width: 100%;
+  max-height: 92vh;
+  object-fit: contain;
+  background: #000;
+}
+
+.previewClose {
+  position: absolute;
+  top: 10px;
+  right: 10px;
+  width: 32px;
+  height: 32px;
+  border-radius: 8px;
+  border: 1px solid rgba(255, 255, 255, 0.35);
+  background: rgba(0, 0, 0, 0.55);
+  color: #fff;
+  font-size: 20px;
+  line-height: 1;
+  cursor: pointer;
+}
+
 @media (max-width: 1200px) {
   .panel {
     height: 820px;
@@ -289,11 +373,6 @@
   .cardRight {
     width: 100%;
     justify-content: space-between;
-  }
-
-  .latestShot {
-    width: 160px;
-    height: 90px;
   }
 
   .battleRow {

@@ -50,6 +50,7 @@ import {
   fetchUserGameRecords,
   fetchUserProfile,
   toggleFollowUser,
+  updateUserMatchTitle,
   upsertLoginIdentity,
   upsertUserProfile,
 } from '@/lib/communitySocial'
@@ -712,6 +713,25 @@ export default function ToolsPage() {
     return true
   }
 
+  const handleUpdateMatchTitle = async (matchId: string, title: string): Promise<boolean> => {
+    if (!authUserId) {
+      showGlobalToast('请先登录后再编辑标题。', 'error')
+      return false
+    }
+    const ok = await updateUserMatchTitle({
+      userId: authUserId,
+      matchId,
+      title,
+    })
+    if (!ok) {
+      showGlobalToast('保存标题失败，请检查数据库权限。', 'error')
+      return false
+    }
+    showGlobalToast('对局标题已保存。', 'success')
+    await loadRecordsFirstPage()
+    return true
+  }
+
   useEffect(() => {
     if (!draggingResizer) return
     const onMove = (e: MouseEvent) => {
@@ -937,8 +957,11 @@ export default function ToolsPage() {
                   hasMore={recordsHasMore}
                   usersById={usersById}
                   selectedRecordId={selectedRecord?.id}
+                  currentUserId={authUserId}
+                  onlyMine={recordFilters.onlyMine}
                   onSelectRecord={setSelectedRecord}
                   onLoadMore={loadMoreRecords}
+                  onUpdateMatchTitle={handleUpdateMatchTitle}
                 />
               )}
             </div>

@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useMemo, useState } from 'react'
+import { type MouseEvent, useEffect, useMemo, useState } from 'react'
 import { buildScreenshotProxyUrl } from '@/lib/recordScreenshot'
 
 interface RecordScreenshotImageProps {
@@ -8,9 +8,10 @@ interface RecordScreenshotImageProps {
   alt: string
   className?: string
   title?: string
+  onClick?: (event: MouseEvent<HTMLImageElement>) => void
 }
 
-export default function RecordScreenshotImage({ src, alt, className, title }: RecordScreenshotImageProps) {
+export default function RecordScreenshotImage({ src, alt, className, title, onClick }: RecordScreenshotImageProps) {
   const fallbackSrc = useMemo(() => buildScreenshotProxyUrl(src), [src])
   const [resolvedSrc, setResolvedSrc] = useState(src)
   const [triedFallback, setTriedFallback] = useState(false)
@@ -34,7 +35,7 @@ export default function RecordScreenshotImage({ src, alt, className, title }: Re
       className={className}
       title={title}
       onError={handleError}
+      onClick={onClick}
     />
   )
 }
-

@@ -4,6 +4,7 @@ import { useMemo, useRef, useState } from 'react'
 import { CommunityGameRecord, CommunityPublicUser } from '@/lib/communityBuilds'
 import { cdnUrl, heroAvatarUrl } from '@/lib/cdn'
 import RecordScreenshotImage from '@/components/tools/RecordScreenshotImage'
+import { resolveScreenshotOpenUrl } from '@/lib/recordScreenshot'
 import styles from './MatchRecordsCenterPanel.module.css'
 
 interface MatchRecordsCenterPanelProps {
@@ -14,8 +15,11 @@ interface MatchRecordsCenterPanelProps {
   hasMore: boolean
   selectedRecordId?: string
   usersById: Record<string, CommunityPublicUser>
+  currentUserId?: string
+  onlyMine?: boolean
   onSelectRecord: (record: CommunityGameRecord) => void
   onLoadMore: () => void
+  onUpdateMatchTitle?: (matchId: string, title: string) => Promise<boolean>
 }
 
 type BattleCard = {
@@ -28,6 +32,8 @@ type BattleCard = {
 
 type MatchSummary = {
   key: string
+  matchId: string
+  matchTitle: string
   authorUserId: string
   authorName: string
   hero: string
@@ -35,6 +41,7 @@ type MatchSummary = {
   startTime: string
   endTime: string
   isFinished: boolean
+  matchVictory: boolean | null
   wins: number
   losses: number
   lastDay: number
@@ -50,6 +57,15 @@ function asObject(input: any): Record<string, any> {
 function toNumber(input: any): number | null {
   const n = Number(input)
   return Number.isFinite(n) ? n : null
+}
+
+function toBoolean(input: any): boolean | null {
+  if (typeof input === 'boolean') return input
+  if (typeof input === 'number') return input !== 0
+  const text = String(input || '').trim().toLowerCase()
+  if (text === 'true' || text === '1' || text === 'yes') return true
+  if (text === 'false' || text === '0' || text === 'no') return false
+  return null
 }
 
 function formatDate(raw?: string): string {
@@ -107,6 +123,31 @@ function getMatchKey(record: CommunityGameRecord): string {
   return `${record.authorUserId}::date:${record.playedOn}`
 }
 
+function deriveScore(latestMeta: Record<string, any>, battles: CommunityGameRecord[]): { wins: number; losses: number } {
+  const explicitWins = toNumber(latestMeta.match_total_wins ?? latestMeta.matchWins ?? latestMeta.total_wins)
+  const explicitLosses = toNumber(latestMeta.match_total_losses ?? latestMeta.matchLosses ?? latestMeta.total_losses)
+  if (explicitWins != null && explicitLosses != null) {
+    return {
+      wins: Math.max(0, Math.round(explicitWins)),
+      losses: Math.max(0, Math.round(explicitLosses)),
+    }
+  }
+
+  const matchDays = toNumber(latestMeta.match_days ?? latestMeta.matchDays)
+  const matchVictory = toBoolean(latestMeta.match_victory ?? latestMeta.matchVictory ?? latestMeta.victory)
+  const isFinished = toBoolean(latestMeta.is_finished)
+  if (isFinished === true && matchDays != null && matchDays > 0 && matchVictory != null) {
+    const total = Math.max(1, Math.round(matchDays))
+    if (matchVictory) {
+      return { wins: 10, losses: Math.max(0, total - 10) }
+    }
+    return { wins: Math.max(0, total - 10), losses: 10 }
+  }
+
+  const wins = battles.filter((x) => x.result === 'win').length
+  return { wins, losses: battles.length - wins }
+}
+
 function buildSummaries(records: CommunityGameRecord[], usersById: Record<string, CommunityPublicUser>): MatchSummary[] {
   const grouped = new Map<string, CommunityGameRecord[]>()
   records.forEach((record) => {
@@ -134,14 +175,21 @@ function buildSummaries(records: CommunityGameRecord[], usersById: Record<string
     const date = String(latestMeta.game_date || latestMeta.gameDate || latest.playedOn || '')
     const start = String(latestMeta.start_time || latestMeta.match_start_time || latestMeta.matchStartTime || '')
     const end = String(latestMeta.end_time || latestMeta.match_end_time || latestMeta.matchEndTime || '')
-    const finishedRaw = latestMeta.is_finished
-    const isFinished = typeof finishedRaw === 'boolean' ? finishedRaw : true
-    const wins = sorted.filter((x) => x.result === 'win').length
-    const losses = sorted.length - wins
-    const lastDay = sorted.reduce((max, x) => Math.max(max, Number(x.dayIndex || 0)), 0)
+    const isFinished = toBoolean(latestMeta.is_finished) ?? true
+    const matchVictory = toBoolean(latestMeta.match_victory ?? latestMeta.matchVictory ?? latestMeta.victory)
+    const score = deriveScore(latestMeta, sorted)
+    const inferredDay = toNumber(latestMeta.match_days ?? latestMeta.matchDays) ?? 0
+    const lastDay = Math.max(
+      Math.max(...sorted.map((x) => Math.max(0, Number(x.dayIndex || 0))), 0),
+      Math.max(0, Math.round(inferredDay))
+    )
+    const matchId = String(latestMeta.match_id || latestMeta.matchId || '').trim()
+    const matchTitle = String(latestMeta.match_title || latestMeta.matchTitle || '').trim()
 
     return {
       key,
+      matchId,
+      matchTitle,
       authorUserId: latest.authorUserId,
       authorName: user?.nickname || latest.authorName || '匿名',
       hero,
@@ -149,8 +197,9 @@ function buildSummaries(records: CommunityGameRecord[], usersById: Record<string
       startTime: formatTime(start),
       endTime: formatTime(end),
       isFinished,
-      wins,
-      losses,
+      matchVictory,
+      wins: score.wins,
+      losses: score.losses,
       lastDay,
       latestBattle: latest,
       battles: sorted,
@@ -172,11 +221,18 @@ export default function MatchRecordsCenterPanel({
   hasMore,
   selectedRecordId,
   usersById,
+  currentUserId = '',
+  onlyMine = false,
   onSelectRecord,
   onLoadMore,
+  onUpdateMatchTitle,
 }: MatchRecordsCenterPanelProps) {
   const boxRef = useRef<HTMLDivElement | null>(null)
   const [expanded, setExpanded] = useState<Set<string>>(new Set())
+  const [previewImage, setPreviewImage] = useState<string | null>(null)
+  const [editingTitleKey, setEditingTitleKey] = useState<string | null>(null)
+  const [titleDraft, setTitleDraft] = useState('')
+  const [savingTitleKey, setSavingTitleKey] = useState<string | null>(null)
 
   const summaries = useMemo(() => buildSummaries(records, usersById), [records, usersById])
 
@@ -201,13 +257,19 @@ export default function MatchRecordsCenterPanel({
         {summaries.map((summary) => {
           const open = expanded.has(summary.key)
           const heroAvatar = heroAvatarUrl(summary.hero.toLowerCase())
-          const statusText = summary.isFinished
-            ? (summary.losses === 0 ? '全胜' : summary.wins > summary.losses ? '优势收官' : '惜败收官')
-            : '进行中'
+          const statusText = !summary.isFinished
+            ? '进行中'
+            : summary.matchVictory === true
+              ? '胜利收官'
+              : summary.matchVictory === false
+                ? '失败收官'
+                : (summary.wins > summary.losses ? '优势收官' : '惜败收官')
           const flowList = [...summary.battles]
             .sort((a, b) => a.dayIndex - b.dayIndex)
             .slice(0, 18)
           const latest = summary.latestBattle
+          const canEditTitle = onlyMine && !!currentUserId && currentUserId === summary.authorUserId && !!summary.matchId && !!onUpdateMatchTitle
+          const displayTitle = summary.matchTitle || `${summary.hero} · Day${summary.lastDay} · ${summary.wins}胜${summary.losses}负`
           return (
             <div key={summary.key} className={`${styles.card} ${open ? styles.cardOpen : ''}`}>
               <button
@@ -227,9 +289,7 @@ export default function MatchRecordsCenterPanel({
                     <img src={heroAvatar} alt={summary.hero} className={styles.heroAvatar} />
                   </div>
                   <div className={styles.titleBlock}>
-                    <div className={styles.cardTitle}>
-                      {summary.hero} · Day{summary.lastDay} · {summary.wins}胜{summary.losses}负
-                    </div>
+                    <div className={styles.cardTitle}>{displayTitle}</div>
                     <div className={styles.cardSub}>
                       {summary.authorName} · {summary.gameDate} {summary.startTime} · {statusText}
                     </div>
@@ -246,13 +306,66 @@ export default function MatchRecordsCenterPanel({
                   </div>
                 </div>
                 <div className={styles.cardRight}>
-                  <RecordScreenshotImage src={latest.screenshotUrl} alt={`${summary.authorName}-Day${summary.lastDay}`} className={styles.latestShot} />
                   <span className={styles.arrow}>{open ? '▴' : '▾'}</span>
                 </div>
               </button>
 
               {open && (
                 <div className={styles.cardBody}>
+                  {canEditTitle && (
+                    <div className={styles.titleEditRow}>
+                      {editingTitleKey === summary.key ? (
+                        <>
+                          <input
+                            className={styles.titleEditInput}
+                            value={titleDraft}
+                            maxLength={60}
+                            onChange={(e) => setTitleDraft(e.target.value)}
+                            placeholder="输入这局的标题（如核心卡）"
+                          />
+                          <button
+                            className={styles.titleActionBtn}
+                            disabled={savingTitleKey === summary.key}
+                            onClick={async () => {
+                              if (!onUpdateMatchTitle) return
+                              setSavingTitleKey(summary.key)
+                              const ok = await onUpdateMatchTitle(summary.matchId, titleDraft.trim())
+                              setSavingTitleKey(null)
+                              if (ok) {
+                                setEditingTitleKey(null)
+                                setTitleDraft('')
+                              }
+                            }}
+                          >
+                            {savingTitleKey === summary.key ? '保存中...' : '保存'}
+                          </button>
+                          <button
+                            className={styles.titleActionBtnGhost}
+                            onClick={() => {
+                              setEditingTitleKey(null)
+                              setTitleDraft('')
+                            }}
+                          >
+                            取消
+                          </button>
+                        </>
+                      ) : (
+                        <>
+                          <span className={styles.titleHint}>对局标题：{summary.matchTitle || '未设置'}</span>
+                          <button
+                            className={styles.titleActionBtn}
+                            onClick={() => {
+                              setEditingTitleKey(summary.key)
+                              setTitleDraft(summary.matchTitle || '')
+                            }}
+                          >
+                            编辑标题
+                          </button>
+                        </>
+                      )}
+                    </div>
+                  )}
+
                   {summary.battles.map((battle) => {
                     const meta = asObject(battle.meta)
                     const selfCards = getBattleCards(meta, false)
@@ -261,7 +374,7 @@ export default function MatchRecordsCenterPanel({
                     const battleTime = formatTime(meta.battle_start_time || meta.start_time || battle.createdAt)
                     return (
                       <div key={battle.id} className={styles.battleBlock}>
-                        <button
+                        <div
                           className={`${styles.battleRow} ${selectedRecordId === battle.id ? styles.battleRowActive : ''}`}
                           onClick={() => onSelectRecord(battle)}
                         >
@@ -271,8 +384,17 @@ export default function MatchRecordsCenterPanel({
                           </span>
                           <span className={styles.battleTime}>{battleTime}</span>
                           <span className={styles.battleDuration}>{duration != null ? `${duration.toFixed(1)}s` : '--'}</span>
-                          <RecordScreenshotImage src={battle.screenshotUrl} alt={`day${battle.dayIndex}`} className={styles.battleShot} />
-                        </button>
+                          <RecordScreenshotImage
+                            src={battle.screenshotUrl}
+                            alt={`day${battle.dayIndex}`}
+                            className={styles.battleShot}
+                            onClick={(event) => {
+                              event.stopPropagation()
+                              const openUrl = resolveScreenshotOpenUrl(battle.screenshotUrl)
+                              setPreviewImage(openUrl || battle.screenshotUrl)
+                            }}
+                          />
+                        </div>
 
                         {(selfCards.length > 0 || enemyCards.length > 0) && (
                           <div className={styles.lineupWrap}>
@@ -325,6 +447,16 @@ export default function MatchRecordsCenterPanel({
           </button>
         )}
       </div>
+
+      {previewImage && (
+        <div className={styles.previewMask} onClick={() => setPreviewImage(null)}>
+          <div className={styles.previewInner} onClick={(e) => e.stopPropagation()}>
+            <button className={styles.previewClose} onClick={() => setPreviewImage(null)}>×</button>
+            <RecordScreenshotImage src={previewImage} alt="battle-preview" className={styles.previewImage} />
+          </div>
+        </div>
+      )}
     </div>
   )
 }
+
