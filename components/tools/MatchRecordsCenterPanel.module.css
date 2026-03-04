@@ -272,6 +272,19 @@
   cursor: zoom-in;
 }
 
+.noShot {
+  width: 100%;
+  height: 58px;
+  border-radius: 6px;
+  border: 1px dashed rgba(255, 255, 255, 0.22);
+  color: #8f8f8f;
+  font-size: 12px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(255, 255, 255, 0.03);
+}
+
 .lineupWrap {
   display: grid;
   grid-template-columns: 1fr;

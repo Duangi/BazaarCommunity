@@ -16,7 +16,7 @@ type RecordPayload = {
   playedOn: string
   result: 'win' | 'lose'
   dayIndex: number
-  screenshotUrl: string
+  screenshotUrl?: string
   note?: string
   meta?: any
 }
@@ -46,7 +46,6 @@ function validate(body: any): { ok: boolean; payload?: RecordPayload; message?: 
 
   if (!authorUserId) return { ok: false, message: 'authorUserId 不能为空' }
   if (!authorName) return { ok: false, message: 'authorName 不能为空' }
-  if (!screenshotUrl) return { ok: false, message: 'screenshotUrl 不能为空' }
   if (!Number.isFinite(dayIndex) || dayIndex < 1 || dayIndex > 30) {
     return { ok: false, message: 'dayIndex 不合法' }
   }
@@ -142,7 +141,7 @@ export async function POST(request: NextRequest) {
         played_on: payload.playedOn,
         result: payload.result,
         day_index: payload.dayIndex,
-        screenshot_url: payload.screenshotUrl,
+        screenshot_url: payload.screenshotUrl || '',
         note: payload.note || null,
         meta: payload.meta || null,
       })

@@ -64,6 +64,17 @@
   cursor: zoom-in;
 }
 
+.noShot {
+  width: 100%;
+  border-radius: 10px;
+  border: 1px dashed rgba(255, 255, 255, 0.22);
+  background: rgba(255, 255, 255, 0.03);
+  color: #9a9a9a;
+  font-size: 13px;
+  text-align: center;
+  padding: 32px 12px;
+}
+
 .lineupWrap {
   margin-top: 8px;
   display: grid;

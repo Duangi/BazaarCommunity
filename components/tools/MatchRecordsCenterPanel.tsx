@@ -135,8 +135,7 @@ function deriveScore(latestMeta: Record<string, any>, battles: CommunityGameReco
 
   const matchDays = toNumber(latestMeta.match_days ?? latestMeta.matchDays)
   const matchVictory = toBoolean(latestMeta.match_victory ?? latestMeta.matchVictory ?? latestMeta.victory)
-  const isFinished = toBoolean(latestMeta.is_finished)
-  if (isFinished === true && matchDays != null && matchDays > 0 && matchVictory != null) {
+  if (matchDays != null && matchDays >= 10 && matchVictory != null) {
     const total = Math.max(1, Math.round(matchDays))
     if (matchVictory) {
       return { wins: 10, losses: Math.max(0, total - 10) }
@@ -264,9 +263,16 @@ export default function MatchRecordsCenterPanel({
               : summary.matchVictory === false
                 ? '失败收官'
                 : (summary.wins > summary.losses ? '优势收官' : '惜败收官')
-          const flowList = [...summary.battles]
+          const exactTotal = Math.max(0, summary.wins + summary.losses)
+          const maxFlow = 24
+          const fallbackFlow: Array<'win' | 'lose'> = [
+            ...Array.from({ length: Math.max(0, summary.wins) }, () => 'win' as const),
+            ...Array.from({ length: Math.max(0, summary.losses) }, () => 'lose' as const),
+          ]
+          const battleFlow: Array<'win' | 'lose'> = [...summary.battles]
             .sort((a, b) => a.dayIndex - b.dayIndex)
-            .slice(0, 18)
+            .map((b) => (b.result === 'win' ? 'win' : 'lose') as 'win' | 'lose')
+          const flowList = (battleFlow.length >= exactTotal && exactTotal > 0 ? battleFlow : fallbackFlow).slice(0, maxFlow)
           const latest = summary.latestBattle
           const canEditTitle = onlyMine && !!currentUserId && currentUserId === summary.authorUserId && !!summary.matchId && !!onUpdateMatchTitle
           const displayTitle = summary.matchTitle || `${summary.hero} · Day${summary.lastDay} · ${summary.wins}胜${summary.losses}负`
@@ -295,12 +301,12 @@ export default function MatchRecordsCenterPanel({
                     </div>
                     <div className={styles.flowRow}>
                       {flowList.map((b, idx) => (
-                        <span key={`${summary.key}-flow-${idx}`} className={`${styles.flowDot} ${b.result === 'win' ? styles.flowWin : styles.flowLose}`} title={`Day${b.dayIndex} ${b.result === 'win' ? '胜利' : '失败'}`}>
-                          {b.result === 'win' ? '✓' : '✗'}
+                        <span key={`${summary.key}-flow-${idx}`} className={`${styles.flowDot} ${b === 'win' ? styles.flowWin : styles.flowLose}`} title={b === 'win' ? '胜利' : '失败'}>
+                          {b === 'win' ? '✓' : '✗'}
                         </span>
                       ))}
-                      {summary.battles.length > flowList.length && (
-                        <span className={styles.flowMore}>+{summary.battles.length - flowList.length}</span>
+                      {exactTotal > flowList.length && (
+                        <span className={styles.flowMore}>+{exactTotal - flowList.length}</span>
                       )}
                     </div>
                   </div>
@@ -372,6 +378,7 @@ export default function MatchRecordsCenterPanel({
                     const enemyCards = getBattleCards(meta, true)
                     const duration = toNumber(meta.duration)
                     const battleTime = formatTime(meta.battle_start_time || meta.start_time || battle.createdAt)
+                    const hasShot = !!String(battle.screenshotUrl || '').trim()
                     return (
                       <div key={battle.id} className={styles.battleBlock}>
                         <div
@@ -384,16 +391,20 @@ export default function MatchRecordsCenterPanel({
                           </span>
                           <span className={styles.battleTime}>{battleTime}</span>
                           <span className={styles.battleDuration}>{duration != null ? `${duration.toFixed(1)}s` : '--'}</span>
-                          <RecordScreenshotImage
-                            src={battle.screenshotUrl}
-                            alt={`day${battle.dayIndex}`}
-                            className={styles.battleShot}
-                            onClick={(event) => {
-                              event.stopPropagation()
-                              const openUrl = resolveScreenshotOpenUrl(battle.screenshotUrl)
-                              setPreviewImage(openUrl || battle.screenshotUrl)
-                            }}
-                          />
+                          {hasShot ? (
+                            <RecordScreenshotImage
+                              src={battle.screenshotUrl}
+                              alt={`day${battle.dayIndex}`}
+                              className={styles.battleShot}
+                              onClick={(event) => {
+                                event.stopPropagation()
+                                const openUrl = resolveScreenshotOpenUrl(battle.screenshotUrl)
+                                setPreviewImage(openUrl || battle.screenshotUrl)
+                              }}
+                            />
+                          ) : (
+                            <div className={styles.noShot}>无截图</div>
+                          )}
                         </div>
 
                         {(selfCards.length > 0 || enemyCards.length > 0) && (
@@ -459,4 +470,3 @@ export default function MatchRecordsCenterPanel({
     </div>
   )
 }
-

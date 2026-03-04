@@ -42,6 +42,7 @@ import {
 } from '@/lib/communitySupabase'
 import {
   deleteUserGameRecord,
+  deleteUserMatchRecords,
   fetchAllPublicProfiles,
   fetchFollowersCount,
   fetchFollowingProfiles,
@@ -700,15 +701,19 @@ export default function ToolsPage() {
       showGlobalToast('只能删除自己上传的记录。', 'error')
       return false
     }
-    if (!window.confirm(`确认删除这条战绩记录？\nDay${record.dayIndex} · ${record.result === 'win' ? '胜利' : '失败'}`)) {
+    const meta = (record.meta && typeof record.meta === 'object') ? record.meta : {}
+    const matchId = String(meta.match_id || meta.matchId || '').trim()
+    if (!window.confirm(`确认删除整局对局记录？\n这会同时删除 Supabase 记录与 R2 截图。`)) {
       return false
     }
-    const ok = await deleteUserGameRecord(record.id, authUserId)
+    const ok = matchId
+      ? await deleteUserMatchRecords(authUserId, matchId)
+      : await deleteUserGameRecord(record.id, authUserId)
     if (!ok) {
-      showGlobalToast('删除失败，请检查 Supabase RLS 策略。', 'error')
+      showGlobalToast('删除失败，请检查服务器配置。', 'error')
       return false
     }
-    showGlobalToast('已删除该记录。', 'success')
+    showGlobalToast(matchId ? '已删除整局记录。' : '已删除该记录。', 'success')
     await loadRecordsFirstPage()
     return true
   }

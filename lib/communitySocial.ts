@@ -318,6 +318,25 @@ export async function deleteUserGameRecord(recordId: string, userId: string): Pr
   return !error
 }
 
+export async function deleteUserMatchRecords(userId: string, matchId: string): Promise<boolean> {
+  if (!userId || !matchId) return false
+  try {
+    const response = await fetch('/api/game-records/match', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        authorUserId: userId,
+        matchId,
+      }),
+    })
+    if (!response.ok) return false
+    const json = await response.json().catch(() => null)
+    return !!json?.ok
+  } catch {
+    return false
+  }
+}
+
 type UpdateMatchTitleParams = {
   userId: string
   matchId: string

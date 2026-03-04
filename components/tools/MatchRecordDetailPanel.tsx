@@ -68,6 +68,7 @@ export default function MatchRecordDetailPanel({
   const canDelete = !!currentUserId && currentUserId === record.authorUserId
   const [previewOpen, setPreviewOpen] = useState(false)
   const matchTitle = String(meta.match_title || meta.matchTitle || '').trim()
+  const hasShot = !!String(record.screenshotUrl || '').trim()
 
   return (
     <div className={styles.panel}>
@@ -83,12 +84,16 @@ export default function MatchRecordDetailPanel({
         </div>
       </div>
 
-      <RecordScreenshotImage
-        src={record.screenshotUrl}
-        alt={`${record.authorName}-detail`}
-        className={styles.image}
-        onClick={() => setPreviewOpen(true)}
-      />
+      {hasShot ? (
+        <RecordScreenshotImage
+          src={record.screenshotUrl}
+          alt={`${record.authorName}-detail`}
+          className={styles.image}
+          onClick={() => setPreviewOpen(true)}
+        />
+      ) : (
+        <div className={styles.noShot}>该小局无截图</div>
+      )}
 
       {(selfCards.length > 0 || enemyCards.length > 0) && (
         <div className={styles.lineupWrap}>
@@ -137,12 +142,12 @@ export default function MatchRecordDetailPanel({
               await onDeleteRecord(record)
             }}
           >
-            删除本条
+            删除整局
           </button>
         )}
       </div>
 
-      {previewOpen && (
+      {previewOpen && hasShot && (
         <div className={styles.previewMask} onClick={() => setPreviewOpen(false)}>
           <div className={styles.previewInner} onClick={(e) => e.stopPropagation()}>
             <button className={styles.previewClose} onClick={() => setPreviewOpen(false)}>×</button>
