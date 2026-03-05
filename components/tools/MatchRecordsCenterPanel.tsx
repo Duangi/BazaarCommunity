@@ -50,6 +50,12 @@ type MatchSummary = {
   battles: CommunityGameRecord[]
 }
 
+type DisplayBattleRow = {
+  day: number
+  result: 'win' | 'lose' | null
+  battle: CommunityGameRecord | null
+}
+
 function asObject(input: any): Record<string, any> {
   if (input && typeof input === 'object') return input as Record<string, any>
   return {}
@@ -253,6 +259,39 @@ function buildSummaries(records: CommunityGameRecord[], usersById: Record<string
   })
 }
 
+function buildDisplayRows(summary: MatchSummary): DisplayBattleRow[] {
+  const byDay = new Map<number, CommunityGameRecord>()
+  summary.battles.forEach((battle) => {
+    const day = Math.max(1, Number(battle.dayIndex || 0))
+    if (!day || byDay.has(day)) return
+    byDay.set(day, battle)
+  })
+
+  const expectedDays = Math.max(
+    0,
+    Number(summary.wins || 0) + Number(summary.losses || 0),
+    Number(summary.flowSequence.length || 0),
+    Number(summary.lastDay || 0)
+  )
+
+  if (expectedDays <= 0) {
+    return [...summary.battles].map((battle) => ({
+      day: Math.max(1, Number(battle.dayIndex || 1)),
+      result: battle.result === 'win' ? 'win' : 'lose',
+      battle,
+    }))
+  }
+
+  const rows: DisplayBattleRow[] = []
+  for (let day = expectedDays; day >= 1; day -= 1) {
+    const battle = byDay.get(day) || null
+    const flowResult = summary.flowSequence[day - 1] || null
+    const result = battle ? (battle.result === 'win' ? 'win' : 'lose') : flowResult
+    rows.push({ day, result, battle })
+  }
+  return rows
+}
+
 export default function MatchRecordsCenterPanel({
   records,
   total,
@@ -401,7 +440,30 @@ export default function MatchRecordsCenterPanel({
                     </div>
                   )}
 
-                  {summary.battles.map((battle) => {
+                  {buildDisplayRows(summary).map((row) => {
+                    const battle = row.battle
+                    const isPlaceholder = !battle
+                    const result = row.result
+                    if (isPlaceholder) {
+                      return (
+                        <div key={`${summary.key}-placeholder-${row.day}`} className={styles.battleBlock}>
+                          <div className={`${styles.battleRow} ${styles.battleRowPlaceholder}`}>
+                            <span className={styles.battleDay}>DAY {row.day}</span>
+                            <span
+                              className={`${styles.battleResult} ${
+                                result === 'win' ? styles.battleWin : result === 'lose' ? styles.battleLose : ''
+                              }`}
+                            >
+                              {result === 'win' ? '胜利' : result === 'lose' ? '失败' : '--'}
+                            </span>
+                            <span className={styles.battleTime}>--:--</span>
+                            <span className={styles.battleDuration}>--</span>
+                            <div className={styles.noShot}>无上传记录</div>
+                          </div>
+                        </div>
+                      )
+                    }
+
                     const meta = asObject(battle.meta)
                     const selfCards = getBattleCards(meta, false)
                     const enemyCards = getBattleCards(meta, true)
