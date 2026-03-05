@@ -14,6 +14,7 @@ const HERO_OPTIONS = [
   { val: 'Mak', label: '马克', avatar: heroAvatarUrl('mak') },
   { val: 'Dooley', label: '多利', avatar: heroAvatarUrl('dooley') },
   { val: 'Stelle', label: '斯黛拉', avatar: heroAvatarUrl('stelle') },
+  { val: 'Karnok', label: 'Karnok', avatar: heroAvatarUrl('karnok') },
 ] as const
 
 type MatchRecordFilters = {

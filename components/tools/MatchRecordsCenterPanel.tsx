@@ -134,16 +134,6 @@ function deriveScore(latestMeta: Record<string, any>, battles: CommunityGameReco
     }
   }
 
-  const matchDays = toNumber(latestMeta.match_days ?? latestMeta.matchDays)
-  const matchVictory = toBoolean(latestMeta.match_victory ?? latestMeta.matchVictory ?? latestMeta.victory)
-  if (matchDays != null && matchDays >= 10 && matchVictory != null) {
-    const total = Math.max(1, Math.round(matchDays))
-    if (matchVictory) {
-      return { wins: 10, losses: Math.max(0, total - 10) }
-    }
-    return { wins: Math.max(0, total - 10), losses: 10 }
-  }
-
   const wins = battles.filter((x) => x.result === 'win').length
   return { wins, losses: battles.length - wins }
 }
@@ -225,10 +215,12 @@ function buildSummaries(records: CommunityGameRecord[], usersById: Record<string
     const matchVictory = toBoolean(latestMeta.match_victory ?? latestMeta.matchVictory ?? latestMeta.victory)
     const score = deriveScore(latestMeta, sorted)
     const flowSequence = parseMatchFlow(latestMeta, sorted)
+    const exactTotalDays = Math.max(0, score.wins + score.losses)
     const inferredDay = toNumber(latestMeta.match_days ?? latestMeta.matchDays) ?? 0
     const lastDay = Math.max(
-      Math.max(...sorted.map((x) => Math.max(0, Number(x.dayIndex || 0))), 0),
-      Math.max(0, Math.round(inferredDay))
+      exactTotalDays,
+      exactTotalDays > 0 ? 0 : Math.max(...sorted.map((x) => Math.max(0, Number(x.dayIndex || 0))), 0),
+      exactTotalDays > 0 ? 0 : Math.max(0, Math.round(inferredDay))
     )
     const matchId = String(latestMeta.match_id || latestMeta.matchId || '').trim()
     const matchTitle = String(latestMeta.match_title || latestMeta.matchTitle || '').trim()

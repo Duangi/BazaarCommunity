@@ -88,7 +88,7 @@ export type CommunityGameRecord = {
   createdAt: string
 }
 
-const HEROES = ['Pygmalien', 'Jules', 'Vanessa', 'Mak', 'Dooley', 'Stelle']
+const HEROES = ['Pygmalien', 'Jules', 'Vanessa', 'Mak', 'Dooley', 'Stelle', 'Karnok']
 
 function pick<T>(arr: T[], idx: number): T {
   return arr[idx % arr.length]

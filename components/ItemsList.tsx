@@ -47,7 +47,8 @@ const HERO_COLORS: Record<string, string> = {
   'Vanessa': '#FF6B6B',
   'Mak': '#D4FF85',
   'Dooley': '#FFC048',
-  'Stelle': '#FFE74C'
+  'Stelle': '#FFE74C',
+  'Karnok': '#ffcd73',
 }
 
 const HERO_FILTER_OPTIONS = [
@@ -57,6 +58,7 @@ const HERO_FILTER_OPTIONS = [
   { val: 'Mak', label: '马克', avatar: heroAvatarUrl('mak') },
   { val: 'Dooley', label: '多利', avatar: heroAvatarUrl('dooley') },
   { val: 'Stelle', label: '斯黛拉', avatar: heroAvatarUrl('stelle') },
+  { val: 'Karnok', label: 'Karnok', avatar: heroAvatarUrl('karnok') },
 ] as const
 
 export function ItemCard({

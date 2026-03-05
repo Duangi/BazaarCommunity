@@ -162,8 +162,9 @@
   display: flex;
   flex-direction: column;
   gap: 8px;
-  max-height: none;
-  overflow: visible;
+  max-height: min(78vh, calc(100vh - 220px));
+  overflow-y: auto;
+  overscroll-behavior: contain;
 }
 
 .titleEditRow {

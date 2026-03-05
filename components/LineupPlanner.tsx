@@ -118,7 +118,7 @@ interface LineupPlannerProps {
   } | null) => void
 }
 
-const HERO_OPTIONS = ['Pygmalien', 'Jules', 'Vanessa', 'Mak', 'Dooley', 'Stelle'] as const
+const HERO_OPTIONS = ['Pygmalien', 'Jules', 'Vanessa', 'Mak', 'Dooley', 'Stelle', 'Karnok'] as const
 const DAY_PLAN_OPTIONS = ['连胜早走', '北伐阵容'] as const
 const STRENGTH_OPTIONS = ['版本强势', '中规中矩', '地沟油'] as const
 const DIFFICULTY_OPTIONS = ['容易成型', '比较困难', '极难成型'] as const
@@ -129,6 +129,7 @@ const HERO_LABELS: Record<string, string> = {
   Mak: '马克',
   Dooley: '多利',
   Stelle: '斯黛拉',
+  Karnok: 'Karnok',
 }
 
 function createCardBuild(index = 1): CardBuild {
