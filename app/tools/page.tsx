@@ -253,27 +253,35 @@ export default function ToolsPage() {
 
     setAuthUserId(session.userId)
     setAuthUsername(session.username)
-    await upsertLoginIdentity({
-      userId: session.userId,
-      username: session.username,
-      issuedAt: session.issuedAt,
-    })
-    const remoteProfile = await fetchUserProfile(session.userId)
-    if (remoteProfile?.nickname) {
-      setUserProfile({
-        nickname: remoteProfile.nickname,
-        useBilibili: remoteProfile.useBilibili,
-        bilibiliUid: remoteProfile.bilibiliUid || '',
-        mainHeroes: remoteProfile.mainHeroes || ['Pygmalien'],
+    try {
+      await upsertLoginIdentity({
+        userId: session.userId,
+        username: session.username,
+        issuedAt: session.issuedAt,
       })
-    } else {
+      const remoteProfile = await fetchUserProfile(session.userId)
+      if (remoteProfile?.nickname) {
+        setUserProfile({
+          nickname: remoteProfile.nickname,
+          useBilibili: remoteProfile.useBilibili,
+          bilibiliUid: remoteProfile.bilibiliUid || '',
+          mainHeroes: remoteProfile.mainHeroes || ['Pygmalien'],
+        })
+      } else {
+        setUserProfile((prev) => ({
+          ...prev,
+          nickname: prev.nickname.trim() || session.username,
+        }))
+      }
+      await refreshFollowingState(session.userId)
+      await loadPublicUsers()
+    } catch (error) {
+      console.error('登录后同步用户信息失败:', error)
       setUserProfile((prev) => ({
         ...prev,
         nickname: prev.nickname.trim() || session.username,
       }))
     }
-    await refreshFollowingState(session.userId)
-    await loadPublicUsers()
   }
 
   const handleLoginWithKey = async (rawKey: string): Promise<{ ok: boolean; message: string }> => {
@@ -297,11 +305,18 @@ export default function ToolsPage() {
     clearCommunityLoginRawKeyFromLocal()
   }
 
-  const loadCommunityFirstPage = async () => {
+  const loadCommunityFirstPage = async (nextFilters: ExploreFilters = exploreFilters) => {
     setCommunityLoading(true)
     try {
       const [lineupsPage, ratingsPage] = await Promise.all([
-        withTimeout(fetchCommunityLineupsPage({ page: FIRST_PAGE, pageSize: PAGE_SIZE }), COMMUNITY_TIMEOUT_MS),
+        withTimeout(
+          fetchCommunityLineupsPage({
+            page: FIRST_PAGE,
+            pageSize: PAGE_SIZE,
+            hero: nextFilters.hero || undefined,
+          }),
+          COMMUNITY_TIMEOUT_MS
+        ),
         withTimeout(fetchCommunityRatingsPage({ page: FIRST_PAGE, pageSize: PAGE_SIZE }), COMMUNITY_TIMEOUT_MS),
       ])
       setCommunityBuilds(lineupsPage.items || [])
@@ -374,13 +389,24 @@ export default function ToolsPage() {
     setLoadingMoreLineups(true)
     try {
       const nextPage = lineupPage + 1
-      const result = await fetchCommunityLineupsPage({ page: nextPage, pageSize: PAGE_SIZE })
+      const result = await fetchCommunityLineupsPage({
+        page: nextPage,
+        pageSize: PAGE_SIZE,
+        hero: exploreFilters.hero || undefined,
+      })
       setCommunityBuilds((prev) => mergeById(prev, result.items))
       setLineupPage(result.page)
       setLineupTotal(result.total)
       setHasMoreLineups(result.hasMore)
     } finally {
       setLoadingMoreLineups(false)
+    }
+  }
+
+  const handleChangeExploreFilters = (next: ExploreFilters) => {
+    setExploreFilters(next)
+    if (appMode === 'explore' && next.hero !== exploreFilters.hero) {
+      void loadCommunityFirstPage(next)
     }
   }
 
@@ -476,7 +502,7 @@ export default function ToolsPage() {
     } finally {
       setLoading(false)
     }
-    loadCommunityFirstPage()
+    loadCommunityFirstPage(defaultExploreFilters)
     loadPublicUsers()
   }
 
@@ -487,6 +513,34 @@ export default function ToolsPage() {
   useEffect(() => {
     let mounted = true
     ;(async () => {
+      let urlSessionApplied = false
+      if (typeof window !== 'undefined') {
+        const url = new URL(window.location.href)
+        const urlAuthKey = (url.searchParams.get('authkey') || url.searchParams.get('authKey') || '').trim()
+        if (urlAuthKey) {
+          const decoded = decodeGameLoginKey(urlAuthKey)
+          url.searchParams.delete('authkey')
+          url.searchParams.delete('authKey')
+          const nextQuery = url.searchParams.toString()
+          const nextUrl = `${url.pathname}${nextQuery ? `?${nextQuery}` : ''}${url.hash || ''}`
+          window.history.replaceState({}, '', nextUrl)
+
+          if (decoded) {
+            saveCommunityLoginRawKeyToLocal(decoded.key)
+            await applyLoginSession({
+              key: decoded.key,
+              userId: decoded.accountId,
+              username: decoded.username,
+              issuedAt: decoded.issuedAt,
+            })
+            urlSessionApplied = true
+            showGlobalToast(`已通过链接自动登录：${decoded.username}`, 'success')
+          } else {
+            showGlobalToast('链接中的 authkey 无效', 'error')
+          }
+        }
+      }
+
       const [profile, reactions, favorites, favoriteRatings, savedSession] = await Promise.all([
         loadCommunityProfileFromDb(),
         loadCommunityReactionsFromDb(),
@@ -499,7 +553,7 @@ export default function ToolsPage() {
       if (reactions) setUserReactions(reactions)
       if (favorites) setFavoriteLineupIds(favorites)
       if (favoriteRatings) setFavoriteRatingIds(favoriteRatings)
-      if (savedSession?.key) {
+      if (!urlSessionApplied && savedSession?.key) {
         const decoded = decodeGameLoginKey(savedSession.key)
         if (decoded) {
           await applyLoginSession({
@@ -522,7 +576,7 @@ export default function ToolsPage() {
             await saveCommunityLoginSessionToDb(null)
           }
         }
-      } else {
+      } else if (!urlSessionApplied) {
         const rawFallback = loadCommunityLoginRawKeyFromLocal()
         const decodedFallback = rawFallback ? decodeGameLoginKey(rawFallback) : null
         if (decodedFallback) {
@@ -894,15 +948,17 @@ export default function ToolsPage() {
                   filters={exploreFilters}
                   canUseFollowingFilter={!!authUserId}
                   seasonOptions={seasonOptions}
-                  onChangeFilters={setExploreFilters}
+                  onChangeFilters={handleChangeExploreFilters}
                   lookupCard={lookupCardId ? items.find((it) => it.id === lookupCardId) || null : null}
                   onClearLookup={() => setLookupCardId(null)}
                   onResetAll={() => {
-                    setExploreFilters((prev) => ({
+                    const next = {
                       ...defaultExploreFilters,
-                      followingOnly: prev.followingOnly && !!authUserId,
+                      followingOnly: exploreFilters.followingOnly && !!authUserId,
                       season: '',
-                    }))
+                    } as ExploreFilters
+                    setExploreFilters(next)
+                    void loadCommunityFirstPage(next)
                     setLookupCardId(null)
                   }}
                   onSelectItem={setSelectedItem}

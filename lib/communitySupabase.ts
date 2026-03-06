@@ -24,6 +24,7 @@ type TargetType = 'lineup' | 'rating'
 type FetchPageParams = {
   page?: number
   pageSize?: number
+  hero?: string
 }
 
 type LineupSnapshot = {
@@ -161,7 +162,8 @@ function mapRowToRating(row: any): CommunityRatingShare {
 async function fetchLineupSummaryRows(
   client: SupabaseClient,
   from: number,
-  to: number
+  to: number,
+  params: FetchPageParams = {}
 ): Promise<{ data: any[] | null; count: number | null; error: any }> {
   const legacyColumns = [
     'uuid',
@@ -188,33 +190,41 @@ async function fetchLineupSummaryRows(
   const withAuthorUserColumns = `${baseColumns},author_user_id`
   const withCount = { count: 'exact' as const }
 
-  const queryWithAuthor = await client
+  let queryWithAuthor = client
     .from('community_lineups')
     .select(withAuthorUserColumns, withCount)
     .order('created_at', { ascending: false })
     .range(from, to)
-  if (!queryWithAuthor.error) return queryWithAuthor
-  if (!isMissingColumnError(queryWithAuthor.error, 'author_user_id')) {
-    if (!isMissingColumnError(queryWithAuthor.error, 'season')) return queryWithAuthor
-    const withoutSeasonWithAuthor = await client
+  if (params.hero) queryWithAuthor = queryWithAuthor.eq('hero', params.hero)
+  const queryWithAuthorResult = await queryWithAuthor
+  if (!queryWithAuthorResult.error) return queryWithAuthorResult
+  if (!isMissingColumnError(queryWithAuthorResult.error, 'author_user_id')) {
+    if (!isMissingColumnError(queryWithAuthorResult.error, 'season')) return queryWithAuthorResult
+    let withoutSeasonWithAuthor = client
       .from('community_lineups')
       .select(`${legacyColumns},author_user_id`, withCount)
       .order('created_at', { ascending: false })
       .range(from, to)
-    if (!withoutSeasonWithAuthor.error) return withoutSeasonWithAuthor
-    if (!isMissingColumnError(withoutSeasonWithAuthor.error, 'author_user_id')) return withoutSeasonWithAuthor
-    return client
+    if (params.hero) withoutSeasonWithAuthor = withoutSeasonWithAuthor.eq('hero', params.hero)
+    const withoutSeasonWithAuthorResult = await withoutSeasonWithAuthor
+    if (!withoutSeasonWithAuthorResult.error) return withoutSeasonWithAuthorResult
+    if (!isMissingColumnError(withoutSeasonWithAuthorResult.error, 'author_user_id')) return withoutSeasonWithAuthorResult
+    let legacyQuery = client
       .from('community_lineups')
       .select(legacyColumns, withCount)
       .order('created_at', { ascending: false })
       .range(from, to)
+    if (params.hero) legacyQuery = legacyQuery.eq('hero', params.hero)
+    return legacyQuery
   }
 
-  return client
+  let fallbackQuery = client
     .from('community_lineups')
     .select(baseColumns, withCount)
     .order('created_at', { ascending: false })
     .range(from, to)
+  if (params.hero) fallbackQuery = fallbackQuery.eq('hero', params.hero)
+  return fallbackQuery
 }
 
 async function fetchRatingSummaryRows(
@@ -269,7 +279,7 @@ export async function fetchCommunityLineupsPage(params: FetchPageParams = {}): P
   const { page, pageSize, from, to } = getPage(params.page, params.pageSize)
   if (!client) return { items: [], total: 0, page, pageSize, hasMore: false }
 
-  const { data, error, count } = await fetchLineupSummaryRows(client, from, to)
+  const { data, error, count } = await fetchLineupSummaryRows(client, from, to, params)
   if (error || !Array.isArray(data)) {
     return { items: [], total: 0, page, pageSize, hasMore: false }
   }
