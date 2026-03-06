@@ -10,6 +10,7 @@ const USER_REACTIONS_KEY = 'community_user_reactions_v1'
 const FAVORITE_LINEUPS_KEY = 'community_favorite_lineups_v1'
 const FAVORITE_RATINGS_KEY = 'community_favorite_ratings_v1'
 const LOGIN_SESSION_KEY = 'community_login_session_v1'
+const LOGIN_RAW_KEY = 'community_login_raw_key_v1'
 
 function readLocal<T = any>(key: string): T | null {
   try {
@@ -220,6 +221,35 @@ export async function saveCommunityLoginSessionToDb(session: CommunityLoginSessi
   try {
     const db = await getDb()
     await db.put(STORE, session, LOGIN_SESSION_KEY)
+  } catch {
+    // ignore
+  }
+}
+
+export function loadCommunityLoginRawKeyFromLocal(): string {
+  try {
+    if (typeof window === 'undefined') return ''
+    return (window.localStorage.getItem(LOGIN_RAW_KEY) || '').trim()
+  } catch {
+    return ''
+  }
+}
+
+export function saveCommunityLoginRawKeyToLocal(rawKey: string): void {
+  try {
+    if (typeof window === 'undefined') return
+    const key = String(rawKey || '').trim()
+    if (!key) return
+    window.localStorage.setItem(LOGIN_RAW_KEY, key)
+  } catch {
+    // ignore
+  }
+}
+
+export function clearCommunityLoginRawKeyFromLocal(): void {
+  try {
+    if (typeof window === 'undefined') return
+    window.localStorage.removeItem(LOGIN_RAW_KEY)
   } catch {
     // ignore
   }

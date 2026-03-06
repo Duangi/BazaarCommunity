@@ -16,15 +16,18 @@ import MatchRecordDetailPanel from '@/components/tools/MatchRecordDetailPanel'
 import { CommunityBuild, CommunityGameRecord, CommunityPublicUser, CommunityRatingShare } from '@/lib/communityBuilds'
 import { itemsDbUrl, skillsDbUrl } from '@/lib/cdn'
 import {
+  clearCommunityLoginRawKeyFromLocal,
   CommunityLoginSession,
   CommunityUserProfile,
   CommunityUserReactions,
+  loadCommunityLoginRawKeyFromLocal,
   loadCommunityLoginSessionFromDb,
   loadCommunityProfileFromDb,
   loadCommunityProfileFromLocal,
   loadCommunityReactionsFromDb,
   loadFavoriteLineupIdsFromDb,
   loadFavoriteRatingIdsFromDb,
+  saveCommunityLoginRawKeyToLocal,
   saveCommunityLoginSessionToDb,
   saveCommunityProfileToDb,
   saveCommunityReactionsToDb,
@@ -207,6 +210,7 @@ export default function ToolsPage() {
   const [draggingResizer, setDraggingResizer] = useState<'left' | 'right' | null>(null)
   const mainContentRef = useRef<HTMLDivElement | null>(null)
   const resizeStartRef = useRef({ x: 0, left: 20, right: 25 })
+  const recordsFetchSeqRef = useRef(0)
 
   const seasonOptions = getSeasonOptions(seasonRange)
   const usersById = useMemo(
@@ -284,11 +288,13 @@ export default function ToolsPage() {
       issuedAt: decoded.issuedAt,
     }
     await applyLoginSession(session)
+    saveCommunityLoginRawKeyToLocal(decoded.key)
     return { ok: true, message: `登录成功：${decoded.username}` }
   }
 
   const handleLogout = async () => {
     await applyLoginSession(null)
+    clearCommunityLoginRawKeyFromLocal()
   }
 
   const loadCommunityFirstPage = async () => {
@@ -321,21 +327,26 @@ export default function ToolsPage() {
     }
   }
 
-  const loadRecordsFirstPage = async () => {
+  const loadRecordsFirstPage = async (
+    nextFilters: MatchRecordFilters = recordFilters,
+    nextAuthUserId: string = authUserId
+  ) => {
+    const requestSeq = ++recordsFetchSeqRef.current
     setRecordsLoading(true)
     try {
       const uploaderUserId =
-        recordFilters.onlyMine && authUserId
-          ? authUserId
-          : (recordFilters.uploaderUserId || undefined)
+        nextFilters.onlyMine && nextAuthUserId
+          ? nextAuthUserId
+          : (nextFilters.uploaderUserId || undefined)
       const page = await fetchGameRecordsPage({
         page: FIRST_PAGE,
         pageSize: PAGE_SIZE,
-        viewerUserId: authUserId || undefined,
-        onlyFollowing: recordFilters.onlyFollowing,
-        uploaderMainHero: recordFilters.uploaderMainHero || undefined,
+        viewerUserId: nextAuthUserId || undefined,
+        onlyFollowing: nextFilters.onlyFollowing,
+        uploaderMainHero: nextFilters.uploaderMainHero || undefined,
         uploaderUserId,
       })
+      if (requestSeq !== recordsFetchSeqRef.current) return
       setRecords(page.items || [])
       setRecordsPage(page.page)
       setRecordsTotal(page.total)
@@ -345,6 +356,7 @@ export default function ToolsPage() {
         return page.items.find((x) => x.id === prev.id) || page.items[0] || null
       })
     } catch (error) {
+      if (requestSeq !== recordsFetchSeqRef.current) return
       console.error('加载对局记录失败:', error)
       setRecords([])
       setRecordsPage(FIRST_PAGE)
@@ -352,6 +364,7 @@ export default function ToolsPage() {
       setRecordsHasMore(false)
       setSelectedRecord(null)
     } finally {
+      if (requestSeq !== recordsFetchSeqRef.current) return
       setRecordsLoading(false)
     }
   }
@@ -409,6 +422,13 @@ export default function ToolsPage() {
       setRecordsHasMore(page.hasMore)
     } finally {
       setRecordsLoadingMore(false)
+    }
+  }
+
+  const handleChangeRecordFilters = (next: MatchRecordFilters) => {
+    setRecordFilters(next)
+    if (appMode === 'records') {
+      void loadRecordsFirstPage(next, authUserId)
     }
   }
 
@@ -489,7 +509,29 @@ export default function ToolsPage() {
             issuedAt: decoded.issuedAt,
           })
         } else {
-          await saveCommunityLoginSessionToDb(null)
+          const rawFallback = loadCommunityLoginRawKeyFromLocal()
+          const decodedFallback = rawFallback ? decodeGameLoginKey(rawFallback) : null
+          if (decodedFallback) {
+            await applyLoginSession({
+              key: decodedFallback.key,
+              userId: decodedFallback.accountId,
+              username: decodedFallback.username,
+              issuedAt: decodedFallback.issuedAt,
+            })
+          } else {
+            await saveCommunityLoginSessionToDb(null)
+          }
+        }
+      } else {
+        const rawFallback = loadCommunityLoginRawKeyFromLocal()
+        const decodedFallback = rawFallback ? decodeGameLoginKey(rawFallback) : null
+        if (decodedFallback) {
+          await applyLoginSession({
+            key: decodedFallback.key,
+            userId: decodedFallback.accountId,
+            username: decodedFallback.username,
+            issuedAt: decodedFallback.issuedAt,
+          })
         }
       }
     })()
@@ -516,8 +558,8 @@ export default function ToolsPage() {
 
   useEffect(() => {
     if (appMode !== 'records') return
-    loadRecordsFirstPage()
-  }, [appMode, recordFilters.onlyFollowing, recordFilters.onlyMine, recordFilters.uploaderMainHero, recordFilters.uploaderUserId, authUserId])
+    void loadRecordsFirstPage(recordFilters, authUserId)
+  }, [appMode, authUserId])
 
   useEffect(() => {
     if (!globalToast) return
@@ -880,7 +922,7 @@ export default function ToolsPage() {
                   allUsers={allPublicUsers}
                   followingUserIds={followingUserIds}
                   recordFilters={recordFilters}
-                  onChangeRecordFilters={setRecordFilters}
+                  onChangeRecordFilters={handleChangeRecordFilters}
                   onToggleFollowUser={handleToggleFollow}
                   onSelectItem={setSelectedItem}
                 />

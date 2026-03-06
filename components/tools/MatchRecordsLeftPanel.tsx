@@ -83,8 +83,10 @@ export default function MatchRecordsLeftPanel({
             <input
               type="checkbox"
               checked={recordFilters.onlyFollowing}
+              disabled={!currentUserId}
               onChange={(e) => onChangeRecordFilters({ ...recordFilters, onlyFollowing: e.target.checked })}
             />
+            <span className={styles.checkboxMark} aria-hidden="true" />
             <span>仅关注玩家</span>
           </label>
         </div>
@@ -96,6 +98,7 @@ export default function MatchRecordsLeftPanel({
               disabled={!currentUserId}
               onChange={(e) => onChangeRecordFilters({ ...recordFilters, onlyMine: e.target.checked })}
             />
+            <span className={styles.checkboxMark} aria-hidden="true" />
             <span>仅我上传</span>
           </label>
         </div>
