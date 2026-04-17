@@ -1,7 +1,7 @@
 'use client'
 
 import { useEffect, useState } from 'react'
-import { resolveItemImageUrl, type ImageItemLike } from '@/lib/itemImage'
+import { resolveItemImageCandidates, type ImageItemLike } from '@/lib/itemImage'
 
 interface ItemImageProps {
   item: ImageItemLike
@@ -18,14 +18,15 @@ export default function ItemImage({
   fallbackClassName,
   loading = 'lazy',
 }: ItemImageProps) {
-  const [failed, setFailed] = useState(false)
-  const src = resolveItemImageUrl(item)
+  const candidates = resolveItemImageCandidates(item)
+  const [index, setIndex] = useState(0)
+  const src = candidates[index] || ''
 
   useEffect(() => {
-    setFailed(false)
-  }, [src, item.id, item.art_key])
+    setIndex(0)
+  }, [item.id, item.art_key, candidates.join('|')])
 
-  if (!src || failed) {
+  if (!src) {
     return <div className={fallbackClassName}>🎴</div>
   }
 
@@ -35,7 +36,7 @@ export default function ItemImage({
       alt={alt}
       className={className}
       loading={loading}
-      onError={() => setFailed(true)}
+      onError={() => setIndex((prev) => prev + 1)}
     />
   )
 }

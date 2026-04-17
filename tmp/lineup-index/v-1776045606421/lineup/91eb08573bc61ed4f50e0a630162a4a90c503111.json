@@ -1,0 +1,30 @@
+{
+  "layout_signature": "91eb08573bc61ed4f50e0a630162a4a90c503111",
+  "combo_signature": "ae287675badc9015a74be84017f80990b86e6ed0",
+  "cards": [
+    {
+      "slot_index": 0,
+      "template_id": "bf90b501-0d87-49ae-a82a-5941db70179c",
+      "tier": 3,
+      "enchant_code": "Turbo"
+    },
+    {
+      "slot_index": 3,
+      "template_id": "3132efea-ee79-4b99-b380-d0df3bf1df88",
+      "tier": 3,
+      "enchant_code": "Fiery"
+    },
+    {
+      "slot_index": 6,
+      "template_id": "9a099710-0ecf-4587-98ba-96c1a6630f60",
+      "tier": 3,
+      "enchant_code": "Shielded"
+    },
+    {
+      "slot_index": 8,
+      "template_id": "ebbde8ce-5694-4d93-b54a-c2914dd01a9b",
+      "tier": 2,
+      "enchant_code": null
+    }
+  ]
+}

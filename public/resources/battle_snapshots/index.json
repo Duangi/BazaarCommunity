@@ -1,0 +1,19 @@
+{
+  "runs": [
+    {
+      "runId": "60c209e0-fc55-4ba3-91ee-c0d8fadf8e35",
+      "basePath": "/resources/battle_snapshots/60c209e0-fc55-4ba3-91ee-c0d8fadf8e35",
+      "files": {
+        "meta": "meta.json",
+        "status": "status.json",
+        "checkpoint": "checkpoint.json",
+        "events": "events.ndjson",
+        "decisionChain": "decision_chain.ndjson",
+        "pvpBattles": "pvp_battles.ndjson"
+      }
+    }
+  ],
+  "globalFiles": {
+    "pvpBattles": "/resources/battle_snapshots/pvp_battles.ndjson"
+  }
+}

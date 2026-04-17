@@ -1,0 +1,48 @@
+{
+  "layout_signature": "668e3f9fc217a950dcadeb778816dcfb9596738c",
+  "combo_signature": "688373bcf7d8dbcb26e1a65bd0676860aeb44cc8",
+  "cards": [
+    {
+      "slot_index": 0,
+      "template_id": "8f6eebd6-db14-48f8-9407-5962772e7dec",
+      "tier": 3,
+      "enchant_code": null
+    },
+    {
+      "slot_index": 2,
+      "template_id": "f6f7b04f-9e4c-4107-af98-5288e8c568fd",
+      "tier": 3,
+      "enchant_code": null
+    },
+    {
+      "slot_index": 3,
+      "template_id": "19199531-1aff-47ce-bdfc-1188cb3efec2",
+      "tier": 3,
+      "enchant_code": null
+    },
+    {
+      "slot_index": 4,
+      "template_id": "f42936ef-6efd-478a-9ed2-fd759df65f97",
+      "tier": 2,
+      "enchant_code": "Fiery"
+    },
+    {
+      "slot_index": 5,
+      "template_id": "cf3a7956-f400-42e1-bae1-d3678d76fd01",
+      "tier": 3,
+      "enchant_code": "Deadly"
+    },
+    {
+      "slot_index": 6,
+      "template_id": "bef0a78b-b3b4-4e7b-85d3-7c42aca6379f",
+      "tier": 3,
+      "enchant_code": "Heavy"
+    },
+    {
+      "slot_index": 8,
+      "template_id": "6b49b81d-aac0-4fb6-95f4-5bfc32a19dd3",
+      "tier": 3,
+      "enchant_code": "Toxic"
+    }
+  ]
+}

@@ -1,0 +1,39 @@
+{
+  "generatedAt": "2026-04-16T03:39:46.735Z",
+  "source": {
+    "type": "file",
+    "value": "/Users/duang/Downloads/dump.zh-CN.json"
+  },
+  "detected": {
+    "rawItems": 1036,
+    "rawSkills": 415,
+    "normalizedItems": 1036,
+    "normalizedSkills": 415
+  },
+  "compareWithExisting": {
+    "items": {
+      "existingCount": 1072,
+      "nextCount": 1036,
+      "overlap": 0,
+      "onlyExisting": 1072,
+      "onlyNext": 1036
+    },
+    "skills": {
+      "existingCount": 478,
+      "nextCount": 415,
+      "overlap": 0,
+      "onlyExisting": 478,
+      "onlyNext": 415
+    }
+  },
+  "mergedCooldownFromLegacy": {
+    "itemMerged": 812,
+    "skillMerged": 0
+  },
+  "imageConfig": {
+    "imageBase": "https://s.bazaardb.gg/v1",
+    "imageVersion": "z12.3",
+    "imageSize": 256,
+    "imageQuery": "v=6"
+  }
+}

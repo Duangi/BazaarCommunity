@@ -1,0 +1,39 @@
+{
+  "template_id": "3868bcee-4463-4c34-9a9b-b1ab1fa49260",
+  "count": 3,
+  "records": [
+    {
+      "template_id": "3868bcee-4463-4c34-9a9b-b1ab1fa49260",
+      "combo_signature": "8deecd89374dc2d5ac00a03dee344dd5a2634da8",
+      "layout_signature": "94ac3bbca1d94d2db2fd1c99bf7b8e03676c9917",
+      "hero": "Jules",
+      "day": 7,
+      "rating_bucket": "600-700",
+      "matches": 1,
+      "wins": 0,
+      "win_rate": 0
+    },
+    {
+      "template_id": "3868bcee-4463-4c34-9a9b-b1ab1fa49260",
+      "combo_signature": "9501489fc5a49ff0d4cd55ec927c9ef425c54823",
+      "layout_signature": "5c32ccb3b75ac60891b3578d56cd26427022a2e7",
+      "hero": "Pygmalien",
+      "day": 2,
+      "rating_bucket": "<500",
+      "matches": 1,
+      "wins": 0,
+      "win_rate": 0
+    },
+    {
+      "template_id": "3868bcee-4463-4c34-9a9b-b1ab1fa49260",
+      "combo_signature": "bcbaec738b87afa40f3a1f3e4a05ca96fd0d827e",
+      "layout_signature": "edadec747ff261b7e0cf1f25ab94c13c91165dfb",
+      "hero": "Pygmalien",
+      "day": 2,
+      "rating_bucket": "800-900",
+      "matches": 1,
+      "wins": 0,
+      "win_rate": 0
+    }
+  ]
+}

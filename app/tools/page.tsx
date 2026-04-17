@@ -16,18 +16,15 @@ import MatchRecordDetailPanel from '@/components/tools/MatchRecordDetailPanel'
 import { CommunityBuild, CommunityGameRecord, CommunityPublicUser, CommunityRatingShare } from '@/lib/communityBuilds'
 import { itemsDbUrl, skillsDbUrl } from '@/lib/cdn'
 import {
-  clearCommunityLoginRawKeyFromLocal,
   CommunityLoginSession,
   CommunityUserProfile,
   CommunityUserReactions,
-  loadCommunityLoginRawKeyFromLocal,
   loadCommunityLoginSessionFromDb,
   loadCommunityProfileFromDb,
   loadCommunityProfileFromLocal,
   loadCommunityReactionsFromDb,
   loadFavoriteLineupIdsFromDb,
   loadFavoriteRatingIdsFromDb,
-  saveCommunityLoginRawKeyToLocal,
   saveCommunityLoginSessionToDb,
   saveCommunityProfileToDb,
   saveCommunityReactionsToDb,
@@ -58,7 +55,7 @@ import {
   upsertLoginIdentity,
   upsertUserProfile,
 } from '@/lib/communitySocial'
-import { decodeGameLoginKey } from '@/lib/gameLoginKey'
+import { enrichItemsWithResolvedText, loadResolvedTextMap } from '@/lib/itemDataEnhancer'
 import styles from './tools.module.css'
 
 type ExploreFilters = {
@@ -90,8 +87,8 @@ type SeasonRangeConfig = {
 
 const DEFAULT_SEASON_RANGE: SeasonRangeConfig = {
   minSeason: 11,
-  maxSeason: 12,
-  defaultSeason: 12,
+  maxSeason: 13,
+  defaultSeason: 13,
 }
 
 const defaultExploreFilters: ExploreFilters = {
@@ -150,6 +147,7 @@ function getSeasonOptions(config: SeasonRangeConfig): number[] {
 }
 
 export default function ToolsPage() {
+  const [allItems, setAllItems] = useState<any[]>([])
   const [items, setItems] = useState<any[]>([])
   const [skills, setSkills] = useState<any[]>([])
   const [loading, setLoading] = useState(true)
@@ -216,6 +214,15 @@ export default function ToolsPage() {
   const usersById = useMemo(
     () => Object.fromEntries(allPublicUsers.map((u) => [u.userId, u])),
     [allPublicUsers]
+  )
+  const lookupCardResolved = useMemo(
+    () =>
+      lookupCardId
+        ? items.find((it) => it.id === lookupCardId) ||
+          skills.find((it) => it.id === lookupCardId) ||
+          null
+        : null,
+    [lookupCardId, items, skills]
   )
   const showGlobalToast = (text: string, tone: 'success' | 'error' | 'info' = 'info') => {
     setGlobalToast({ text, tone })
@@ -284,25 +291,23 @@ export default function ToolsPage() {
     }
   }
 
-  const handleLoginWithKey = async (rawKey: string): Promise<{ ok: boolean; message: string }> => {
-    const decoded = decodeGameLoginKey(rawKey)
-    if (!decoded) {
-      return { ok: false, message: '密钥格式不正确或无法解密' }
+  const handleLoginWithUsername = async (rawUsername: string): Promise<{ ok: boolean; message: string }> => {
+    const username = String(rawUsername || '').trim()
+    if (!username) {
+      return { ok: false, message: '用户名不能为空' }
     }
     const session: CommunityLoginSession = {
-      key: decoded.key,
-      userId: decoded.accountId,
-      username: decoded.username,
-      issuedAt: decoded.issuedAt,
+      key: '',
+      userId: username.toLowerCase(),
+      username,
+      issuedAt: Date.now(),
     }
     await applyLoginSession(session)
-    saveCommunityLoginRawKeyToLocal(decoded.key)
-    return { ok: true, message: `登录成功：${decoded.username}` }
+    return { ok: true, message: `登录成功：${username}` }
   }
 
   const handleLogout = async () => {
     await applyLoginSession(null)
-    clearCommunityLoginRawKeyFromLocal()
   }
 
   const loadCommunityFirstPage = async (nextFilters: ExploreFilters = exploreFilters) => {
@@ -475,10 +480,11 @@ export default function ToolsPage() {
       }
 
       const isValidTranslated = (item: any) => hasChineseName(item) && !hasUntranslatedDesc(item)
-      const [itemsResponse, skillsResponse, seasonResponse] = await Promise.all([
+      const [itemsResponse, skillsResponse, seasonResponse, resolvedTextMap] = await Promise.all([
         fetch(itemsDbUrl()),
         fetch(skillsDbUrl()),
         fetch('/config/season_range.json').catch(() => null),
+        loadResolvedTextMap(),
       ])
       const [itemsData, skillsData, seasonData] = await Promise.all([
         itemsResponse.json(),
@@ -491,12 +497,16 @@ export default function ToolsPage() {
       setPublishSeason(range.defaultSeason)
       setExploreFilters((prev) => ({ ...prev, season: '' }))
 
-      const filteredItems = Array.isArray(itemsData) ? itemsData.filter(isValidTranslated) : []
-      const filteredSkills = Array.isArray(skillsData) ? skillsData.filter(isValidTranslated) : []
+      const normalizedItems = enrichItemsWithResolvedText(Array.isArray(itemsData) ? itemsData : [], resolvedTextMap)
+      const normalizedSkills = enrichItemsWithResolvedText(Array.isArray(skillsData) ? skillsData : [], resolvedTextMap)
+      const filteredItems = normalizedItems.filter(isValidTranslated)
+      const filteredSkills = normalizedSkills.filter(isValidTranslated)
+      setAllItems(normalizedItems)
       setItems(filteredItems)
       setSkills(filteredSkills)
     } catch (error) {
       console.error('加载数据失败:', error)
+      setAllItems([])
       setItems([])
       setSkills([])
     } finally {
@@ -513,34 +523,6 @@ export default function ToolsPage() {
   useEffect(() => {
     let mounted = true
     ;(async () => {
-      let urlSessionApplied = false
-      if (typeof window !== 'undefined') {
-        const url = new URL(window.location.href)
-        const urlAuthKey = (url.searchParams.get('authkey') || url.searchParams.get('authKey') || '').trim()
-        if (urlAuthKey) {
-          const decoded = decodeGameLoginKey(urlAuthKey)
-          url.searchParams.delete('authkey')
-          url.searchParams.delete('authKey')
-          const nextQuery = url.searchParams.toString()
-          const nextUrl = `${url.pathname}${nextQuery ? `?${nextQuery}` : ''}${url.hash || ''}`
-          window.history.replaceState({}, '', nextUrl)
-
-          if (decoded) {
-            saveCommunityLoginRawKeyToLocal(decoded.key)
-            await applyLoginSession({
-              key: decoded.key,
-              userId: decoded.accountId,
-              username: decoded.username,
-              issuedAt: decoded.issuedAt,
-            })
-            urlSessionApplied = true
-            showGlobalToast(`已通过链接自动登录：${decoded.username}`, 'success')
-          } else {
-            showGlobalToast('链接中的 authkey 无效', 'error')
-          }
-        }
-      }
-
       const [profile, reactions, favorites, favoriteRatings, savedSession] = await Promise.all([
         loadCommunityProfileFromDb(),
         loadCommunityReactionsFromDb(),
@@ -553,40 +535,13 @@ export default function ToolsPage() {
       if (reactions) setUserReactions(reactions)
       if (favorites) setFavoriteLineupIds(favorites)
       if (favoriteRatings) setFavoriteRatingIds(favoriteRatings)
-      if (!urlSessionApplied && savedSession?.key) {
-        const decoded = decodeGameLoginKey(savedSession.key)
-        if (decoded) {
-          await applyLoginSession({
-            key: decoded.key,
-            userId: decoded.accountId,
-            username: decoded.username,
-            issuedAt: decoded.issuedAt,
-          })
-        } else {
-          const rawFallback = loadCommunityLoginRawKeyFromLocal()
-          const decodedFallback = rawFallback ? decodeGameLoginKey(rawFallback) : null
-          if (decodedFallback) {
-            await applyLoginSession({
-              key: decodedFallback.key,
-              userId: decodedFallback.accountId,
-              username: decodedFallback.username,
-              issuedAt: decodedFallback.issuedAt,
-            })
-          } else {
-            await saveCommunityLoginSessionToDb(null)
-          }
-        }
-      } else if (!urlSessionApplied) {
-        const rawFallback = loadCommunityLoginRawKeyFromLocal()
-        const decodedFallback = rawFallback ? decodeGameLoginKey(rawFallback) : null
-        if (decodedFallback) {
-          await applyLoginSession({
-            key: decodedFallback.key,
-            userId: decodedFallback.accountId,
-            username: decodedFallback.username,
-            issuedAt: decodedFallback.issuedAt,
-          })
-        }
+      if (savedSession?.userId) {
+        await applyLoginSession({
+          key: savedSession.key || '',
+          userId: savedSession.userId,
+          username: savedSession.username || savedSession.userId,
+          issuedAt: Number(savedSession.issuedAt || Date.now()),
+        })
       }
     })()
     return () => {
@@ -767,7 +722,7 @@ export default function ToolsPage() {
 
   const handleToggleFollow = async (targetUserId: string, enabled: boolean) => {
     if (!authUserId) {
-      showGlobalToast('请先密钥登录后再关注作者。', 'error')
+      showGlobalToast('请先登录后再关注作者。', 'error')
       return
     }
     if (targetUserId === authUserId) {
@@ -888,7 +843,7 @@ export default function ToolsPage() {
             <CommunityAuthBar
               isAuthed={!!authUserId}
               nickname={userProfile.nickname || authUsername}
-              onLoginWithKey={handleLoginWithKey}
+              onLoginWithUsername={handleLoginWithUsername}
               onSignOut={handleLogout}
             />
             <button
@@ -949,7 +904,7 @@ export default function ToolsPage() {
                   canUseFollowingFilter={!!authUserId}
                   seasonOptions={seasonOptions}
                   onChangeFilters={handleChangeExploreFilters}
-                  lookupCard={lookupCardId ? items.find((it) => it.id === lookupCardId) || null : null}
+                  lookupCard={lookupCardResolved}
                   onClearLookup={() => setLookupCardId(null)}
                   onResetAll={() => {
                     const next = {
@@ -1019,9 +974,10 @@ export default function ToolsPage() {
                   ratingsTotal={ratingTotal}
                   hasMoreLineups={hasMoreLineups}
                   hasMoreRatings={hasMoreRatings}
-                  itemsById={Object.fromEntries(items.map((it) => [it.id, it]))}
+                  itemsById={Object.fromEntries(allItems.map((it) => [it.id, it]))}
                   filters={exploreFilters}
                   lookupCardId={lookupCardId}
+                  lookupCard={lookupCardResolved}
                   focusCardId={selectedItem?.id || null}
                   userReactions={userReactions}
                   favoriteLineupIds={favoriteLineupIds}

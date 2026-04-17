@@ -5,6 +5,29 @@
   gap: 10px;
 }
 
+.leftTopTabs {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 6px;
+  flex-shrink: 0;
+}
+
+.leftTopTabBtn {
+  border: 1px solid #4a4232;
+  background: #201c14;
+  color: #ccb98f;
+  border-radius: 8px;
+  padding: 7px 8px;
+  font-size: 12px;
+  cursor: pointer;
+}
+
+.leftTopTabBtnActive {
+  border-color: #ffcd19;
+  background: linear-gradient(135deg, rgba(255, 205, 25, 0.15), rgba(158, 104, 10, 0.2));
+  color: #ffcd19;
+}
+
 .panel {
   background: #1a1a1a;
   border: 1px solid #333;
@@ -15,8 +38,8 @@
   gap: 10px;
   flex-shrink: 0;
   min-height: 220px;
-  max-height: 34%;
-  overflow: auto;
+  max-height: none;
+  overflow: visible;
 }
 
 .panelCollapsed {
@@ -173,9 +196,21 @@
   flex: 1;
   min-height: 0;
   overflow: hidden;
-  min-height: 560px;
+  min-height: 620px;
   display: flex;
   flex-direction: column;
+  gap: 8px;
+}
+
+.wikiLookupBar {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  border: 1px solid #333;
+  background: #151515;
+  border-radius: 8px;
+  padding: 6px 8px;
+  flex-shrink: 0;
 }
 
 .lookupStateRow {

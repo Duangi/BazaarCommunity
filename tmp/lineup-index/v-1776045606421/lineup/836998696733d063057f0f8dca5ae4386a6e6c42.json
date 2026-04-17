@@ -1,0 +1,36 @@
+{
+  "layout_signature": "836998696733d063057f0f8dca5ae4386a6e6c42",
+  "combo_signature": "67595a94a7876f62b225d8d8a32d396b84f606f9",
+  "cards": [
+    {
+      "slot_index": 0,
+      "template_id": "daa37838-fd22-4791-bc1c-ee5ae31a081c",
+      "tier": 3,
+      "enchant_code": null
+    },
+    {
+      "slot_index": 2,
+      "template_id": "8451b8d1-2b0f-433f-bf88-36054ff4525f",
+      "tier": 3,
+      "enchant_code": null
+    },
+    {
+      "slot_index": 4,
+      "template_id": "8a9b0c1d-2e3f-4a5b-6c7d-8e9f0a1b2c3d",
+      "tier": 3,
+      "enchant_code": "Mossy"
+    },
+    {
+      "slot_index": 6,
+      "template_id": "3f4a5b6c-7d8e-9f0a-1b2c-3d4e5f6a7b8c",
+      "tier": 2,
+      "enchant_code": null
+    },
+    {
+      "slot_index": 7,
+      "template_id": "cc25c553-c676-4b7b-a6a0-509da0512614",
+      "tier": 3,
+      "enchant_code": "Toxic"
+    }
+  ]
+}

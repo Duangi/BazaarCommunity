@@ -1,0 +1,39 @@
+{
+  "template_id": "e93df1d5-112d-41ef-9336-e784053d09be",
+  "count": 3,
+  "records": [
+    {
+      "template_id": "e93df1d5-112d-41ef-9336-e784053d09be",
+      "combo_signature": "4f6bbc62d5037f627a6c85b582ae26cb2de149b8",
+      "layout_signature": "08e025c75c1a98528235a94788d28e130f1452d0",
+      "hero": "Stelle",
+      "day": 3,
+      "rating_bucket": "500-600",
+      "matches": 1,
+      "wins": 1,
+      "win_rate": 1
+    },
+    {
+      "template_id": "e93df1d5-112d-41ef-9336-e784053d09be",
+      "combo_signature": "024c17ba6959d6750d0e5da66fb9e13ed378cd8e",
+      "layout_signature": "2eeebfbd5444295d019fefd4acda461eeb540fce",
+      "hero": "Stelle",
+      "day": 5,
+      "rating_bucket": "500-600",
+      "matches": 1,
+      "wins": 0,
+      "win_rate": 0
+    },
+    {
+      "template_id": "e93df1d5-112d-41ef-9336-e784053d09be",
+      "combo_signature": "202bae6b095ff8d1abfae1fae01e6818ec2f0f19",
+      "layout_signature": "42e08720cf04fc07fa3ad3a8238341ecba583d84",
+      "hero": "Stelle",
+      "day": 4,
+      "rating_bucket": "500-600",
+      "matches": 1,
+      "wins": 0,
+      "win_rate": 0
+    }
+  ]
+}

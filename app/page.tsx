@@ -77,6 +77,25 @@ export default function Home() {
             </div>
             <div className={styles.toolsArrow}>→</div>
           </Link>
+
+          <Link href="/analytics" className={styles.testButton}>
+            <div className={styles.testIcon}>📊</div>
+            <div className={styles.toolsContent}>
+              <h2>大数据分析（测试版）</h2>
+              <p>单卡查阵容 · 英雄与卡牌统计 · 胜率热度分析</p>
+            </div>
+            <div className={styles.toolsArrow}>→</div>
+          </Link>
+
+          <Link href="/jibao-lab" className={styles.testButton}>
+            <div className={styles.testIcon}>🧪</div>
+            <div className={styles.toolsContent}>
+              <h2>机煲实验室</h2>
+              <p>拖拽摆位 · 计算左右充能效率 · 自动优化建议</p>
+            </div>
+            <div className={styles.toolsArrow}>→</div>
+          </Link>
+
         </div>
 
         {/* 页脚 */}

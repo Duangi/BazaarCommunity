@@ -1,0 +1,42 @@
+{
+  "layout_signature": "34aca11eb616e7d57fb757818987ce57d619cac1",
+  "combo_signature": "9b843c22f6061dd7b81866bc0947190e83968ed6",
+  "cards": [
+    {
+      "slot_index": 0,
+      "template_id": "c65da89e-3504-40e7-87a8-10defcb7f07b",
+      "tier": 3,
+      "enchant_code": null
+    },
+    {
+      "slot_index": 1,
+      "template_id": "6870c295-6a4d-4175-b378-c961df9933de",
+      "tier": 3,
+      "enchant_code": "Heavy"
+    },
+    {
+      "slot_index": 3,
+      "template_id": "b23c5988-7091-4b77-a7fb-134c0d0a3285",
+      "tier": 2,
+      "enchant_code": "Deadly"
+    },
+    {
+      "slot_index": 4,
+      "template_id": "16b9413f-c28b-4c45-84a9-4c214cc681fd",
+      "tier": 4,
+      "enchant_code": "Obsidian"
+    },
+    {
+      "slot_index": 7,
+      "template_id": "c45a7c22-ae24-4246-bb6c-a83324a8546c",
+      "tier": 2,
+      "enchant_code": null
+    },
+    {
+      "slot_index": 9,
+      "template_id": "11c2fbfe-ce9f-4007-99ac-5e37a9ba7dca",
+      "tier": 2,
+      "enchant_code": null
+    }
+  ]
+}

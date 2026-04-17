@@ -1,0 +1,30 @@
+{
+  "layout_signature": "f72e68fe4ba74259cfcf6034c666be0e7a83cead",
+  "combo_signature": "569a51ce1b90f49e0bdcd000abbcdbf9bea37f09",
+  "cards": [
+    {
+      "slot_index": 0,
+      "template_id": "9ca6a93b-10e9-4138-abd1-0ff2e7c2c985",
+      "tier": 4,
+      "enchant_code": "Deadly"
+    },
+    {
+      "slot_index": 2,
+      "template_id": "b6afda86-9dec-4580-b1e3-4d1cc59c3029",
+      "tier": 4,
+      "enchant_code": "Turbo"
+    },
+    {
+      "slot_index": 4,
+      "template_id": "49895243-8b5d-407f-9c8c-efdd05b3a34a",
+      "tier": 4,
+      "enchant_code": "Shielded"
+    },
+    {
+      "slot_index": 7,
+      "template_id": "18e2e46f-6419-44b3-80fa-11b13bc7b831",
+      "tier": 4,
+      "enchant_code": "Radiant"
+    }
+  ]
+}

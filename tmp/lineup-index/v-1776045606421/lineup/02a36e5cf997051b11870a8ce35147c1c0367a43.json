@@ -1,0 +1,42 @@
+{
+  "layout_signature": "02a36e5cf997051b11870a8ce35147c1c0367a43",
+  "combo_signature": "0d33b8d7ab925fae0a93101e34323e0d613ff579",
+  "cards": [
+    {
+      "slot_index": 0,
+      "template_id": "5ff4d4c3-5a31-42d9-9b82-608f237e9e40",
+      "tier": 2,
+      "enchant_code": null
+    },
+    {
+      "slot_index": 2,
+      "template_id": "c984adcc-6a42-4b0b-a964-fd64fd2fdaa7",
+      "tier": 2,
+      "enchant_code": null
+    },
+    {
+      "slot_index": 4,
+      "template_id": "94144b09-eb5b-438b-a0fe-3d7494b84c84",
+      "tier": 3,
+      "enchant_code": null
+    },
+    {
+      "slot_index": 5,
+      "template_id": "a89a0b5d-bbbb-4818-b002-1ad0156156f7",
+      "tier": 3,
+      "enchant_code": null
+    },
+    {
+      "slot_index": 8,
+      "template_id": "c6433adf-cebc-4b6a-9172-3d7b36f6b428",
+      "tier": 2,
+      "enchant_code": null
+    },
+    {
+      "slot_index": 9,
+      "template_id": "d9b24744-c718-458e-b836-d61227ab5711",
+      "tier": 3,
+      "enchant_code": "Heavy"
+    }
+  ]
+}

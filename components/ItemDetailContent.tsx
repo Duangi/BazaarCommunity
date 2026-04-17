@@ -34,6 +34,17 @@ interface ItemDetailContentProps {
 
 // 这是我们的“详情展示标准件”
 export default function ItemDetailContent({ item }: ItemDetailContentProps) {
+  const activeLines = Array.isArray(item.skills) && item.skills.length > 0
+    ? item.skills
+    : Array.isArray(item.descriptions) && item.descriptions.length > 0
+      ? item.descriptions
+      : item.description_cn
+        ? [item.description_cn]
+        : []
+  const passiveLines = Array.isArray(item.skills_passive) ? item.skills_passive : []
+  const questLines = item.quests ? (Array.isArray(item.quests) ? item.quests : [item.quests]) : []
+  const enchantEntries = item.enchantments ? Object.entries(item.enchantments) : []
+
   return (
     <>
       {/* 详细信息 */}
@@ -44,6 +55,7 @@ export default function ItemDetailContent({ item }: ItemDetailContentProps) {
           const hasProgression = typeof cdTiersRaw === 'string' && cdTiersRaw.includes('/')
           
           if (hasProgression) {
+            // cooldown_tiers is normalized to seconds during data assembly.
             const cdVals = cdTiersRaw.split('/').map(v => {
               const ms = parseFloat(v)
               return isNaN(ms) ? "0.0" : (ms > 100 ? ms / 1000 : ms).toFixed(1)
@@ -80,43 +92,43 @@ export default function ItemDetailContent({ item }: ItemDetailContentProps) {
 
         {/* 右侧：技能/描述 */}
         <div className={styles.detailsRight}>
-          {(item.skills || item.descriptions || []).map((desc, idx) => (
+          {activeLines.map((desc, idx) => (
             <div key={`desc-${idx}`} className={styles.skillItem}>
-              🗡️ {renderText(desc)}
+              🗡️ {renderText(desc, item)}
             </div>
           ))}
-          {!item.skills && !item.descriptions && item.description_cn && (
-            <div className={styles.skillItem}>
-              🗡️ {renderText(item.description_cn)}
-            </div>
-          )}
-          {item.skills_passive?.map((skill, idx) => (
+          {passiveLines.map((skill, idx) => (
             <div key={`passive-${idx}`} className={`${styles.skillItem} ${styles.passive}`}>
-              ⚙️ {renderText(skill)}
+              ⚙️ {renderText(skill, item)}
             </div>
           ))}
         </div>
       </div>
       
       {/* 任务区域 */}
-      {item.quests && (
+      {questLines.length > 0 && (
         <div className={styles.questsSection}>
-          {(Array.isArray(item.quests) ? item.quests : [item.quests]).map((quest, index) => (
+          {questLines.map((quest, index) => (
             <div key={index} className={styles.questItem}>
               <div className={styles.questHeader}>📜 任务 {index + 1}:</div>
-              {quest.cn_target && <div className={styles.questTarget}>→ {renderText(quest.cn_target || quest.en_target)}</div>}
-              {quest.cn_reward && <div className={styles.questReward}>✨ {renderText(quest.cn_reward || quest.en_reward)}</div>}
+              {(quest?.cn_target || quest?.en_target || quest?.objective) && (
+                <div className={styles.questTarget}>→ {renderText(quest.cn_target || quest.en_target || quest.objective, item)}</div>
+              )}
+              {(quest?.cn_reward || quest?.en_reward || quest?.reward) && (
+                <div className={styles.questReward}>✨ {renderText(quest.cn_reward || quest.en_reward || quest.reward, item)}</div>
+              )}
             </div>
           ))}
         </div>
       )}
 
       {/* 附魔区域 */}
-      {item.enchantments && Object.keys(item.enchantments).length > 0 && (
+      {enchantEntries.length > 0 && (
         <div className={styles.itemEnchantmentsRow}>
-          {Object.entries(item.enchantments).map(([enchKey, ench]) => {
-            const name = ench.name_cn || enchKey
-            const effect = ench.effect_cn || ench.effect_en || ''
+          {enchantEntries.map(([enchKey, ench]) => {
+            const data = (ench && typeof ench === 'object') ? ench : { effect_cn: String(ench || '') }
+            const name = data.name_cn || enchKey
+            const effect = data.effect_cn || data.effect_en || ''
             const color = ENCHANT_COLORS[name] || '#ffcd19'
             
             return (
@@ -124,7 +136,7 @@ export default function ItemDetailContent({ item }: ItemDetailContentProps) {
                 <span className={styles.enchantBadge} style={{ '--enc-clr': color } as React.CSSProperties}>
                   {name}
                 </span>
-                <span className={styles.enchantEffect}>{renderText(effect)}</span>
+                <span className={styles.enchantEffect}>{renderText(effect, item)}</span>
               </div>
             )
           })}

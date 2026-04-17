@@ -1,0 +1,48 @@
+{
+  "layout_signature": "ed84bd74442df4df3cd801d79918454ba577bf6f",
+  "combo_signature": "9ddda3f31afad4f30b05089c9ab67b536ce72c21",
+  "cards": [
+    {
+      "slot_index": 0,
+      "template_id": "4fb9fa4a-6250-4132-a7cb-9a4b874b0bdc",
+      "tier": 3,
+      "enchant_code": "Turbo"
+    },
+    {
+      "slot_index": 1,
+      "template_id": "7cbc8056-482b-4ccf-887a-ddb2702c856c",
+      "tier": 2,
+      "enchant_code": "Toxic"
+    },
+    {
+      "slot_index": 2,
+      "template_id": "8019736a-bb1e-4cbd-a3f8-2bfa9b943b6f",
+      "tier": 3,
+      "enchant_code": "Toxic"
+    },
+    {
+      "slot_index": 4,
+      "template_id": "4252c53d-8c2f-4dbb-974f-b45926911eac",
+      "tier": 3,
+      "enchant_code": "Obsidian"
+    },
+    {
+      "slot_index": 5,
+      "template_id": "c2cc691a-8f35-43be-8951-c65911b08865",
+      "tier": 2,
+      "enchant_code": null
+    },
+    {
+      "slot_index": 7,
+      "template_id": "37222f02-3767-44ef-a8ed-000c90d3330e",
+      "tier": 3,
+      "enchant_code": "Shielded"
+    },
+    {
+      "slot_index": 8,
+      "template_id": "3e3bda1d-81ba-4719-8772-417d8b834e99",
+      "tier": 3,
+      "enchant_code": "Shielded"
+    }
+  ]
+}

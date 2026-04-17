@@ -6,18 +6,18 @@ import styles from './CommunityAuthBar.module.css'
 interface CommunityAuthBarProps {
   isAuthed: boolean
   nickname?: string
-  onLoginWithKey: (key: string) => Promise<{ ok: boolean; message: string }>
+  onLoginWithUsername: (username: string) => Promise<{ ok: boolean; message: string }>
   onSignOut: () => Promise<void>
 }
 
 export default function CommunityAuthBar({
   isAuthed,
   nickname,
-  onLoginWithKey,
+  onLoginWithUsername,
   onSignOut,
 }: CommunityAuthBarProps) {
   const [expanded, setExpanded] = useState(false)
-  const [rawKey, setRawKey] = useState('')
+  const [username, setUsername] = useState('')
   const [hint, setHint] = useState('')
   const [busy, setBusy] = useState(false)
 
@@ -28,17 +28,17 @@ export default function CommunityAuthBar({
   }, [hint])
 
   const submit = async () => {
-    if (!rawKey.trim()) {
-      setHint('请输入 BazaarHelper 登录密钥')
+    if (!username.trim()) {
+      setHint('请输入用户名')
       return
     }
     setBusy(true)
-    const result = await onLoginWithKey(rawKey.trim())
+    const result = await onLoginWithUsername(username.trim())
     setBusy(false)
     setHint(result.message)
     if (result.ok) {
       setExpanded(false)
-      setRawKey('')
+      setUsername('')
     }
   }
 
@@ -56,16 +56,16 @@ export default function CommunityAuthBar({
       ) : (
         <>
           <button className={styles.authBtn} onClick={() => setExpanded((v) => !v)} disabled={busy}>
-            {expanded ? '收起登录' : '密钥登录'}
+            {expanded ? '收起登录' : '登录'}
           </button>
           {expanded && (
             <div className={styles.authPopover}>
               <input
                 className={styles.authInput}
                 type="text"
-                placeholder="粘贴 bh1.xxxxx.yyyyy 登录密钥"
-                value={rawKey}
-                onChange={(e) => setRawKey(e.target.value)}
+                placeholder="输入用户名（例如 Duangi）"
+                value={username}
+                onChange={(e) => setUsername(e.target.value)}
               />
               <div className={styles.authActions}>
                 <button className={styles.authActionBtn} disabled={busy} onClick={submit}>

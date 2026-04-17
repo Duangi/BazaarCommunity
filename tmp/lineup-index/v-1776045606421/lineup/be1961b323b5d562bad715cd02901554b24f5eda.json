@@ -1,0 +1,42 @@
+{
+  "layout_signature": "be1961b323b5d562bad715cd02901554b24f5eda",
+  "combo_signature": "d4593cc3bcbf5812850ea4ec8d8bdd4254e95f81",
+  "cards": [
+    {
+      "slot_index": 0,
+      "template_id": "c47744c9-d3bd-42ba-ae49-5fbff2f5d785",
+      "tier": 3,
+      "enchant_code": "Toxic"
+    },
+    {
+      "slot_index": 1,
+      "template_id": "6399efb4-f70d-4e17-977c-2f8e35a03087",
+      "tier": 3,
+      "enchant_code": null
+    },
+    {
+      "slot_index": 2,
+      "template_id": "8e406c92-dfaf-47d7-8085-671a646a3858",
+      "tier": 2,
+      "enchant_code": null
+    },
+    {
+      "slot_index": 4,
+      "template_id": "48a56ce6-8c01-4d1f-853d-22e8b3dfea35",
+      "tier": 4,
+      "enchant_code": "Mossy"
+    },
+    {
+      "slot_index": 6,
+      "template_id": "f97422bf-fbee-4bc3-a9c8-da799a53a716",
+      "tier": 3,
+      "enchant_code": null
+    },
+    {
+      "slot_index": 7,
+      "template_id": "58928d1a-27ef-43be-89e2-81e627dae954",
+      "tier": 4,
+      "enchant_code": "Radiant"
+    }
+  ]
+}

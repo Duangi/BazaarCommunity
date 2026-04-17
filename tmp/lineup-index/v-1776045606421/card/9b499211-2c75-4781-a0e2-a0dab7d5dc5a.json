@@ -1,0 +1,61 @@
+{
+  "template_id": "9b499211-2c75-4781-a0e2-a0dab7d5dc5a",
+  "count": 5,
+  "records": [
+    {
+      "template_id": "9b499211-2c75-4781-a0e2-a0dab7d5dc5a",
+      "combo_signature": "350f29ffd71ba5f19faca121d88a3f8137fd6d7a",
+      "layout_signature": "f0678efe8b3e5ea21116fc8d131dd65f543499bf",
+      "hero": "Karnok",
+      "day": 2,
+      "rating_bucket": "500-600",
+      "matches": 1,
+      "wins": 1,
+      "win_rate": 1
+    },
+    {
+      "template_id": "9b499211-2c75-4781-a0e2-a0dab7d5dc5a",
+      "combo_signature": "a12e3fa5badebb4abd42961b1c86250bac5edb4b",
+      "layout_signature": "8a80b687de5a271a48095c836574b15f767e6c13",
+      "hero": "Dooley",
+      "day": 4,
+      "rating_bucket": "800-900",
+      "matches": 1,
+      "wins": 1,
+      "win_rate": 1
+    },
+    {
+      "template_id": "9b499211-2c75-4781-a0e2-a0dab7d5dc5a",
+      "combo_signature": "5a9ee9ec350a172a8f5323b17e95b19f1c50914d",
+      "layout_signature": "5dc7b0abe49b343b8b0e4edea7a6f0fd3d928477",
+      "hero": "Karnok",
+      "day": 2,
+      "rating_bucket": "800-900",
+      "matches": 1,
+      "wins": 1,
+      "win_rate": 1
+    },
+    {
+      "template_id": "9b499211-2c75-4781-a0e2-a0dab7d5dc5a",
+      "combo_signature": "e259ab580e3204effdb59e867f2545a887645481",
+      "layout_signature": "0dc927b1fdfd3f074ed84f66ed60eda1f1d5a20d",
+      "hero": "Dooley",
+      "day": 2,
+      "rating_bucket": "500-600",
+      "matches": 1,
+      "wins": 0,
+      "win_rate": 0
+    },
+    {
+      "template_id": "9b499211-2c75-4781-a0e2-a0dab7d5dc5a",
+      "combo_signature": "7c1a3b423dbc9133a30075ee844f29870e186c33",
+      "layout_signature": "22d0dd67de5ae64b0a282d374b60efc9bd5175a0",
+      "hero": "Karnok",
+      "day": 2,
+      "rating_bucket": "500-600",
+      "matches": 1,
+      "wins": 0,
+      "win_rate": 0
+    }
+  ]
+}

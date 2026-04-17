@@ -1,0 +1,30 @@
+{
+  "layout_signature": "0388e50861b8c33f5ab62f54e8fa8a116d9cfbe9",
+  "combo_signature": "889d05cca3fd90322239cea1af07313f1dc9cc80",
+  "cards": [
+    {
+      "slot_index": 2,
+      "template_id": "26cd871b-5fc4-4b8a-a4cf-6d33d5462c22",
+      "tier": 1,
+      "enchant_code": null
+    },
+    {
+      "slot_index": 4,
+      "template_id": "f4bef5b2-773b-44bf-84a0-67ae325604f7",
+      "tier": 2,
+      "enchant_code": null
+    },
+    {
+      "slot_index": 5,
+      "template_id": "63f124c0-f94c-4850-8522-215d2e72a815",
+      "tier": 2,
+      "enchant_code": null
+    },
+    {
+      "slot_index": 7,
+      "template_id": "c2b6e584-b0b0-417d-92c6-e916ca55e3ae",
+      "tier": 1,
+      "enchant_code": "Toxic"
+    }
+  ]
+}

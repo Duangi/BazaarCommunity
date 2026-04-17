@@ -1,0 +1,30 @@
+{
+  "layout_signature": "690fe93178da3573141ccdbc4d525cda93d3ee2b",
+  "combo_signature": "8bec530efecfd44ecd3e4a178006869406a11cd9",
+  "cards": [
+    {
+      "slot_index": 0,
+      "template_id": "22c8b252-e36d-4564-9588-06febd4b358d",
+      "tier": 4,
+      "enchant_code": null
+    },
+    {
+      "slot_index": 2,
+      "template_id": "94a184be-98f2-4a65-8334-e15deff2c082",
+      "tier": 3,
+      "enchant_code": "Radiant"
+    },
+    {
+      "slot_index": 5,
+      "template_id": "84edf515-c3bc-43f4-becb-b53b59e4abcc",
+      "tier": 3,
+      "enchant_code": "Deadly"
+    },
+    {
+      "slot_index": 8,
+      "template_id": "50039402-e84e-4698-90fa-7cbaffca9ce8",
+      "tier": 3,
+      "enchant_code": "Mossy"
+    }
+  ]
+}

@@ -1,0 +1,42 @@
+{
+  "layout_signature": "b9750b024066f36e48f0247842ba922dcc4bb70f",
+  "combo_signature": "d6de363f2830b39fdbcd71beb1a34e924ed6b3d4",
+  "cards": [
+    {
+      "slot_index": 0,
+      "template_id": "16b0d645-3a47-45a1-be2a-1e3ee311f33e",
+      "tier": 4,
+      "enchant_code": "Mossy"
+    },
+    {
+      "slot_index": 1,
+      "template_id": "ad779fb4-0001-4406-8aac-a5f5ce6580eb",
+      "tier": 3,
+      "enchant_code": "Restorative"
+    },
+    {
+      "slot_index": 3,
+      "template_id": "f6f7b04f-9e4c-4107-af98-5288e8c568fd",
+      "tier": 1,
+      "enchant_code": "Mossy"
+    },
+    {
+      "slot_index": 4,
+      "template_id": "3718910f-3b43-4c4b-8904-d1dbfce56c13",
+      "tier": 4,
+      "enchant_code": "Mossy"
+    },
+    {
+      "slot_index": 7,
+      "template_id": "f6f7b04f-9e4c-4107-af98-5288e8c568fd",
+      "tier": 2,
+      "enchant_code": "Fiery"
+    },
+    {
+      "slot_index": 8,
+      "template_id": "fd35f65b-8e2a-4a6c-8e85-20d0fd5b8fc1",
+      "tier": 4,
+      "enchant_code": "Icy"
+    }
+  ]
+}

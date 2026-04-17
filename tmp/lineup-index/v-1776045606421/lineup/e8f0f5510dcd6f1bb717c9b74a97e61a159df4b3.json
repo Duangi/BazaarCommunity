@@ -1,0 +1,30 @@
+{
+  "layout_signature": "e8f0f5510dcd6f1bb717c9b74a97e61a159df4b3",
+  "combo_signature": "bc7ab02d5bcd79799079c14664209492134d8246",
+  "cards": [
+    {
+      "slot_index": 0,
+      "template_id": "8f61677c-aa75-4275-b8b4-3cbaca1fdcbf",
+      "tier": 2,
+      "enchant_code": null
+    },
+    {
+      "slot_index": 2,
+      "template_id": "6ada601b-88a5-4eaf-8813-805bd51c7f9b",
+      "tier": 3,
+      "enchant_code": "Fiery"
+    },
+    {
+      "slot_index": 4,
+      "template_id": "fb9bc349-bc38-40f4-a67e-a9c580e1e681",
+      "tier": 4,
+      "enchant_code": null
+    },
+    {
+      "slot_index": 7,
+      "template_id": "6aa8be90-55f4-4fec-bd92-811e175657a1",
+      "tier": 3,
+      "enchant_code": null
+    }
+  ]
+}

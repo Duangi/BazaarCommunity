@@ -36,6 +36,8 @@ interface ItemsListProps {
   onSelectItem: (item: Item) => void
   enableBuildLookup?: boolean
   onLookupBuilds?: (item: Item) => void
+  lookupFilterItem?: Item | null
+  onClearLookupFilter?: () => void
 }
 
 
@@ -185,9 +187,30 @@ export default function ItemsList({
   onSelectItem,
   enableBuildLookup = false,
   onLookupBuilds,
+  lookupFilterItem = null,
+  onClearLookupFilter,
 }: ItemsListProps) {
   const normalizeText = (value: any): string =>
     (value == null ? '' : String(value)).toLowerCase().trim()
+
+  const normalizeFieldText = (value: any): string => {
+    if (value == null) return ''
+    if (typeof value === 'string') return value.toLowerCase()
+    if (Array.isArray(value)) {
+      return value
+        .map((x) => (typeof x === 'string' ? x : JSON.stringify(x)))
+        .join(' ')
+        .toLowerCase()
+    }
+    if (typeof value === 'object') {
+      try {
+        return JSON.stringify(value).toLowerCase()
+      } catch {
+        return ''
+      }
+    }
+    return String(value).toLowerCase()
+  }
 
   const subsequenceMatch = (text: string, query: string): boolean => {
     if (!query) return true
@@ -260,15 +283,15 @@ export default function ItemsList({
   const [selectedHiddenTags, setSelectedHiddenTags] = useState<string[]>([])
   const [matchMode, setMatchMode] = useState<'all' | 'any'>('any')
   const [isFilterCollapsed, setIsFilterCollapsed] = useState(false)
+  const [filterHeight, setFilterHeight] = useState(360)
+  const [isResizing, setIsResizing] = useState(false)
   const [visibleCount, setVisibleCount] = useState(30)
   const [expandedItems, setExpandedItems] = useState<Set<string>>(new Set())
   const [lookupTarget, setLookupTarget] = useState<Item | null>(null)
-  const [filterHeight, setFilterHeight] = useState(320)
-  const [isResizing, setIsResizing] = useState(false)
-  const scrollAreaRef = useRef<HTMLDivElement>(null)
   const containerRef = useRef<HTMLDivElement>(null)
+  const scrollAreaRef = useRef<HTMLDivElement>(null)
   const resizeStartYRef = useRef(0)
-  const resizeStartHeightRef = useRef(320)
+  const resizeStartHeightRef = useRef(360)
 
   useEffect(() => {
     if (activeTab === 'skills') {
@@ -324,7 +347,7 @@ export default function ItemsList({
 
     if (selectedTags.length > 0) {
       result = result.filter((item: any) => {
-        const itemTags = (item.tags || '').toLowerCase()
+        const itemTags = normalizeFieldText(item.tags)
         if (matchMode === 'all') {
           return selectedTags.every(tag => itemTags.includes(tag.toLowerCase()))
         } else {
@@ -335,7 +358,7 @@ export default function ItemsList({
 
     if (selectedHiddenTags.length > 0) {
       result = result.filter((item: any) => {
-        const itemHiddenTags = (item.hidden_tags || '').toLowerCase()
+        const itemHiddenTags = normalizeFieldText(item.hidden_tags)
         if (matchMode === 'all') {
           return selectedHiddenTags.every(tag => itemHiddenTags.includes(tag.toLowerCase()))
         } else {
@@ -386,7 +409,7 @@ export default function ItemsList({
   }
 
   const handleResizeEnter = () => {
-    if (!isResizing) document.body.style.cursor = 'ns-resize'
+    if (!isResizing) document.body.style.cursor = 'row-resize'
   }
 
   const handleResizeLeave = () => {
@@ -398,7 +421,7 @@ export default function ItemsList({
 
     const originalBodyCursor = document.body.style.cursor
     const originalBodySelect = document.body.style.userSelect
-    document.body.style.cursor = 'ns-resize'
+    document.body.style.cursor = 'row-resize'
     document.body.style.userSelect = 'none'
 
     const onMouseMove = (e: MouseEvent) => {
@@ -427,7 +450,7 @@ export default function ItemsList({
       window.removeEventListener('mousemove', onMouseMove)
       window.removeEventListener('mouseup', onMouseUp)
     }
-  }, [isResizing])
+  }, [isResizing, filterHeight, isFilterCollapsed])
 
   return (
     <div ref={containerRef} className={styles.container}>
@@ -449,7 +472,7 @@ export default function ItemsList({
 
       {/* 搜索过滤器 */}
       <div
-        className={styles.searchBoxContainer}
+        className={`${styles.searchBoxContainer} ${isFilterCollapsed ? styles.searchBoxContainerCollapsed : ''}`}
         style={isFilterCollapsed ? undefined : { height: `${filterHeight}px` }}
       >
         <div className={styles.filterContent}>
@@ -670,8 +693,23 @@ export default function ItemsList({
       {/* 物品列表 */}
       {enableBuildLookup && (
         <div className={styles.lookupActionBar}>
-          <div className={styles.lookupTargetName}>
-            {lookupTarget ? `当前选中：${lookupTarget.name_cn || lookupTarget.name_en || lookupTarget.id}` : '先在列表中选一张卡'}
+          <div className={styles.lookupActionLeft}>
+            <div className={styles.lookupTargetName}>
+              当前选中：
+              {lookupTarget ? (lookupTarget.name_cn || lookupTarget.name_en || lookupTarget.id) : '（先在列表中选一张卡）'}
+            </div>
+            {lookupFilterItem && (
+              <span className={styles.lookupChip}>
+                <span className={styles.lookupChipText}>{lookupFilterItem.name_cn || lookupFilterItem.name_en || lookupFilterItem.id}</span>
+                <button
+                  className={styles.lookupChipClose}
+                  onClick={onClearLookupFilter}
+                  title="取消此卡牌过滤"
+                >
+                  ×
+                </button>
+              </span>
+            )}
           </div>
           <button
             className={styles.lookupBuildBtn}

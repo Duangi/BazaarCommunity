@@ -62,6 +62,7 @@ export default function ExploreLeftPanel({
   const [dayMinInput, setDayMinInput] = useState(String(filters.dayMin))
   const [dayMaxInput, setDayMaxInput] = useState(String(filters.dayMax))
   const [filterCollapsed, setFilterCollapsed] = useState(false)
+  const [leftTab, setLeftTab] = useState<'filters' | 'wiki'>('filters')
 
   const bumpRange = (field: 'min' | 'max', delta: number) => {
     if (field === 'min') {
@@ -87,6 +88,21 @@ export default function ExploreLeftPanel({
 
   return (
     <div className={styles.leftStack}>
+      <div className={styles.leftTopTabs}>
+        <button
+          className={`${styles.leftTopTabBtn} ${leftTab === 'filters' ? styles.leftTopTabBtnActive : ''}`}
+          onClick={() => setLeftTab('filters')}
+        >
+          过滤器
+        </button>
+        <button
+          className={`${styles.leftTopTabBtn} ${leftTab === 'wiki' ? styles.leftTopTabBtnActive : ''}`}
+          onClick={() => setLeftTab('wiki')}
+        >
+          百科搜索
+        </button>
+      </div>
+      {leftTab === 'filters' ? (
       <div className={`${styles.panel} ${filterCollapsed ? styles.panelCollapsed : ''}`}>
         <div className={styles.panelHeader}>
           <div className={styles.sectionTitle}>社区过滤器</div>
@@ -353,6 +369,7 @@ export default function ExploreLeftPanel({
           </button>
         </div>}
       </div>
+      ) : (
       <div className={styles.wikiWrap}>
         <WikiFilterPanel
           items={items}
@@ -360,8 +377,11 @@ export default function ExploreLeftPanel({
           onSelectItem={onSelectItem}
           enableBuildLookup
           onLookupBuilds={onLookupBuilds}
+          lookupFilterItem={lookupCard}
+          onClearLookupFilter={onClearLookup}
         />
       </div>
+      )}
     </div>
   )
 }

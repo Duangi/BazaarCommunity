@@ -1,0 +1,72 @@
+{
+  "template_id": "1a3d4cde-333c-4936-b147-263d73f6d200",
+  "count": 6,
+  "records": [
+    {
+      "template_id": "1a3d4cde-333c-4936-b147-263d73f6d200",
+      "combo_signature": "2421c958d67c92cd9ef156a87e0dd9b31b96744d",
+      "layout_signature": "7e0a82bfa165a32f4115e80c3a458bba32b874db",
+      "hero": "Dooley",
+      "day": 9,
+      "rating_bucket": "600-700",
+      "matches": 1,
+      "wins": 1,
+      "win_rate": 1
+    },
+    {
+      "template_id": "1a3d4cde-333c-4936-b147-263d73f6d200",
+      "combo_signature": "a04f3080923be5c6b2ba1f2b17af3b5d2e859395",
+      "layout_signature": "e71b70d558c28ebf7635c65e06d1c045a9c345c5",
+      "hero": "Dooley",
+      "day": 3,
+      "rating_bucket": "800-900",
+      "matches": 1,
+      "wins": 1,
+      "win_rate": 1
+    },
+    {
+      "template_id": "1a3d4cde-333c-4936-b147-263d73f6d200",
+      "combo_signature": "b83200339d1e81f7d5e90e5f4192c1419f166ea4",
+      "layout_signature": "a68c996103cb95bae43c191c1bf5a6d158867892",
+      "hero": "Pygmalien",
+      "day": 10,
+      "rating_bucket": "500-600",
+      "matches": 1,
+      "wins": 1,
+      "win_rate": 1
+    },
+    {
+      "template_id": "1a3d4cde-333c-4936-b147-263d73f6d200",
+      "combo_signature": "ad20bcb9ef1556a46dcb6d818701ddc0ef4f3d97",
+      "layout_signature": "ac99ff3a67b7bf3047ae18c81c6e61e0765099c4",
+      "hero": "Pygmalien",
+      "day": 1,
+      "rating_bucket": "700-800",
+      "matches": 1,
+      "wins": 0,
+      "win_rate": 0
+    },
+    {
+      "template_id": "1a3d4cde-333c-4936-b147-263d73f6d200",
+      "combo_signature": "915dcb1b9ff167d08b12d329a10d8166a2efbd86",
+      "layout_signature": "32fe2a24067bd45400e8c071c58cba80e85348c0",
+      "hero": "Dooley",
+      "day": 3,
+      "rating_bucket": "900-1000",
+      "matches": 1,
+      "wins": 0,
+      "win_rate": 0
+    },
+    {
+      "template_id": "1a3d4cde-333c-4936-b147-263d73f6d200",
+      "combo_signature": "003b3fd724a783d55802ba7991b9e8ede3299e9e",
+      "layout_signature": "ad30cea45c85ac91be58902a58e9129e1a2b9c97",
+      "hero": "Mak",
+      "day": 3,
+      "rating_bucket": "800-900",
+      "matches": 1,
+      "wins": 0,
+      "win_rate": 0
+    }
+  ]
+}

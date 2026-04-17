@@ -1,0 +1,48 @@
+{
+  "layout_signature": "27b834b84c285dab988ce8f60a9df6ddbae80a26",
+  "combo_signature": "61a039ac6bcf206b10abd9852461697ad7a8a84d",
+  "cards": [
+    {
+      "slot_index": 0,
+      "template_id": "d650bafd-d5d1-4d0f-a721-066984d6c1f6",
+      "tier": 3,
+      "enchant_code": "Turbo"
+    },
+    {
+      "slot_index": 1,
+      "template_id": "d6eda7aa-d4fa-4992-88c7-87b89fe7f5ec",
+      "tier": 3,
+      "enchant_code": null
+    },
+    {
+      "slot_index": 2,
+      "template_id": "d5515ae3-b98d-4272-8add-82f441969ffe",
+      "tier": 4,
+      "enchant_code": null
+    },
+    {
+      "slot_index": 3,
+      "template_id": "fcfcd84c-8f62-43ae-9cbb-31d3110e4696",
+      "tier": 3,
+      "enchant_code": "Shielded"
+    },
+    {
+      "slot_index": 4,
+      "template_id": "c017c0dd-af3c-47e0-b510-3661d9dcd7f2",
+      "tier": 4,
+      "enchant_code": null
+    },
+    {
+      "slot_index": 6,
+      "template_id": "58644fca-df07-48f8-808e-85c9cbf5fccb",
+      "tier": 4,
+      "enchant_code": "Icy"
+    },
+    {
+      "slot_index": 8,
+      "template_id": "5ee8749e-0274-4516-bbea-0830bb2953b7",
+      "tier": 3,
+      "enchant_code": null
+    }
+  ]
+}

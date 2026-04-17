@@ -3,12 +3,24 @@
   "version": "1.0.0",
   "private": true,
   "scripts": {
-    "dev": "next dev",
-    "dev:3000": "lsof -ti tcp:3000 | xargs -r kill -9; next dev -p 3000",
-    "build": "next build",
+    "clean:next": "rm -rf .next",
+    "clean:next:dev": "rm -rf .next-dev",
+    "clean:next:all": "rm -rf .next .next-dev",
+    "kill:ports": "for p in 3000 3001 3002; do lsof -ti tcp:$p | xargs kill -9 2>/dev/null || true; done",
+    "dev": "npm run clean:next:all && npm run kill:ports && NEXT_DIST_DIR=.next-dev NEXT_DISABLE_WEBPACK_CACHE=1 next dev -p 3000",
+    "dev:3000": "npm run dev",
+    "dev:3000:clean": "npm run dev",
+    "build": "npm run clean:next && next build",
     "start": "next start",
     "lint": "next lint",
-    "export": "next build && next export"
+    "export": "next build && next export",
+    "sync:bazaardb": "node scripts/sync_bazaardb_data.mjs",
+    "sync:bazaardb:r2": "node scripts/sync_bazaardb_to_r2.mjs",
+    "build:route-stats": "node scripts/build_route_choice_stats.mjs --db-dir \"/Users/duang/Downloads/BazaarPlusPlus\" --out-file \"public/resources/analytics/route_choice_stats.json\"",
+    "build:lineup-index": "node scripts/build_lineup_index_from_archive.mjs",
+    "upload:lineup-index:r2": "node scripts/upload_lineup_index_to_r2.mjs",
+    "seed:bpp:mock": "node scripts/generate_bpp_mock_seed.mjs 2000 11",
+    "seed:bpp:mock:push": "node scripts/seed_bpp_mock_to_supabase.mjs 2000 11"
   },
   "dependencies": {
     "@aws-sdk/client-s3": "^3.922.0",
@@ -19,7 +31,8 @@
     "react": "^18.3.1",
     "react-dnd": "^16.0.1",
     "react-dnd-html5-backend": "^16.0.1",
-    "react-dom": "^18.3.1"
+    "react-dom": "^18.3.1",
+    "sql.js": "^1.13.0"
   },
   "devDependencies": {
     "@types/node": "^20",

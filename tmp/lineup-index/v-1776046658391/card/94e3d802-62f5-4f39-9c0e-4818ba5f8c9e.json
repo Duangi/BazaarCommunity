@@ -1,0 +1,72 @@
+{
+  "template_id": "94e3d802-62f5-4f39-9c0e-4818ba5f8c9e",
+  "count": 6,
+  "records": [
+    {
+      "template_id": "94e3d802-62f5-4f39-9c0e-4818ba5f8c9e",
+      "combo_signature": "f679acf3c0103e60e83c4976fe90c93b1397cc69",
+      "layout_signature": "a961d181f37926c95076c86768548056a127c66a",
+      "hero": "Karnok",
+      "day": 9,
+      "rating_bucket": "500-600",
+      "matches": 1,
+      "wins": 1,
+      "win_rate": 1
+    },
+    {
+      "template_id": "94e3d802-62f5-4f39-9c0e-4818ba5f8c9e",
+      "combo_signature": "561e889dbd8a66cd697d8d85155cdfc9a2892ae2",
+      "layout_signature": "fd7589df3d9bf98ea3182e3aaf19049ac736c2de",
+      "hero": "Mak",
+      "day": 8,
+      "rating_bucket": "600-700",
+      "matches": 1,
+      "wins": 0,
+      "win_rate": 0
+    },
+    {
+      "template_id": "94e3d802-62f5-4f39-9c0e-4818ba5f8c9e",
+      "combo_signature": "6e6fbf615aa7c6312237625a310458d6421d8809",
+      "layout_signature": "29e6c0f4884522e555a3d5c73c584dd5e105e748",
+      "hero": "Mak",
+      "day": 8,
+      "rating_bucket": "600-700",
+      "matches": 1,
+      "wins": 0,
+      "win_rate": 0
+    },
+    {
+      "template_id": "94e3d802-62f5-4f39-9c0e-4818ba5f8c9e",
+      "combo_signature": "f0d36cb8d520176f308f11104c18dce1bffd6876",
+      "layout_signature": "b2e73f86a9cc3f83321ab91ce3b4113a5dbece33",
+      "hero": "Dooley",
+      "day": 7,
+      "rating_bucket": "<500",
+      "matches": 1,
+      "wins": 0,
+      "win_rate": 0
+    },
+    {
+      "template_id": "94e3d802-62f5-4f39-9c0e-4818ba5f8c9e",
+      "combo_signature": "d03fac184a63329276855380cac9436e51c27900",
+      "layout_signature": "3d2805efa99fd5bc16838cfa744f3744037c2bf3",
+      "hero": "Mak",
+      "day": 8,
+      "rating_bucket": "500-600",
+      "matches": 1,
+      "wins": 0,
+      "win_rate": 0
+    },
+    {
+      "template_id": "94e3d802-62f5-4f39-9c0e-4818ba5f8c9e",
+      "combo_signature": "ce715236679fb650955a246393d3c600b7deb957",
+      "layout_signature": "d756123cfd72d2d6dd62fd5425fda37f926006d5",
+      "hero": "Stelle",
+      "day": 9,
+      "rating_bucket": "500-600",
+      "matches": 1,
+      "wins": 0,
+      "win_rate": 0
+    }
+  ]
+}

@@ -1,0 +1,61 @@
+{
+  "template_id": "e5af5b7c-2e8f-4135-8e14-8d1ea71908de",
+  "count": 5,
+  "records": [
+    {
+      "template_id": "e5af5b7c-2e8f-4135-8e14-8d1ea71908de",
+      "combo_signature": "73db30b7b099a7d89e78cc5181cb7b4789d81327",
+      "layout_signature": "d95ff5f0af24fc434bf2a2ccdcba1d5f4374e512",
+      "hero": "Vanessa",
+      "day": 13,
+      "rating_bucket": "500-600",
+      "matches": 1,
+      "wins": 1,
+      "win_rate": 1
+    },
+    {
+      "template_id": "e5af5b7c-2e8f-4135-8e14-8d1ea71908de",
+      "combo_signature": "fa78f74800580d0ff70ed2b37e75b9e36b97d6d0",
+      "layout_signature": "091149ccf9184499458c68bdcd27c4148395edc9",
+      "hero": "Dooley",
+      "day": 12,
+      "rating_bucket": "<500",
+      "matches": 1,
+      "wins": 1,
+      "win_rate": 1
+    },
+    {
+      "template_id": "e5af5b7c-2e8f-4135-8e14-8d1ea71908de",
+      "combo_signature": "68961f6705528713054018254738b0853ce29f5e",
+      "layout_signature": "3b9e2e62d6912b9e9d406ea23de0db5eb0a64683",
+      "hero": "Dooley",
+      "day": 13,
+      "rating_bucket": "<500",
+      "matches": 1,
+      "wins": 1,
+      "win_rate": 1
+    },
+    {
+      "template_id": "e5af5b7c-2e8f-4135-8e14-8d1ea71908de",
+      "combo_signature": "b649803ffce3d8260c2140888e59586809fc325a",
+      "layout_signature": "27f572fe2f680bc6283f79bd91b14082b7e4f095",
+      "hero": "Vanessa",
+      "day": 12,
+      "rating_bucket": "500-600",
+      "matches": 1,
+      "wins": 0,
+      "win_rate": 0
+    },
+    {
+      "template_id": "e5af5b7c-2e8f-4135-8e14-8d1ea71908de",
+      "combo_signature": "27db44cf05ebd2ac64b46d2ab4d5bcd3c0d5d451",
+      "layout_signature": "694d873aa33d2aa0108e0c400ab4d40ea4426251",
+      "hero": "Dooley",
+      "day": 14,
+      "rating_bucket": "<500",
+      "matches": 1,
+      "wins": 0,
+      "win_rate": 0
+    }
+  ]
+}

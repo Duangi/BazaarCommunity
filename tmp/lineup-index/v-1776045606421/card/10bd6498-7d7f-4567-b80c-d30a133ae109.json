@@ -1,0 +1,50 @@
+{
+  "template_id": "10bd6498-7d7f-4567-b80c-d30a133ae109",
+  "count": 4,
+  "records": [
+    {
+      "template_id": "10bd6498-7d7f-4567-b80c-d30a133ae109",
+      "combo_signature": "5f304a2d747466f582772397a3cb1c947e699693",
+      "layout_signature": "ddc4db0359778db02b9d1dadbe1af02f784a06f2",
+      "hero": "Stelle",
+      "day": 8,
+      "rating_bucket": "800-900",
+      "matches": 1,
+      "wins": 1,
+      "win_rate": 1
+    },
+    {
+      "template_id": "10bd6498-7d7f-4567-b80c-d30a133ae109",
+      "combo_signature": "d4260db6a90739faecfc6b7d701b54e74c6d11fc",
+      "layout_signature": "78ec059ba7373513cf5d5df708f6be2b119628de",
+      "hero": "Stelle",
+      "day": 7,
+      "rating_bucket": "800-900",
+      "matches": 1,
+      "wins": 0,
+      "win_rate": 0
+    },
+    {
+      "template_id": "10bd6498-7d7f-4567-b80c-d30a133ae109",
+      "combo_signature": "3c44ac3aab95a89e62af9fb86e4a23dac7ae0f8c",
+      "layout_signature": "041ae00eb441977246bda0de211f606927add63e",
+      "hero": "Stelle",
+      "day": 2,
+      "rating_bucket": "600-700",
+      "matches": 1,
+      "wins": 0,
+      "win_rate": 0
+    },
+    {
+      "template_id": "10bd6498-7d7f-4567-b80c-d30a133ae109",
+      "combo_signature": "071e9b25d97613345468e12b6d06ebcd0c5edf90",
+      "layout_signature": "3797859e904eb7349328b6fe55e0b5e0f08eec57",
+      "hero": "Stelle",
+      "day": 3,
+      "rating_bucket": "600-700",
+      "matches": 1,
+      "wins": 0,
+      "win_rate": 0
+    }
+  ]
+}

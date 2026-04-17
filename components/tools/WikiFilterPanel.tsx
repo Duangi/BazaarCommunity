@@ -8,6 +8,8 @@ interface WikiFilterPanelProps {
   onSelectItem: (item: any) => void
   enableBuildLookup?: boolean
   onLookupBuilds?: (item: any) => void
+  lookupFilterItem?: any | null
+  onClearLookupFilter?: () => void
 }
 
 export default function WikiFilterPanel({
@@ -16,6 +18,8 @@ export default function WikiFilterPanel({
   onSelectItem,
   enableBuildLookup = false,
   onLookupBuilds,
+  lookupFilterItem = null,
+  onClearLookupFilter,
 }: WikiFilterPanelProps) {
   return (
     <ItemsList
@@ -24,6 +28,8 @@ export default function WikiFilterPanel({
       onSelectItem={onSelectItem}
       enableBuildLookup={enableBuildLookup}
       onLookupBuilds={onLookupBuilds}
+      lookupFilterItem={lookupFilterItem}
+      onClearLookupFilter={onClearLookupFilter}
     />
   )
 }

@@ -1,0 +1,72 @@
+{
+  "template_id": "baec36c3-2c41-47fa-bd54-6f1d6b34e8d0",
+  "count": 6,
+  "records": [
+    {
+      "template_id": "baec36c3-2c41-47fa-bd54-6f1d6b34e8d0",
+      "combo_signature": "eb50527b6f86bb6006927c4df561fc44a0c33ff9",
+      "layout_signature": "e01616b39c89ac9be8e5a6a6d9a75a665d85e6e9",
+      "hero": "Pygmalien",
+      "day": 7,
+      "rating_bucket": "600-700",
+      "matches": 1,
+      "wins": 1,
+      "win_rate": 1
+    },
+    {
+      "template_id": "baec36c3-2c41-47fa-bd54-6f1d6b34e8d0",
+      "combo_signature": "1253e29d713f31a08a808aeaa9ed4c42e90e2535",
+      "layout_signature": "b9e5ced79cf279587800d7746cbd72b43ad2b660",
+      "hero": "Mak",
+      "day": 6,
+      "rating_bucket": "500-600",
+      "matches": 1,
+      "wins": 1,
+      "win_rate": 1
+    },
+    {
+      "template_id": "baec36c3-2c41-47fa-bd54-6f1d6b34e8d0",
+      "combo_signature": "4809328f8f5cf789ac7bdde44c664a923c9fa143",
+      "layout_signature": "90f171b9d8a44e6d654b23274f27c7a0b034166d",
+      "hero": "Mak",
+      "day": 7,
+      "rating_bucket": "500-600",
+      "matches": 1,
+      "wins": 1,
+      "win_rate": 1
+    },
+    {
+      "template_id": "baec36c3-2c41-47fa-bd54-6f1d6b34e8d0",
+      "combo_signature": "d776fbfe8f7fa6b069de62f785c349833f1a37ca",
+      "layout_signature": "b6545bea3a0809d5a7df1ace8ac53a7e831c7fce",
+      "hero": "Pygmalien",
+      "day": 6,
+      "rating_bucket": "600-700",
+      "matches": 1,
+      "wins": 0,
+      "win_rate": 0
+    },
+    {
+      "template_id": "baec36c3-2c41-47fa-bd54-6f1d6b34e8d0",
+      "combo_signature": "4809328f8f5cf789ac7bdde44c664a923c9fa143",
+      "layout_signature": "90f171b9d8a44e6d654b23274f27c7a0b034166d",
+      "hero": "Mak",
+      "day": 8,
+      "rating_bucket": "500-600",
+      "matches": 1,
+      "wins": 0,
+      "win_rate": 0
+    },
+    {
+      "template_id": "baec36c3-2c41-47fa-bd54-6f1d6b34e8d0",
+      "combo_signature": "7953624d2e3a999321ee02b6bc402d7f3bd3fb12",
+      "layout_signature": "c802d3a1cc51869a4e99981ddd24c2a17cdac122",
+      "hero": "Jules",
+      "day": 12,
+      "rating_bucket": "600-700",
+      "matches": 1,
+      "wins": 0,
+      "win_rate": 0
+    }
+  ]
+}

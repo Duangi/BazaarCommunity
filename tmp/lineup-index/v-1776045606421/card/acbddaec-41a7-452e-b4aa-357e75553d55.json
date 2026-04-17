@@ -1,0 +1,127 @@
+{
+  "template_id": "acbddaec-41a7-452e-b4aa-357e75553d55",
+  "count": 11,
+  "records": [
+    {
+      "template_id": "acbddaec-41a7-452e-b4aa-357e75553d55",
+      "combo_signature": "3a71e83f9c9f76488f922ca977395d011012bc84",
+      "layout_signature": "2723ffac36c75a99a0def03de6cceaccba88b1b8",
+      "hero": "Mak",
+      "day": 2,
+      "rating_bucket": "500-600",
+      "matches": 1,
+      "wins": 1,
+      "win_rate": 1
+    },
+    {
+      "template_id": "acbddaec-41a7-452e-b4aa-357e75553d55",
+      "combo_signature": "4add36f2dc19552fe2c2bae034e27747689e4124",
+      "layout_signature": "6ce581b36b68ce703c18456d0fc84003d56319fb",
+      "hero": "Jules",
+      "day": 6,
+      "rating_bucket": "500-600",
+      "matches": 1,
+      "wins": 1,
+      "win_rate": 1
+    },
+    {
+      "template_id": "acbddaec-41a7-452e-b4aa-357e75553d55",
+      "combo_signature": "4d8d0de1ea451dbfd4aa460b2976801c948653c2",
+      "layout_signature": "7bbec53cec792edc6f5d937dcd5b727661547ac1",
+      "hero": "Jules",
+      "day": 7,
+      "rating_bucket": "500-600",
+      "matches": 1,
+      "wins": 1,
+      "win_rate": 1
+    },
+    {
+      "template_id": "acbddaec-41a7-452e-b4aa-357e75553d55",
+      "combo_signature": "db5993651e87c9a8311e47fe32a7b65ffd06aea6",
+      "layout_signature": "6b1abf8633a1c36a89f465808d81333970ac4150",
+      "hero": "Jules",
+      "day": 8,
+      "rating_bucket": "500-600",
+      "matches": 1,
+      "wins": 1,
+      "win_rate": 1
+    },
+    {
+      "template_id": "acbddaec-41a7-452e-b4aa-357e75553d55",
+      "combo_signature": "ea3439b9eb379c1d09254ccaf8526b034395fa96",
+      "layout_signature": "cfceb102a8fcbfc2b3561b737695de25f01dafcc",
+      "hero": "Karnok",
+      "day": 9,
+      "rating_bucket": "800-900",
+      "matches": 1,
+      "wins": 1,
+      "win_rate": 1
+    },
+    {
+      "template_id": "acbddaec-41a7-452e-b4aa-357e75553d55",
+      "combo_signature": "86eae9f84bc8da28fcfbda9d5b3ccc0fd3041d3d",
+      "layout_signature": "ece401979cfd7c8375ceec0779ca3d45402d4362",
+      "hero": "Dooley",
+      "day": 4,
+      "rating_bucket": "900-1000",
+      "matches": 1,
+      "wins": 1,
+      "win_rate": 1
+    },
+    {
+      "template_id": "acbddaec-41a7-452e-b4aa-357e75553d55",
+      "combo_signature": "5fca017005272a47cfcb124dfcc0c3a687a2b6e2",
+      "layout_signature": "fe34097d3b991c43bfa266bb0575397da7a9e21d",
+      "hero": "Jules",
+      "day": 12,
+      "rating_bucket": "<500",
+      "matches": 1,
+      "wins": 1,
+      "win_rate": 1
+    },
+    {
+      "template_id": "acbddaec-41a7-452e-b4aa-357e75553d55",
+      "combo_signature": "1269b9c06acf6012a93ede2a0b20eb3e92d44412",
+      "layout_signature": "2e841335449df1e6a07a97172852867f0a6ceb87",
+      "hero": "Dooley",
+      "day": 8,
+      "rating_bucket": "500-600",
+      "matches": 1,
+      "wins": 0,
+      "win_rate": 0
+    },
+    {
+      "template_id": "acbddaec-41a7-452e-b4aa-357e75553d55",
+      "combo_signature": "ec719ca73d501e6b32837b2ed3a7dd0a31b306de",
+      "layout_signature": "e6c472e46efcfdc93c92bfbf13d05db58a992419",
+      "hero": "Jules",
+      "day": 9,
+      "rating_bucket": "500-600",
+      "matches": 1,
+      "wins": 0,
+      "win_rate": 0
+    },
+    {
+      "template_id": "acbddaec-41a7-452e-b4aa-357e75553d55",
+      "combo_signature": "49bc04b9a846c4e1195e8e9385ddc47c9e539bac",
+      "layout_signature": "cdf4bed308eb4712ea0ba80c66b50fcbc47751ce",
+      "hero": "Karnok",
+      "day": 3,
+      "rating_bucket": "700-800",
+      "matches": 1,
+      "wins": 0,
+      "win_rate": 0
+    },
+    {
+      "template_id": "acbddaec-41a7-452e-b4aa-357e75553d55",
+      "combo_signature": "4c11c97ac2a25c041912770e537f3104858e7500",
+      "layout_signature": "52e26fb48530f2d8d060ba87a0b26fe581c12e56",
+      "hero": "Pygmalien",
+      "day": 2,
+      "rating_bucket": "500-600",
+      "matches": 1,
+      "wins": 0,
+      "win_rate": 0
+    }
+  ]
+}

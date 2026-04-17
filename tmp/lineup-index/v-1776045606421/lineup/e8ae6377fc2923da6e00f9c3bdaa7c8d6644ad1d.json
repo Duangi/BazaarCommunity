@@ -1,0 +1,36 @@
+{
+  "layout_signature": "e8ae6377fc2923da6e00f9c3bdaa7c8d6644ad1d",
+  "combo_signature": "939a75070028e8950c9fa37f214ac91ec1eaf5fb",
+  "cards": [
+    {
+      "slot_index": 1,
+      "template_id": "2215483f-1fc3-495a-b492-d917dd7d588c",
+      "tier": 3,
+      "enchant_code": null
+    },
+    {
+      "slot_index": 2,
+      "template_id": "c53eff8b-0407-4e8c-adaf-70b2a66b3528",
+      "tier": 3,
+      "enchant_code": null
+    },
+    {
+      "slot_index": 4,
+      "template_id": "6c77228f-9a62-4274-a4a5-cee77f88f6ec",
+      "tier": 4,
+      "enchant_code": null
+    },
+    {
+      "slot_index": 6,
+      "template_id": "9ca6a93b-10e9-4138-abd1-0ff2e7c2c985",
+      "tier": 3,
+      "enchant_code": "Obsidian"
+    },
+    {
+      "slot_index": 8,
+      "template_id": "d7a66bfb-963f-4c13-8c2b-0bef35a650c8",
+      "tier": 4,
+      "enchant_code": "Turbo"
+    }
+  ]
+}

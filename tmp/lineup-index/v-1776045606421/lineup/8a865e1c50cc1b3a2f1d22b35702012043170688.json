@@ -1,0 +1,30 @@
+{
+  "layout_signature": "8a865e1c50cc1b3a2f1d22b35702012043170688",
+  "combo_signature": "534fc2fc3a1fe36340c28d244384c156aaf52b40",
+  "cards": [
+    {
+      "slot_index": 2,
+      "template_id": "d4c0cf1e-7856-4e40-877f-c77b34f596ed",
+      "tier": 2,
+      "enchant_code": null
+    },
+    {
+      "slot_index": 3,
+      "template_id": "2a1ae50b-6d0d-48a8-9f68-b804e8793030",
+      "tier": 1,
+      "enchant_code": null
+    },
+    {
+      "slot_index": 5,
+      "template_id": "fec7b75b-980f-4744-b1c1-19ce00b117e8",
+      "tier": 1,
+      "enchant_code": null
+    },
+    {
+      "slot_index": 7,
+      "template_id": "566b5c63-4201-41d3-b6d5-0eb527db396a",
+      "tier": 1,
+      "enchant_code": "Restorative"
+    }
+  ]
+}

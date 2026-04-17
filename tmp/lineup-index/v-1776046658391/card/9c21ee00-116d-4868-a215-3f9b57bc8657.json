@@ -1,0 +1,83 @@
+{
+  "template_id": "9c21ee00-116d-4868-a215-3f9b57bc8657",
+  "count": 7,
+  "records": [
+    {
+      "template_id": "9c21ee00-116d-4868-a215-3f9b57bc8657",
+      "combo_signature": "3064f2cf572071220e19a6bdc507ff0640bb3d9d",
+      "layout_signature": "9af75123041f75d06a01399bf022b810cca058dd",
+      "hero": "Pygmalien",
+      "day": 3,
+      "rating_bucket": "<500",
+      "matches": 1,
+      "wins": 1,
+      "win_rate": 1
+    },
+    {
+      "template_id": "9c21ee00-116d-4868-a215-3f9b57bc8657",
+      "combo_signature": "c077f53a629dc38ebb9e1bc09c8325bd2efb6bd7",
+      "layout_signature": "c561ad3de2a7550b945d33e8b6b64791b628af88",
+      "hero": "Pygmalien",
+      "day": 1,
+      "rating_bucket": "500-600",
+      "matches": 1,
+      "wins": 1,
+      "win_rate": 1
+    },
+    {
+      "template_id": "9c21ee00-116d-4868-a215-3f9b57bc8657",
+      "combo_signature": "5bb1096c8c3d84e9cc4b68302b51e34e84637f61",
+      "layout_signature": "217227785e3431c966e2695ec0d5bde218c710b6",
+      "hero": "Pygmalien",
+      "day": 3,
+      "rating_bucket": "700-800",
+      "matches": 1,
+      "wins": 0,
+      "win_rate": 0
+    },
+    {
+      "template_id": "9c21ee00-116d-4868-a215-3f9b57bc8657",
+      "combo_signature": "1c7b5d99b3eff964bb59a5e669daa1db4772d2f3",
+      "layout_signature": "061d75ad7854a52128cbea98b1b4501e83dfd207",
+      "hero": "Pygmalien",
+      "day": 2,
+      "rating_bucket": "500-600",
+      "matches": 1,
+      "wins": 0,
+      "win_rate": 0
+    },
+    {
+      "template_id": "9c21ee00-116d-4868-a215-3f9b57bc8657",
+      "combo_signature": "7f29d01b3b8f077a2ff8a821111af0dba44175f8",
+      "layout_signature": "6493810a59c1c1db2582aa522e97f3201c1e1d12",
+      "hero": "Pygmalien",
+      "day": 3,
+      "rating_bucket": "500-600",
+      "matches": 1,
+      "wins": 0,
+      "win_rate": 0
+    },
+    {
+      "template_id": "9c21ee00-116d-4868-a215-3f9b57bc8657",
+      "combo_signature": "3425caa600cf24340a9f22321e6e609f7e84efb4",
+      "layout_signature": "7ea6675c78063cff108614eac916ba9fdccf7452",
+      "hero": "Pygmalien",
+      "day": 4,
+      "rating_bucket": "<500",
+      "matches": 1,
+      "wins": 0,
+      "win_rate": 0
+    },
+    {
+      "template_id": "9c21ee00-116d-4868-a215-3f9b57bc8657",
+      "combo_signature": "707df508216ea96be573d50726b642714c7c5fb5",
+      "layout_signature": "a00a8914f34527fcecfb9a0083ebede33c455958",
+      "hero": "Pygmalien",
+      "day": 2,
+      "rating_bucket": "500-600",
+      "matches": 1,
+      "wins": 0,
+      "win_rate": 0
+    }
+  ]
+}

@@ -34,8 +34,8 @@
 }
 
 .tab.active {
-  color: #667eea;
-  border-bottom-color: #667eea;
+  color: #ffcd19;
+  border-bottom-color: #ffcd19;
   background: #1a1a1a;
 }
 
@@ -47,13 +47,21 @@
   display: flex;
   flex-direction: column;
   min-height: 140px;
+  max-height: calc(100% - 200px);
   flex-shrink: 0;
+  overflow: hidden;
+}
+
+.searchBoxContainerCollapsed {
+  min-height: 0;
+  height: auto !important;
+  max-height: none;
 }
 
 .filterContent {
   display: flex;
   flex-direction: column;
-  height: 100%;
+  flex: 1;
   min-height: 0;
 }
 
@@ -116,12 +124,13 @@
   flex: 1;
   min-height: 0;
   overflow-y: auto;
+  overscroll-behavior: contain;
 }
 
 .resizeBar {
   height: 14px;
   flex-shrink: 0;
-  cursor: ns-resize;
+  cursor: row-resize !important;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -132,7 +141,7 @@
 }
 
 .resizeBar * {
-  cursor: ns-resize;
+  cursor: row-resize !important;
 }
 
 .resizeBar:hover {
@@ -347,12 +356,59 @@
   background: #14110d;
 }
 
+.lookupActionLeft {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+  flex: 1;
+}
+
 .lookupTargetName {
   font-size: 12px;
   color: #b6b6b6;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
+}
+
+.lookupChip {
+  display: inline-flex;
+  align-items: center;
+  max-width: 220px;
+  border: 1px solid #86631b;
+  background: #2a210d;
+  color: #ffe2a0;
+  border-radius: 8px;
+  padding: 2px 4px 2px 8px;
+  position: relative;
+  flex-shrink: 0;
+}
+
+.lookupChipText {
+  font-size: 12px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 170px;
+}
+
+.lookupChipClose {
+  margin-left: 6px;
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  border: 1px solid rgba(255, 205, 25, 0.45);
+  background: rgba(0, 0, 0, 0.3);
+  color: #ffd46e;
+  font-size: 11px;
+  line-height: 1;
+  padding: 0;
+  cursor: pointer;
+}
+
+.lookupChipClose:hover {
+  background: rgba(255, 205, 25, 0.18);
 }
 
 .lookupBuildBtn {

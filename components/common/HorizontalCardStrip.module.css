@@ -1,0 +1,75 @@
+.row {
+  display: flex;
+  gap: var(--strip-gap, 8px);
+  flex-wrap: wrap;
+  align-items: flex-start;
+}
+
+.cardBtn {
+  border: 1px solid #3a3a3a;
+  border-radius: var(--strip-radius, 7px);
+  overflow: hidden;
+  background: #0f0f0f;
+  padding: 0;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: stretch;
+  justify-content: stretch;
+  box-sizing: border-box;
+}
+
+.cardStatic {
+  border: 1px solid #3a3a3a;
+  border-radius: var(--strip-radius, 7px);
+  overflow: hidden;
+  background: #0f0f0f;
+  display: inline-flex;
+  align-items: stretch;
+  justify-content: stretch;
+  box-sizing: border-box;
+}
+
+.img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+
+.fallback {
+  width: 100%;
+  height: 100%;
+  display: grid;
+  place-items: center;
+  color: #9ca7bf;
+  background: #171a21;
+  font-size: 16px;
+}
+
+.small {
+  width: calc(46px * var(--strip-scale, 1));
+  height: calc(92px * var(--strip-scale, 1));
+}
+
+.medium {
+  width: calc(92px * var(--strip-scale, 1));
+  height: calc(92px * var(--strip-scale, 1));
+}
+
+.large {
+  width: calc(138px * var(--strip-scale, 1));
+  height: calc(92px * var(--strip-scale, 1));
+}
+
+.roleCore {
+  box-shadow: 0 0 0 1px rgba(255, 212, 64, 0.7), 0 0 12px rgba(255, 212, 64, 0.25);
+}
+
+.roleSub {
+  box-shadow: 0 0 0 1px rgba(103, 189, 255, 0.7), 0 0 12px rgba(103, 189, 255, 0.2);
+}
+
+.roleTech {
+  box-shadow: 0 0 0 1px rgba(122, 255, 173, 0.4);
+}
+

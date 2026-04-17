@@ -1,0 +1,42 @@
+{
+  "layout_signature": "d81d342554f868e63ea50cbd278a0d737936085d",
+  "combo_signature": "2b993d31c778855359aab1cf9c80b958c549df52",
+  "cards": [
+    {
+      "slot_index": 0,
+      "template_id": "83befde2-64f9-4cd3-a2bd-a080a0c85ae3",
+      "tier": 3,
+      "enchant_code": null
+    },
+    {
+      "slot_index": 3,
+      "template_id": "9de5b9e6-d2a7-46f1-be70-ee6bded32ead",
+      "tier": 3,
+      "enchant_code": null
+    },
+    {
+      "slot_index": 4,
+      "template_id": "d5515ae3-b98d-4272-8add-82f441969ffe",
+      "tier": 4,
+      "enchant_code": null
+    },
+    {
+      "slot_index": 6,
+      "template_id": "c017c0dd-af3c-47e0-b510-3661d9dcd7f2",
+      "tier": 4,
+      "enchant_code": null
+    },
+    {
+      "slot_index": 7,
+      "template_id": "c400ec7f-8d7a-4845-9ab4-06bac18ef551",
+      "tier": 3,
+      "enchant_code": null
+    },
+    {
+      "slot_index": 9,
+      "template_id": "e6d331a7-c0e3-4619-9eee-c7c5023969bb",
+      "tier": 2,
+      "enchant_code": "Deadly"
+    }
+  ]
+}

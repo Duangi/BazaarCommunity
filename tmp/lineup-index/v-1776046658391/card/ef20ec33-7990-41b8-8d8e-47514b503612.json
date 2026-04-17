@@ -1,0 +1,50 @@
+{
+  "template_id": "ef20ec33-7990-41b8-8d8e-47514b503612",
+  "count": 4,
+  "records": [
+    {
+      "template_id": "ef20ec33-7990-41b8-8d8e-47514b503612",
+      "combo_signature": "bd0adc1fcd7306fe11bd6303608feaae7d054241",
+      "layout_signature": "e564f6137cb5f2643291c68a9e87cc9024c7458e",
+      "hero": "Mak",
+      "day": 2,
+      "rating_bucket": "900-1000",
+      "matches": 1,
+      "wins": 1,
+      "win_rate": 1
+    },
+    {
+      "template_id": "ef20ec33-7990-41b8-8d8e-47514b503612",
+      "combo_signature": "2288200c7364b7e43d3b6cbf21c3aee7dbf81155",
+      "layout_signature": "48a958878e414b3b8da74e35d20470e08b4b5821",
+      "hero": "Mak",
+      "day": 5,
+      "rating_bucket": "500-600",
+      "matches": 1,
+      "wins": 0,
+      "win_rate": 0
+    },
+    {
+      "template_id": "ef20ec33-7990-41b8-8d8e-47514b503612",
+      "combo_signature": "84d5b43e4c6d792334730bbdf66f8260c9e29dfb",
+      "layout_signature": "5284f559861ca24bd85808267239bfd6c90669ab",
+      "hero": "Mak",
+      "day": 3,
+      "rating_bucket": "700-800",
+      "matches": 1,
+      "wins": 0,
+      "win_rate": 0
+    },
+    {
+      "template_id": "ef20ec33-7990-41b8-8d8e-47514b503612",
+      "combo_signature": "4d544f97dcde7c850d973f63d97a8fe1f8b576e3",
+      "layout_signature": "d52a03719f706e0f2f492180b8e177bf015d5d06",
+      "hero": "Karnok",
+      "day": 8,
+      "rating_bucket": "600-700",
+      "matches": 1,
+      "wins": 0,
+      "win_rate": 0
+    }
+  ]
+}

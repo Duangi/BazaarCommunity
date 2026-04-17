@@ -39,8 +39,67 @@ export const ENCHANT_COLORS: Record<string, string> = {
   "黑曜石": "#9d4a6f"
 }
 
+function getPathValue(source: any, path: string): any {
+  if (!source || !path) return undefined
+  const parts = String(path)
+    .split('.')
+    .map((x) => x.trim())
+    .filter(Boolean)
+  let cur: any = source
+  for (const p of parts) {
+    if (cur == null) return undefined
+    const index = Number(p)
+    if (Array.isArray(cur) && Number.isInteger(index)) {
+      cur = cur[index]
+      continue
+    }
+    cur = cur[p]
+  }
+  return cur
+}
+
+function stringifyDynamicValue(value: any): string {
+  if (value == null) return ''
+  if (typeof value === 'string' || typeof value === 'number' || typeof value === 'boolean') {
+    return String(value)
+  }
+  if (Array.isArray(value)) {
+    const parts = value.map((v) => stringifyDynamicValue(v)).filter(Boolean)
+    return parts.join('/')
+  }
+  if (typeof value === 'object') {
+    const byLabel = value.cn || value.name_cn || value.en || value.name_en || value.value || value.text
+    if (byLabel != null) return String(byLabel)
+    return ''
+  }
+  return ''
+}
+
+function interpolatePlaceholders(content: string, context?: any): string {
+  if (!content || !context) return content
+  return content.replace(/\{([^{}]+)\}/g, (full, pathRaw) => {
+    const path = String(pathRaw || '').trim()
+    if (!path) return full
+    const value = getPathValue(context, path)
+    const rendered = stringifyDynamicValue(value)
+    return rendered || full
+  })
+}
+
+function normalizeDurationInText(content: string): string {
+  if (!content) return content
+  // Some sources use millisecond-scale numbers in Chinese "秒" phrases (e.g. 1000秒 -> 1秒).
+  return content.replace(/(\d+(?:\.\d+)?)\s*秒/g, (_, rawNum: string) => {
+    const n = Number(rawNum)
+    if (!Number.isFinite(n)) return `${rawNum}秒`
+    const sec = Math.abs(n) >= 100 ? n / 1000 : n
+    const s = Number(sec.toFixed(3)).toString()
+    return `${s}秒`
+  })
+}
+
 // 渲染文本，高亮关键词和数值序列
-export const renderText = (text: any) => {
+export const renderText = (text: any, context?: any) => {
   if (!text) return null
   
   let content = ""
@@ -53,6 +112,9 @@ export const renderText = (text: any) => {
   } else {
     return null
   }
+
+  content = interpolatePlaceholders(content, context)
+  content = normalizeDurationInText(content)
   
   // 1. 处理数值序列如 3/6/9/12
   const parts = content.split(/(\d+(?:\/\d+)+)/g)

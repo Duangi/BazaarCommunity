@@ -116,7 +116,22 @@ function computeCardsData(snapshot: LineupSnapshot): CommunityBuild['cards_data'
     .filter((x: { id: string }) => !!x.id)
 }
 
+function parseMaybeJson<T = any>(value: any): T | null {
+  if (value == null) return null
+  if (typeof value === 'object') return value as T
+  if (typeof value !== 'string') return null
+  const raw = value.trim()
+  if (!raw) return null
+  try {
+    return JSON.parse(raw) as T
+  } catch {
+    return null
+  }
+}
+
 function mapRowToBuild(row: any): CommunityBuild {
+  const parsedSnapshot = parseMaybeJson<any>(row.lineup_payload)
+  const parsedCards = parseMaybeJson<any[]>(row.cards_data)
   return {
     id: row.uuid,
     name: row.name || '未命名阵容',
@@ -132,15 +147,15 @@ function mapRowToBuild(row: any): CommunityBuild {
     favorites: Number(row.favorites_count || 0),
     rating: Number(row.rating_score || 0),
     publishedAt: row.created_at || new Date().toISOString(),
-    cards_data: Array.isArray(row.cards_data) ? row.cards_data : [],
+    cards_data: Array.isArray(parsedCards) ? parsedCards : Array.isArray(row.cards_data) ? row.cards_data : [],
     notes: row.notes || '',
     authorName: row.author_name || '',
     authorUserId: row.author_user_id || '',
     authorBilibiliUid: row.author_bilibili_uid || '',
     videoBv: row.video_bv || '',
     videoTitle: row.video_title || '',
-    snapshot: row.lineup_payload || null,
-    specialSlots: Array.isArray(row.special_slots) ? row.special_slots : extractSpecialSlots(row.lineup_payload),
+    snapshot: parsedSnapshot || row.lineup_payload || null,
+    specialSlots: Array.isArray(row.special_slots) ? row.special_slots : extractSpecialSlots(parsedSnapshot || row.lineup_payload),
   }
 }
 
@@ -184,6 +199,7 @@ async function fetchLineupSummaryRows(
     'author_bilibili_uid',
     'video_bv',
     'video_title',
+    'lineup_payload',
     'created_at',
   ].join(',')
   const baseColumns = `season,${legacyColumns}`

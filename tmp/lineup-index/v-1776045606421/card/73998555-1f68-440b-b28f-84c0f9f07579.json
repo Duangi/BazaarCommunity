@@ -1,0 +1,28 @@
+{
+  "template_id": "73998555-1f68-440b-b28f-84c0f9f07579",
+  "count": 2,
+  "records": [
+    {
+      "template_id": "73998555-1f68-440b-b28f-84c0f9f07579",
+      "combo_signature": "3522190d5b6374ae0d4195a1cbeaf6c4e68f2763",
+      "layout_signature": "53a48b2e9fdf020fe969e45cd47c6770906366b4",
+      "hero": "Dooley",
+      "day": 9,
+      "rating_bucket": "600-700",
+      "matches": 1,
+      "wins": 1,
+      "win_rate": 1
+    },
+    {
+      "template_id": "73998555-1f68-440b-b28f-84c0f9f07579",
+      "combo_signature": "d4f24e2edd6a6730fc778d1a24ad2fcf67b6f617",
+      "layout_signature": "33178f63ceab832570997a245c789c0c2c456594",
+      "hero": "Jules",
+      "day": 7,
+      "rating_bucket": "<500",
+      "matches": 1,
+      "wins": 0,
+      "win_rate": 0
+    }
+  ]
+}

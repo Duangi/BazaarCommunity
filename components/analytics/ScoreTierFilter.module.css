@@ -1,0 +1,66 @@
+.wrap {
+  border: 1px solid #3a3a3a;
+  border-radius: 12px;
+  background: #161616;
+  padding: 10px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.headRow {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.title {
+  font-size: 12px;
+  color: #f5cd62;
+  font-weight: 700;
+}
+
+.highBtn {
+  border: 1px solid #514226;
+  background: #251d10;
+  color: #ebc77f;
+  border-radius: 8px;
+  font-size: 12px;
+  padding: 4px 8px;
+  cursor: pointer;
+}
+
+.highBtnActive {
+  border-color: #e6b850;
+  color: #ffe4ad;
+  box-shadow: 0 0 0 1px rgba(230, 184, 80, 0.3);
+}
+
+.grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 6px;
+}
+
+.tierBtn {
+  border: 1px solid #3d3d3d;
+  background: #1f1f1f;
+  color: #ddd;
+  border-radius: 8px;
+  font-size: 12px;
+  padding: 6px 8px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.tierBtnActive {
+  border-color: #f3c96b;
+  color: #ffeec6;
+  background: #2b2110;
+}
+
+.count {
+  color: #a7a7a7;
+}

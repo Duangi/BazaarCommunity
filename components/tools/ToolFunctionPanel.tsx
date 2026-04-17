@@ -2,7 +2,7 @@
 
 import { useEffect, useMemo, useState } from 'react'
 import RatingTool from '@/components/RatingTool'
-import LineupPlanner from '@/components/LineupPlanner'
+import LineupSchemeWorkbench from '@/components/tools/LineupSchemeWorkbench'
 import styles from './ToolFunctionPanel.module.css'
 import { loadToolDraftsFromDb, saveToolDraftsToDb } from '@/lib/draftDb'
 
@@ -234,7 +234,7 @@ export default function ToolFunctionPanel({
         {activeView === 'rating' ? (
           <RatingTool onSelectItem={onSelectItem} onDraftApiChange={setDraftApi} />
         ) : (
-          <LineupPlanner onSelectItem={onSelectItem} onDraftApiChange={setDraftApi} />
+          <LineupSchemeWorkbench onSelectItem={onSelectItem} onDraftApiChange={setDraftApi} />
         )}
         {toast && (
           <div className={`${styles.draftToast} ${toast.tone === 'success' ? styles.toastSuccess : styles.toastError}`}>

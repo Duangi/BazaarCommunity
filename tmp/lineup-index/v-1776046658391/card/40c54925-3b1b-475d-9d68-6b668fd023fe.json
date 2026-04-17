@@ -1,0 +1,50 @@
+{
+  "template_id": "40c54925-3b1b-475d-9d68-6b668fd023fe",
+  "count": 4,
+  "records": [
+    {
+      "template_id": "40c54925-3b1b-475d-9d68-6b668fd023fe",
+      "combo_signature": "dd9ce58a32f2d79d5927a63fe0cd7529e39a48c2",
+      "layout_signature": "411991d390d674f6742e1b4b0783e1e9e4effcb1",
+      "hero": "Karnok",
+      "day": 6,
+      "rating_bucket": "700-800",
+      "matches": 1,
+      "wins": 1,
+      "win_rate": 1
+    },
+    {
+      "template_id": "40c54925-3b1b-475d-9d68-6b668fd023fe",
+      "combo_signature": "13700fd5b453461903dbce43b7a1d444f2f549f2",
+      "layout_signature": "85520d6db4e23e82d984823e1a84d447f71763a1",
+      "hero": "Mak",
+      "day": 5,
+      "rating_bucket": "600-700",
+      "matches": 1,
+      "wins": 0,
+      "win_rate": 0
+    },
+    {
+      "template_id": "40c54925-3b1b-475d-9d68-6b668fd023fe",
+      "combo_signature": "c424bf76c7ae59fa3aebf3491bf71d5e0f2323c7",
+      "layout_signature": "48c63480e24d494ff0d396836995a51ec67507c4",
+      "hero": "Pygmalien",
+      "day": 5,
+      "rating_bucket": "500-600",
+      "matches": 1,
+      "wins": 0,
+      "win_rate": 0
+    },
+    {
+      "template_id": "40c54925-3b1b-475d-9d68-6b668fd023fe",
+      "combo_signature": "8b9b10d39ffa7878bc68d57702dae391ddf846f6",
+      "layout_signature": "d24a7a2ac261f3190bc3dbc6175ea17017380723",
+      "hero": "Karnok",
+      "day": 7,
+      "rating_bucket": "700-800",
+      "matches": 1,
+      "wins": 0,
+      "win_rate": 0
+    }
+  ]
+}

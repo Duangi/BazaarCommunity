@@ -1,0 +1,72 @@
+{
+  "template_id": "0022c409-c839-41e8-8022-65a407457dfe",
+  "count": 6,
+  "records": [
+    {
+      "template_id": "0022c409-c839-41e8-8022-65a407457dfe",
+      "combo_signature": "19dc1783962aadf127214e9a3125129968add760",
+      "layout_signature": "967f0207879d8bcce793fd256322666d1d14f1c3",
+      "hero": "Jules",
+      "day": 2,
+      "rating_bucket": "800-900",
+      "matches": 1,
+      "wins": 1,
+      "win_rate": 1
+    },
+    {
+      "template_id": "0022c409-c839-41e8-8022-65a407457dfe",
+      "combo_signature": "b08b1ee2d3bb0d276b6102ed6817c3f5493f0e3c",
+      "layout_signature": "132894d1db1d7dc1c0296b1d3c0de013cf458065",
+      "hero": "Pygmalien",
+      "day": 6,
+      "rating_bucket": "700-800",
+      "matches": 1,
+      "wins": 1,
+      "win_rate": 1
+    },
+    {
+      "template_id": "0022c409-c839-41e8-8022-65a407457dfe",
+      "combo_signature": "3a015af0bd3fee52759036b36ce3c7f282180645",
+      "layout_signature": "0878babc8bb0356b10c845bbe81fc7bf07c8ab19",
+      "hero": "Vanessa",
+      "day": 12,
+      "rating_bucket": "600-700",
+      "matches": 1,
+      "wins": 0,
+      "win_rate": 0
+    },
+    {
+      "template_id": "0022c409-c839-41e8-8022-65a407457dfe",
+      "combo_signature": "d199b0194a618ed17e845170d6bdac3d9a6b7139",
+      "layout_signature": "71ba5fd27107b6d8c319dfd19010e88cf8c651f8",
+      "hero": "Pygmalien",
+      "day": 12,
+      "rating_bucket": "600-700",
+      "matches": 1,
+      "wins": 0,
+      "win_rate": 0
+    },
+    {
+      "template_id": "0022c409-c839-41e8-8022-65a407457dfe",
+      "combo_signature": "a0d25fcc113d0ae632dae3e25d5fd65de9bd0881",
+      "layout_signature": "88ce1c1fe47c535f48dcbe3c7024a3784515f6c6",
+      "hero": "Jules",
+      "day": 6,
+      "rating_bucket": "700-800",
+      "matches": 1,
+      "wins": 0,
+      "win_rate": 0
+    },
+    {
+      "template_id": "0022c409-c839-41e8-8022-65a407457dfe",
+      "combo_signature": "867df63a92eff343028a4640a7653e5702312a94",
+      "layout_signature": "15d75b76235ccd44eaf70d747594004f537730f5",
+      "hero": "Karnok",
+      "day": 12,
+      "rating_bucket": "800-900",
+      "matches": 1,
+      "wins": 0,
+      "win_rate": 0
+    }
+  ]
+}

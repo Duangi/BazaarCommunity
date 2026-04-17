@@ -1,0 +1,30 @@
+{
+  "layout_signature": "a09d716efe3f01d09ec0782e97bf187901c693ab",
+  "combo_signature": "fed50cadd5c2e39a6c86967f082f2433824bc992",
+  "cards": [
+    {
+      "slot_index": 2,
+      "template_id": "4c8c35c4-ab16-465c-92be-0113dd99d3df",
+      "tier": 1,
+      "enchant_code": null
+    },
+    {
+      "slot_index": 4,
+      "template_id": "cdea14ac-23d0-43c2-95b3-12cedab1795a",
+      "tier": 1,
+      "enchant_code": "Mossy"
+    },
+    {
+      "slot_index": 5,
+      "template_id": "09132149-783d-4d5a-900c-31135bffab44",
+      "tier": 1,
+      "enchant_code": null
+    },
+    {
+      "slot_index": 6,
+      "template_id": "26621cbf-809d-4522-ad24-34443af96f27",
+      "tier": 1,
+      "enchant_code": null
+    }
+  ]
+}

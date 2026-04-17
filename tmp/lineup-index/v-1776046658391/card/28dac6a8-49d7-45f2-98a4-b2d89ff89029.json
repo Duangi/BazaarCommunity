@@ -1,0 +1,61 @@
+{
+  "template_id": "28dac6a8-49d7-45f2-98a4-b2d89ff89029",
+  "count": 5,
+  "records": [
+    {
+      "template_id": "28dac6a8-49d7-45f2-98a4-b2d89ff89029",
+      "combo_signature": "f81078bd3959e8c46e7bd56ab34711ee5916fbae",
+      "layout_signature": "12de89312f7f5c852eb0191583d4805620cf7e3f",
+      "hero": "Stelle",
+      "day": 8,
+      "rating_bucket": "900-1000",
+      "matches": 1,
+      "wins": 0,
+      "win_rate": 0
+    },
+    {
+      "template_id": "28dac6a8-49d7-45f2-98a4-b2d89ff89029",
+      "combo_signature": "f81078bd3959e8c46e7bd56ab34711ee5916fbae",
+      "layout_signature": "12de89312f7f5c852eb0191583d4805620cf7e3f",
+      "hero": "Stelle",
+      "day": 9,
+      "rating_bucket": "900-1000",
+      "matches": 1,
+      "wins": 0,
+      "win_rate": 0
+    },
+    {
+      "template_id": "28dac6a8-49d7-45f2-98a4-b2d89ff89029",
+      "combo_signature": "39e32aa85b76662cee8714fabf3f24c330333bbd",
+      "layout_signature": "80a23077c08135289c9acd4e3e3f33b48ee79d79",
+      "hero": "Pygmalien",
+      "day": 3,
+      "rating_bucket": "<500",
+      "matches": 1,
+      "wins": 0,
+      "win_rate": 0
+    },
+    {
+      "template_id": "28dac6a8-49d7-45f2-98a4-b2d89ff89029",
+      "combo_signature": "e5331487e320f621f080968b9bca2081c719ab38",
+      "layout_signature": "13c563290df14fec515466a45879cc23578a7434",
+      "hero": "Pygmalien",
+      "day": 3,
+      "rating_bucket": "700-800",
+      "matches": 1,
+      "wins": 0,
+      "win_rate": 0
+    },
+    {
+      "template_id": "28dac6a8-49d7-45f2-98a4-b2d89ff89029",
+      "combo_signature": "a3a0cf261161025bf5568d87dff49a6fb64bc1fe",
+      "layout_signature": "4250359d5a036d9944601bb6a4b01c8222827897",
+      "hero": "Pygmalien",
+      "day": 4,
+      "rating_bucket": "700-800",
+      "matches": 1,
+      "wins": 0,
+      "win_rate": 0
+    }
+  ]
+}

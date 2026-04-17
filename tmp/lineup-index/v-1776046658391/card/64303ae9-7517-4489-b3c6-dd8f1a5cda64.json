@@ -1,0 +1,28 @@
+{
+  "template_id": "64303ae9-7517-4489-b3c6-dd8f1a5cda64",
+  "count": 2,
+  "records": [
+    {
+      "template_id": "64303ae9-7517-4489-b3c6-dd8f1a5cda64",
+      "combo_signature": "b9887a94da1e104ba41c521cef0ae56ccafc63df",
+      "layout_signature": "031cabfde0c6ddffeb2535ec891dce21b9af324e",
+      "hero": "Mak",
+      "day": 6,
+      "rating_bucket": "600-700",
+      "matches": 1,
+      "wins": 1,
+      "win_rate": 1
+    },
+    {
+      "template_id": "64303ae9-7517-4489-b3c6-dd8f1a5cda64",
+      "combo_signature": "3a015af0bd3fee52759036b36ce3c7f282180645",
+      "layout_signature": "0878babc8bb0356b10c845bbe81fc7bf07c8ab19",
+      "hero": "Vanessa",
+      "day": 12,
+      "rating_bucket": "600-700",
+      "matches": 1,
+      "wins": 0,
+      "win_rate": 0
+    }
+  ]
+}

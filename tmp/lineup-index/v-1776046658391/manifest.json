@@ -1,0 +1,15 @@
+{
+  "version": "v-1776046658391",
+  "created_at": "2026-04-13T02:17:39.839Z",
+  "source_zip": "/Users/duang/Downloads/归档.zip",
+  "include_opponent": false,
+  "snapshots": 170975,
+  "variants": 170584,
+  "card_files": 1049,
+  "lineup_files": 148981,
+  "lineup_shards": 256,
+  "paths": {
+    "card": "card/{template_id}.json",
+    "lineup_shard": "lineup-shards/{layout_signature_prefix2}.json"
+  }
+}

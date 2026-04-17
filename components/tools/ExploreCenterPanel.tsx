@@ -34,6 +34,7 @@ interface ExploreCenterPanelProps {
   itemsById: Record<string, any>
   filters: ExploreFilters
   lookupCardId: string | null
+  lookupCard?: any | null
   focusCardId?: string | null
   userReactions: Record<string, { liked?: boolean; favorited?: boolean }>
   favoriteLineupIds: string[]
@@ -71,6 +72,7 @@ export default function ExploreCenterPanel({
   itemsById,
   filters,
   lookupCardId,
+  lookupCard = null,
   focusCardId,
   userReactions,
   favoriteLineupIds,
@@ -100,6 +102,125 @@ export default function ExploreCenterPanel({
   } | null>(null)
 
   const followingSet = useMemo(() => new Set(followingUserIds), [followingUserIds])
+  const normalizeLookupText = (value: any): string => String(value || '').trim().toLowerCase()
+
+  const lookupNeedle = useMemo(() => {
+    if (!lookupCardId && !lookupCard) return null
+    const idSet = new Set<string>()
+    const nameSet = new Set<string>()
+    const pushName = (value: any) => {
+      const s = normalizeLookupText(value)
+      if (s) nameSet.add(s)
+    }
+    const pushId = (value: any) => {
+      const s = normalizeLookupText(value)
+      if (s) idSet.add(s)
+    }
+    pushId(lookupCardId)
+    pushId(lookupCard?.id)
+    pushId(lookupCard?.source_key)
+    pushName(lookupCard?.name_cn)
+    pushName(lookupCard?.name_en)
+    return { idSet, nameSet }
+  }, [lookupCardId, lookupCard])
+
+  const parseSnapshot = (build: CommunityBuild): any | null => {
+    const raw = (build as any)?.snapshot
+    if (!raw) return null
+    if (typeof raw === 'object') return raw
+    if (typeof raw === 'string') {
+      try {
+        return JSON.parse(raw)
+      } catch {
+        return null
+      }
+    }
+    return null
+  }
+
+  const isLookupItemMatch = (item: any): boolean => {
+    if (!lookupNeedle || !item) return false
+    const sid = normalizeLookupText(item?.id || item?.templateId || item?.template_id || item?.source_key)
+    const scn = normalizeLookupText(item?.name_cn || item?.name)
+    const sen = normalizeLookupText(item?.name_en || item?.title)
+    return Boolean(
+      (sid && lookupNeedle.idSet.has(sid)) ||
+      (scn && lookupNeedle.nameSet.has(scn)) ||
+      (sen && lookupNeedle.nameSet.has(sen))
+    )
+  }
+
+  const findLookupRoleFromSnapshot = (build: CommunityBuild): 'core' | 'sub' | 'tech' | null => {
+    if (!lookupNeedle) return null
+    const snapshot = parseSnapshot(build)
+    const segments = Array.isArray(snapshot?.segments) ? snapshot.segments : []
+    if (segments.length === 0) return null
+
+    const matchedRoles: Array<'core' | 'sub' | 'tech'> = []
+    for (const seg of segments) {
+      const segBuilds = Array.isArray(seg?.builds) ? seg.builds : []
+      for (const oneBuild of segBuilds) {
+        const cards = Array.isArray(oneBuild?.cards) ? oneBuild.cards : []
+        const coreSet = new Set((Array.isArray(oneBuild?.corePlacementIds) ? oneBuild.corePlacementIds : []).map((x: any) => String(x)))
+        const subSet = new Set((Array.isArray(oneBuild?.secondaryPlacementIds) ? oneBuild.secondaryPlacementIds : []).map((x: any) => String(x)))
+        for (const card of cards) {
+          const item = card?.item || {}
+          if (!isLookupItemMatch(item)) continue
+          const pid = String(card?.placementId || '')
+          let role: 'core' | 'sub' | 'tech' = 'tech'
+          if (pid && coreSet.has(pid)) role = 'core'
+          else if (pid && subSet.has(pid)) role = 'sub'
+          matchedRoles.push(role)
+        }
+      }
+    }
+    if (matchedRoles.length === 0) return null
+    return [...matchedRoles].sort((a, b) => getRoleWeight(a) - getRoleWeight(b))[0]
+  }
+
+  const findLookupRole = (build: CommunityBuild): 'core' | 'sub' | 'tech' | null => {
+    if (!lookupNeedle) return null
+    const cards = Array.isArray(build.cards_data) ? build.cards_data : []
+    for (const card of cards) {
+      const rawId = normalizeLookupText((card as any)?.id)
+      if (!rawId) continue
+      if (lookupNeedle.idSet.has(rawId)) return ((card as any)?.role || 'tech') as 'core' | 'sub' | 'tech'
+      const mapped = itemsById[(card as any)?.id]
+      const mappedCn = normalizeLookupText(mapped?.name_cn)
+      const mappedEn = normalizeLookupText(mapped?.name_en)
+      if ((mappedCn && lookupNeedle.nameSet.has(mappedCn)) || (mappedEn && lookupNeedle.nameSet.has(mappedEn))) {
+        return ((card as any)?.role || 'tech') as 'core' | 'sub' | 'tech'
+      }
+    }
+    return findLookupRoleFromSnapshot(build)
+  }
+
+  const buildMatchesLookup = (build: CommunityBuild): boolean => {
+    if (!lookupNeedle) return true
+    const cards = Array.isArray(build.cards_data) ? build.cards_data : []
+    for (const card of cards) {
+      const rawId = normalizeLookupText((card as any)?.id)
+      if (rawId && lookupNeedle.idSet.has(rawId)) return true
+      const mapped = itemsById[(card as any)?.id]
+      const mappedCn = normalizeLookupText(mapped?.name_cn)
+      const mappedEn = normalizeLookupText(mapped?.name_en)
+      if ((mappedCn && lookupNeedle.nameSet.has(mappedCn)) || (mappedEn && lookupNeedle.nameSet.has(mappedEn))) {
+        return true
+      }
+    }
+    const snapshot = parseSnapshot(build)
+    const segments = Array.isArray(snapshot?.segments) ? snapshot.segments : []
+    for (const seg of segments) {
+      const segBuilds = Array.isArray(seg?.builds) ? seg.builds : []
+      for (const oneBuild of segBuilds) {
+        const snapshotCards = Array.isArray(oneBuild?.cards) ? oneBuild.cards : []
+        for (const card of snapshotCards) {
+          if (isLookupItemMatch(card?.item || {})) return true
+        }
+      }
+    }
+    return false
+  }
 
   const filtered = useMemo(() => {
     let result = [...builds]
@@ -121,15 +242,15 @@ export default function ExploreCenterPanel({
       })
     }
     result = result.filter((b) => b.dayTo >= filters.dayMin && b.dayFrom <= filters.dayMax)
-    if (lookupCardId) {
-      result = result.filter((b) => b.cards_data.some((c) => c.id === lookupCardId))
+    if (lookupNeedle) {
+      result = result.filter((b) => buildMatchesLookup(b))
       result = result.filter((b) => {
-        const role = b.cards_data.find((c) => c.id === lookupCardId)?.role
-        return role ? filters.lookupRoles.includes(role) : false
+        const role = findLookupRole(b) || 'tech'
+        return filters.lookupRoles.includes(role)
       })
       result.sort((a, b) => {
-        const aRole = a.cards_data.find((c) => c.id === lookupCardId)?.role || 'tech'
-        const bRole = b.cards_data.find((c) => c.id === lookupCardId)?.role || 'tech'
+        const aRole = findLookupRole(a) || 'tech'
+        const bRole = findLookupRole(b) || 'tech'
         if (getRoleWeight(aRole) !== getRoleWeight(bRole)) return getRoleWeight(aRole) - getRoleWeight(bRole)
         return b.dayTo - a.dayTo
       })
@@ -149,7 +270,7 @@ export default function ExploreCenterPanel({
       result = result.filter((b) => b.id === focusFavoriteId)
     }
     return result
-  }, [builds, filters, lookupCardId, onlyFavorites, favoriteLineupIds, focusFavoriteId, followingSet])
+  }, [builds, filters, lookupNeedle, onlyFavorites, favoriteLineupIds, focusFavoriteId, followingSet])
 
   const activeCardId = lookupCardId || focusCardId || null
   const filteredRatings = useMemo(() => {
@@ -213,6 +334,43 @@ export default function ExploreCenterPanel({
     if (s.includes('small') || s.includes('小')) return styles.thumbSmall
     if (s.includes('large') || s.includes('大')) return styles.thumbLarge
     return styles.thumbMedium
+  }
+
+  const extractSnapshotCards = (build: CommunityBuild) => {
+    const rawSnapshot = (build as any)?.snapshot
+    const snapshot =
+      rawSnapshot && typeof rawSnapshot === 'string'
+        ? (() => {
+            try {
+              return JSON.parse(rawSnapshot)
+            } catch {
+              return null
+            }
+          })()
+        : rawSnapshot
+    const segments = Array.isArray(snapshot?.segments) ? snapshot.segments : []
+    if (segments.length === 0) return []
+    const maxSeg = [...segments].sort((a: any, b: any) => Number(b?.dayTo || 0) - Number(a?.dayTo || 0))[0]
+    const firstBuild = maxSeg?.builds?.[0]
+    const cards = Array.isArray(firstBuild?.cards)
+      ? firstBuild.cards
+      : Array.isArray(firstBuild?.placements)
+      ? firstBuild.placements
+      : []
+    return cards
+      .map((c: any, idx: number) => {
+        const item = c?.item || {}
+        const id = String(item?.id || item?.templateId || item?.template_id || c?.id || '').trim()
+        if (!id) return null
+        return {
+          id,
+          pos: Number(c?.start ?? idx) + 1,
+          size: String(item?.size || 'Medium'),
+          role: 'tech' as 'core' | 'sub' | 'tech',
+          item,
+        }
+      })
+      .filter(Boolean) as Array<{ id: string; pos: number; size: string; role: 'core' | 'sub' | 'tech'; item: any }>
   }
 
   return (
@@ -321,12 +479,34 @@ export default function ExploreCenterPanel({
                       </div>
                     </div>
                     <div className={styles.thumbRow}>
-                      {[...build.cards_data].sort((a, b) => a.pos - b.pos).map((card) => {
-                        const item = itemsById[card.id]
+                      {(() => {
+                        const byPos = new Map<number, 'core' | 'sub' | 'tech'>()
+                        const byId = new Map<string, 'core' | 'sub' | 'tech'>()
+                        for (const c of build.cards_data || []) {
+                          byPos.set(Number(c.pos || 0), c.role)
+                          byId.set(String(c.id || ''), c.role)
+                        }
+                        const snapshotCards = extractSnapshotCards(build)
+                        const renderCards =
+                          snapshotCards.length > 0
+                            ? snapshotCards.map((c) => ({
+                                ...c,
+                                role: byPos.get(c.pos) || byId.get(c.id) || 'tech',
+                                itemRef: c.item,
+                              }))
+                            : [...build.cards_data].sort((a, b) => a.pos - b.pos).map((c) => ({
+                                ...c,
+                                size: itemsById[c.id]?.size || 'Medium',
+                                itemRef: itemsById[c.id] || null,
+                              }))
+
+                        return renderCards.map((card) => {
+                          const item = card.itemRef || itemsById[card.id] || null
+                          if (!item) return null
                         return (
                           <button
                             key={`${build.id}-${card.id}-${card.pos}`}
-                            className={`${styles.thumbBtn} ${getSizeClass(item?.size)} ${
+                            className={`${styles.thumbBtn} ${getSizeClass(card.size || item?.size)} ${
                               card.role === 'core' ? styles.roleCore : card.role === 'sub' ? styles.roleSub : styles.roleTech
                             }`}
                             onClick={() => item && onSelectItem(item)}
@@ -335,7 +515,7 @@ export default function ExploreCenterPanel({
                             {item ? <ItemImage item={item} alt={item.name_cn || item.name_en || item.id} className={styles.thumbImg} /> : <span>{card.id}</span>}
                           </button>
                         )
-                      })}
+                      }).filter(Boolean)})()}
                     </div>
                     <div className={styles.feedActions}>
                       <button

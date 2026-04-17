@@ -1,0 +1,36 @@
+{
+  "layout_signature": "849610c5cc0bff5276278c84638e46c154b96c8c",
+  "combo_signature": "0963648efb58ba9062a7f8972396865ea7470d99",
+  "cards": [
+    {
+      "slot_index": 0,
+      "template_id": "4cf73614-52fd-4c59-8002-bbff087951ba",
+      "tier": 2,
+      "enchant_code": "Heavy"
+    },
+    {
+      "slot_index": 2,
+      "template_id": "49d2fab6-9076-4a81-a7f6-b2409b6b5021",
+      "tier": 2,
+      "enchant_code": "Fiery"
+    },
+    {
+      "slot_index": 4,
+      "template_id": "4e1770dd-2a10-440c-924a-c80afbbb269a",
+      "tier": 2,
+      "enchant_code": "Shielded"
+    },
+    {
+      "slot_index": 6,
+      "template_id": "e6d331a7-c0e3-4619-9eee-c7c5023969bb",
+      "tier": 2,
+      "enchant_code": "Restorative"
+    },
+    {
+      "slot_index": 7,
+      "template_id": "2e77aab4-4c38-4f0a-8953-696c55140d8e",
+      "tier": 5,
+      "enchant_code": "Radiant"
+    }
+  ]
+}

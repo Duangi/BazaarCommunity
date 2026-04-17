@@ -1,4 +1,4 @@
-const CDN_BASE = 'https://data.duang.work'
+const CDN_BASE = process.env.NEXT_PUBLIC_CDN_BASE_URL || 'https://data.duang.work'
 const BUILTIN_HERO_AVATARS = new Set(['pygmalien', 'jules', 'vanessa', 'mak', 'dooley', 'stelle'])
 
 function stripLeadingSlash(path: string): string {
@@ -28,9 +28,11 @@ export function iconUrl(iconName: string): string {
 }
 
 export function itemsDbUrl(): string {
-  return cdnUrl('items_db.json')
+  // Use the bundled latest dump-derived data in this app build.
+  return '/resources/bazaardb/items_db.json?v=20260416a'
 }
 
 export function skillsDbUrl(): string {
-  return cdnUrl('skills_db.json')
+  // Use the bundled latest dump-derived data in this app build.
+  return '/resources/bazaardb/skills_db.json?v=20260416a'
 }
