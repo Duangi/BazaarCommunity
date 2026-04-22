@@ -1,0 +1,157 @@
+.lineupBoard {
+  --slot-height: 72px;
+  --slot-unit-width: 36px;
+  position: relative;
+  width: calc(var(--slot-unit-width) * 10 + 20px);
+  max-width: 100%;
+  border: 1px solid #3a3a3a;
+  border-radius: 14px;
+  background: linear-gradient(180deg, #0a101f 0%, #080d19 100%);
+  padding: 10px;
+  overflow: hidden;
+}
+
+.lineupBoardOver {
+  border-color: #ffcd19;
+  box-shadow: 0 0 0 2px rgba(255, 205, 25, 0.18) inset;
+}
+
+.title {
+  color: #cdbf9a;
+  font-size: 12px;
+  margin-bottom: 6px;
+}
+
+.boardArea {
+  position: relative;
+  width: calc(var(--slot-unit-width) * 10);
+}
+
+.boardGrid {
+  display: grid;
+  grid-template-columns: repeat(10, var(--slot-unit-width));
+  gap: 0;
+  width: calc(var(--slot-unit-width) * 10);
+  height: var(--slot-height);
+}
+
+.cardsOverlay {
+  position: absolute;
+  left: 0;
+  top: 0;
+  height: var(--slot-height);
+  pointer-events: none;
+  display: grid;
+  grid-template-columns: repeat(10, var(--slot-unit-width));
+  width: calc(var(--slot-unit-width) * 10);
+}
+
+.slotCell {
+  height: var(--slot-height);
+  border: 1px dashed rgba(188, 208, 255, 0.18);
+  border-radius: 8px;
+  color: #7c8494;
+  font-size: 11px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  user-select: none;
+  background: rgba(2, 8, 20, 0.28);
+}
+
+.slotCellDisabled {
+  border-style: solid;
+  border-color: rgba(255, 95, 95, 0.26);
+  background:
+    repeating-linear-gradient(
+      -45deg,
+      rgba(118, 18, 24, 0.42) 0px,
+      rgba(118, 18, 24, 0.42) 6px,
+      rgba(68, 8, 12, 0.52) 6px,
+      rgba(68, 8, 12, 0.52) 12px
+    );
+  color: #ff9e9e;
+}
+
+.placedCard {
+  position: relative;
+  height: var(--slot-height);
+  border: 2px solid var(--border-tier, #cd7f32);
+  border-radius: 8px;
+  cursor: grab;
+  overflow: hidden;
+  box-shadow: 0 0 0 1px rgba(0, 0, 0, 0.35) inset;
+  pointer-events: auto;
+}
+
+.placedCardSelected {
+  box-shadow: 0 0 0 2px rgba(255, 255, 255, 0.6), 0 0 0 1px rgba(0, 0, 0, 0.35) inset;
+}
+
+.dragging {
+  opacity: 0.45;
+}
+
+.placedImage {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  display: block;
+  background: rgba(0, 0, 0, 0.35);
+}
+
+.removeButton {
+  position: absolute;
+  right: 2px;
+  top: 2px;
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  border: none;
+  background: rgba(0, 0, 0, 0.65);
+  color: #fff;
+  font-size: 12px;
+  line-height: 1;
+  cursor: pointer;
+  display: none;
+}
+
+.placedCard:hover .removeButton {
+  display: block;
+}
+
+.useBadge {
+  position: absolute;
+  left: 5px;
+  top: 5px;
+  min-width: 22px;
+  height: 18px;
+  padding: 0 6px;
+  border-radius: 10px;
+  border: 1px solid #5a4824;
+  background: rgba(18, 14, 9, 0.88);
+  color: #ffd86a;
+  font-size: 11px;
+  font-weight: 700;
+  line-height: 16px;
+  text-align: center;
+  pointer-events: none;
+}
+
+.damageBadge {
+  position: absolute;
+  left: 6px;
+  right: 6px;
+  bottom: 6px;
+  height: 18px;
+  border-radius: 10px;
+  border: 1px solid #3d3f26;
+  background: rgba(14, 18, 10, 0.9);
+  color: #d5f17a;
+  font-size: 11px;
+  font-weight: 700;
+  line-height: 16px;
+  text-align: center;
+  pointer-events: none;
+  white-space: nowrap;
+}

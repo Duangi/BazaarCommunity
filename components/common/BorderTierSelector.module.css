@@ -1,0 +1,51 @@
+.borderEditor {
+  border: 1px solid #383026;
+  border-radius: 10px;
+  background: #1c1c1f;
+  padding: 12px;
+}
+
+.borderEditorTitle {
+  color: #f3f3f3;
+  font-size: 15px;
+  margin-bottom: 10px;
+}
+
+.borderHint {
+  font-size: 12px;
+  color: #999;
+}
+
+.borderSwatches {
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.borderSwatch {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 98px;
+  height: 40px;
+  padding: 0 14px;
+  border-radius: 22px;
+  border: 1px solid rgba(255, 255, 255, 0.24);
+  background: #101217;
+  color: #ececec;
+  font-size: 14px;
+  cursor: pointer;
+}
+
+.borderSwatchActive {
+  border-color: rgba(255, 255, 255, 0.86);
+  box-shadow: 0 0 0 2px rgba(255, 255, 255, 0.2) inset;
+}
+
+.swatchDot {
+  width: 14px;
+  height: 14px;
+  border-radius: 50%;
+  background: var(--tier-clr, #cd7f32);
+  border: 1px solid rgba(0, 0, 0, 0.45);
+}

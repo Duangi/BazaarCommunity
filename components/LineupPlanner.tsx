@@ -212,15 +212,28 @@ function getCardWidth(size?: string): number {
   return 2
 }
 
-function parseTierToken(input?: string): string {
-  if (!input) return 'bronze'
-  const match = input.match(/bronze|silver|gold|diamond|legendary/i)
+function normalizeTierInput(input: unknown): string {
+  if (input == null) return ''
+  if (typeof input === 'string') return input
+  if (Array.isArray(input)) return input.map((x) => String(x ?? '')).join(' ')
+  try {
+    return JSON.stringify(input)
+  } catch {
+    return String(input)
+  }
+}
+
+function parseTierToken(input?: unknown): string {
+  const text = normalizeTierInput(input)
+  if (!text) return 'bronze'
+  const match = text.match(/bronze|silver|gold|diamond|legendary/i)
   return (match?.[0] || 'bronze').toLowerCase()
 }
 
-function parseAvailableTiers(input?: string): string[] {
-  if (!input) return []
-  const tokens = input.match(/bronze|silver|gold|diamond|legendary/gi) || []
+function parseAvailableTiers(input?: unknown): string[] {
+  const text = normalizeTierInput(input)
+  if (!text) return []
+  const tokens = text.match(/bronze|silver|gold|diamond|legendary/gi) || []
   const uniq = Array.from(new Set(tokens.map((t) => t.toLowerCase())))
   return uniq.filter((t) => TIER_ORDER.includes(t as any))
 }
@@ -1281,6 +1294,7 @@ export default function LineupPlanner({ onSelectItem, onDraftApiChange }: Lineup
       const existing = activeBuild?.cards.find((c) => c.placementId === dragged.placementId)
       if (existing) return existing.width
     }
+    if (!dragged.item) return 1
     return dragged.width || getCardWidth(dragged.item?.size)
   }
 
@@ -1355,6 +1369,7 @@ export default function LineupPlanner({ onSelectItem, onDraftApiChange }: Lineup
       accept: ['ITEM', 'LINEUP_CARD'],
       hover: (dragged: DragPayload, monitor) => {
         if (!boardRef.current || !monitor.isOver({ shallow: true })) return
+        if (!dragged.placementId && !dragged.item) return
         if (!dragged.placementId && dragged.sourceType === 'skills') {
           setPreviewCards(null)
           setDropHint('技能请拖拽到下方技能栏。')
@@ -1372,7 +1387,12 @@ export default function LineupPlanner({ onSelectItem, onDraftApiChange }: Lineup
 
         const movingWidth = getDragCardWidth(dragged)
         const targetStart = centerSlotToStart(slotIndex, movingWidth)
-        const preview = getPreviewResult(dragged, targetStart)
+        let preview: PreviewResult | null = null
+        try {
+          preview = getPreviewResult(dragged, targetStart)
+        } catch {
+          preview = null
+        }
         if (!preview) {
           setPreviewCards(null)
           setDropHint('该位置无法放置（空间不足）。')
@@ -1384,6 +1404,7 @@ export default function LineupPlanner({ onSelectItem, onDraftApiChange }: Lineup
       },
       drop: (dragged: DragPayload, monitor) => {
         if (!boardRef.current || monitor.didDrop()) return
+        if (!dragged.placementId && !dragged.item) return
         if (!dragged.placementId && dragged.sourceType === 'skills') return
 
         const clientOffset = monitor.getClientOffset()
@@ -1397,7 +1418,12 @@ export default function LineupPlanner({ onSelectItem, onDraftApiChange }: Lineup
 
         const movingWidth = getDragCardWidth(dragged)
         const targetStart = centerSlotToStart(slotIndex, movingWidth)
-        const preview = getPreviewResult(dragged, targetStart)
+        let preview: PreviewResult | null = null
+        try {
+          preview = getPreviewResult(dragged, targetStart)
+        } catch {
+          preview = null
+        }
         if (!preview) {
           setPreviewCards(null)
           setDropHint('该位置无法放置（空间不足）。')

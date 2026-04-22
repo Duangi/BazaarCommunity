@@ -6,6 +6,7 @@ import styles from './ItemsList.module.css'
 import ItemDetailContent from './ItemDetailContent'
 import ItemImage from './ItemImage'
 import { heroAvatarUrl, iconUrl } from '@/lib/cdn'
+import { deriveAmmoMax, deriveCritChance, getDisplayTags } from '@/lib/itemDerived'
 
 export interface Item {
   id: string
@@ -105,21 +106,9 @@ export function ItemCard({
   const isCommon = !heroKey || heroSlug === 'common'
 
   // 处理标签（技能和物品的结构可能不同）
-  const getTags = () => {
-    if (item.processed_tags && item.processed_tags.length > 0) {
-      return item.processed_tags
-    }
-    // 如果没有 processed_tags，尝试从 tags 字段解析
-    if (item.tags && typeof item.tags === 'string') {
-      return item.tags.split('|').map(t => {
-        const parts = t.trim().split('/')
-        return parts.length > 1 ? parts[1].trim() : parts[0].trim()
-      }).filter(t => t)
-    }
-    return []
-  }
-
-  const displayTags = getTags()
+  const displayTags = getDisplayTags(item)
+  const ammoMax = deriveAmmoMax(item, item.starting_tier || item.tier)
+  const critChance = deriveCritChance(item, item.starting_tier || item.tier)
 
   return (
     <div 
@@ -150,6 +139,12 @@ export function ItemCard({
             {displayTags.slice(0, 3).map((tag, idx) => (
               <span key={idx} className={styles.tagBadge}>{tag}</span>
             ))}
+            {ammoMax != null && ammoMax > 0 && (
+              <span className={styles.tagBadge}>弹药：{ammoMax}</span>
+            )}
+            {critChance != null && critChance > 0 && (
+              <span className={styles.tagBadge}>暴击：{critChance}%</span>
+            )}
           </div>
         </div>
 

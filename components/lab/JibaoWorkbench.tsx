@@ -1,8 +1,9 @@
 'use client'
 
-import { Fragment, useMemo, useRef, useState } from 'react'
-import { useDrag, useDrop } from 'react-dnd'
-import ItemImage from '@/components/ItemImage'
+import { Fragment, useDeferredValue, useEffect, useMemo, useRef, useState } from 'react'
+import { useDrop } from 'react-dnd'
+import LineupEditBoard from '@/components/common/LineupEditBoard'
+import BorderTierSelector from '@/components/common/BorderTierSelector'
 import styles from './JibaoWorkbench.module.css'
 
 type LabItem = {
@@ -32,6 +33,7 @@ type DragPayload = {
   item?: LabItem
   width?: number
   sourceType?: 'items' | 'skills'
+  sourceBoard?: 'main' | 'reserve'
 }
 
 type ChargeRule = {
@@ -108,6 +110,9 @@ type SuggestionCandidate = {
   curve: number[]
   championSeconds: number[]
 }
+
+type BoardKey = 'main' | 'reserve'
+type SlotMode = 6 | 8 | 10
 
 type CoreBuffRule = {
   sourceName: string
@@ -728,6 +733,35 @@ function getCardCooldownSec(card: PlacedCard): number {
   return getCardCooldownSecByTier(card.item, getEffectiveTier(card), card.cooldownOverrideSec)
 }
 
+function getCardAmmoMaxByTier(item: LabItem, tierInput?: string): number {
+  const raw = item.__raw || {}
+  const tier = parseTierToken(tierInput || item.starting_tier || raw.starting_tier)
+
+  const fromDirect = Number((item as any)?.ammo)
+  if (Number.isFinite(fromDirect) && fromDirect > 0) return Math.max(0, Math.round(fromDirect))
+
+  const ammoTiers = String((item as any)?.ammo_tiers || '').trim()
+  if (ammoTiers) {
+    const vals = ammoTiers
+      .split('/')
+      .map((x) => Number(x))
+      .filter((x) => Number.isFinite(x))
+    if (vals.length > 0) {
+      const idxMap: Record<string, number> = { Bronze: 0, Silver: 1, Gold: 2, Diamond: 3, Legendary: 4 }
+      const idx = idxMap[tier]
+      if (vals.length >= 5 && Number.isInteger(idx) && vals[idx] != null) {
+        return Math.max(0, Math.round(vals[idx]))
+      }
+      return Math.max(0, Math.round(vals[Math.min(vals.length - 1, Math.max(0, idx || 0))]))
+    }
+  }
+
+  const fromRaw = getAttrValueByTier(raw, 'AmmoMax', tier)
+  if (Number.isFinite(fromRaw) && fromRaw > 0) return Math.max(0, Math.round(fromRaw))
+
+  return 0
+}
+
 function readChargeRules(item: LabItem, tierInput?: string): { positionalRules: ChargeRule[]; staticCharge: number } {
   const raw = item.__raw
   if (!raw) return { positionalRules: [], staticCharge: 0 }
@@ -890,6 +924,59 @@ function readForceUseRules(item: LabItem, tierInput?: string): ChargeRule[] {
       sourceId: item.id,
       amount: 1,
       amountByTier: {},
+      targetType,
+      targetMode,
+      targetSection,
+      requiredTags: condMeta.include,
+      requiredExcludeTags: condMeta.exclude,
+      requiredSizes: condMeta.includeSizes,
+      requiredExcludeSizes: condMeta.excludeSizes,
+      requiredCooldownOnly: condMeta.requireCooldownOnly,
+      requiredNotTriggerSource: condMeta.notTriggerSource,
+      targetExcludeSelf: Boolean(target.ExcludeSelf),
+      triggerType: String(trigger.type || ''),
+      triggerRequiredTags: triggerMeta.include,
+      triggerRequiredExcludeTags: triggerMeta.exclude,
+      triggerRequiredSizes: triggerMeta.includeSizes,
+      triggerRequiredExcludeSizes: triggerMeta.excludeSizes,
+      triggerRequireCooldownOnly: triggerMeta.requireCooldownOnly,
+      triggerExcludeSelf: Boolean(subject.ExcludeSelf),
+      triggerSubjectType: String(subject.type || ''),
+      triggerSubjectMode: String(subject.TargetMode || subject.targetMode || ''),
+      description: String(row.description_cn || row.description_en || '').trim(),
+    })
+  }
+  return out
+}
+
+function readReloadRules(item: LabItem, tierInput?: string): ChargeRule[] {
+  const raw = item.__raw
+  if (!raw) return []
+  const tier = parseTierToken(tierInput || item.starting_tier || raw.starting_tier)
+  const rows = [
+    ...(Array.isArray(raw.abilities_detail) ? raw.abilities_detail : []),
+    ...(Array.isArray(raw.auras_detail) ? raw.auras_detail : []),
+  ]
+  const out: ChargeRule[] = []
+  for (const row of rows) {
+    const action = row?.action || {}
+    if (String(action.type || '') !== 'TActionCardReload') continue
+    const amount = getAttrValueByTier(raw, String(action.attribute_type || 'ReloadAmount'), tier)
+    if (!Number.isFinite(amount) || amount <= 0) continue
+    const amountByTier = getAttrValuesByTier(raw, String(action.attribute_type || 'ReloadAmount'))
+    const target = action.target || {}
+    const targetType = String(target.type || '')
+    const targetMode = String(target.TargetMode || target.targetMode || '')
+    const targetSection = String(target.TargetSection || target.targetSection || '')
+    const condMeta = extractConditionMeta(target.conditions || target.Conditions)
+    const trigger = row?.trigger || {}
+    const subject = trigger.Subject || trigger.subject || {}
+    const triggerMeta = extractConditionMeta(subject.Conditions || subject.conditions || trigger.Conditions || trigger.conditions)
+    out.push({
+      sourceName: item.name_cn || item.name_en || item.id,
+      sourceId: item.id,
+      amount,
+      amountByTier,
       targetType,
       targetMode,
       targetSection,
@@ -1226,9 +1313,19 @@ function reserve(occ: boolean[], start: number, width: number) {
   for (let i = start; i < start + width; i += 1) occ[i] = true
 }
 
-function findNearestStart(occ: boolean[], width: number, preferred: number): number | null {
+function findNearestStart(occ: boolean[], width: number, preferred: number, allowedMask?: boolean[]): number | null {
   const candidates: number[] = []
   for (let s = 0; s <= MAX_UNITS - width; s += 1) {
+    if (allowedMask) {
+      let ok = true
+      for (let i = s; i < s + width; i += 1) {
+        if (!allowedMask[i]) {
+          ok = false
+          break
+        }
+      }
+      if (!ok) continue
+    }
     if (canReserve(occ, s, width)) candidates.push(s)
   }
   if (!candidates.length) return null
@@ -1241,18 +1338,23 @@ function findNearestStart(occ: boolean[], width: number, preferred: number): num
   return candidates[0]
 }
 
-function autoLayout(cardsWithoutMoving: PlacedCard[], moving: PlacedCard, targetStart: number): PlacedCard[] | null {
+function autoLayout(
+  cardsWithoutMoving: PlacedCard[],
+  moving: PlacedCard,
+  targetStart: number,
+  allowedMask?: boolean[],
+): PlacedCard[] | null {
   const occ = buildOccupancy()
   const placed: PlacedCard[] = []
 
-  const mStart = findNearestStart(occ, moving.width, targetStart)
+  const mStart = findNearestStart(occ, moving.width, targetStart, allowedMask)
   if (mStart == null) return null
   reserve(occ, mStart, moving.width)
   placed.push({ ...moving, start: mStart })
 
   const sorted = [...cardsWithoutMoving].sort((a, b) => a.start - b.start)
   for (const c of sorted) {
-    const s = findNearestStart(occ, c.width, c.start)
+    const s = findNearestStart(occ, c.width, c.start, allowedMask)
     if (s == null) return null
     reserve(occ, s, c.width)
     placed.push({ ...c, start: s })
@@ -1872,14 +1974,19 @@ function simulateCombatStats(cards: PlacedCard[], durationSec = 20): CombatSumma
   const chargeRulesBySource = new Map<string, ChargeRule[]>()
   const hasteRulesBySource = new Map<string, ChargeRule[]>()
   const forceUseRulesBySource = new Map<string, ChargeRule[]>()
+  const reloadRulesBySource = new Map<string, ChargeRule[]>()
   const offenseRulesBySource = new Map<string, Array<ChargeRule & { valueAmount: number; attributeType: string }>>()
   const baseDamageByCard = new Map<string, number>()
+  const ammoState = new Map<string, { max: number; current: number; readyWhenEmpty: boolean }>()
   for (const c of cards) {
     chargeRulesBySource.set(c.placementId, readChargeRules(c.item, getEffectiveTier(c)).positionalRules)
     hasteRulesBySource.set(c.placementId, readHasteRules(c.item, getEffectiveTier(c)))
     forceUseRulesBySource.set(c.placementId, readForceUseRules(c.item, getEffectiveTier(c)))
+    reloadRulesBySource.set(c.placementId, readReloadRules(c.item, getEffectiveTier(c)))
     offenseRulesBySource.set(c.placementId, readOffenseBuffRules(c.item, getEffectiveTier(c)))
     baseDamageByCard.set(c.placementId, readDamageOnUse(c.item, getEffectiveTier(c)))
+    const maxAmmo = getCardAmmoMaxByTier(c.item, getEffectiveTier(c))
+    if (maxAmmo > 0) ammoState.set(c.placementId, { max: maxAmmo, current: maxAmmo, readyWhenEmpty: false })
   }
 
   const state = new Map<string, { remaining: number; speedUntil: number }>()
@@ -1916,6 +2023,8 @@ function simulateCombatStats(cards: PlacedCard[], durationSec = 20): CombatSumma
     for (const c of activeCards) {
       const st = state.get(c.placementId)
       if (!st) continue
+      const ammo = ammoState.get(c.placementId)
+      if (ammo && ammo.readyWhenEmpty) continue
       const speed = now < st.speedUntil ? 2 : 1
       dt = Math.min(dt, st.remaining / speed)
     }
@@ -1927,13 +2036,21 @@ function simulateCombatStats(cards: PlacedCard[], durationSec = 20): CombatSumma
       for (const c of activeCards) {
         const st = state.get(c.placementId)
         if (!st) continue
+        const ammo = ammoState.get(c.placementId)
+        if (ammo && ammo.readyWhenEmpty) continue
         const speed = now < st.speedUntil ? 2 : 1
         st.remaining = Math.max(0, st.remaining - dt * speed)
       }
       now += dt
     }
 
-    const firedNow = activeCards.filter((c) => (state.get(c.placementId)?.remaining ?? Number.POSITIVE_INFINITY) <= epsilon)
+    const firedNow = activeCards.filter((c) => {
+      const st = state.get(c.placementId)
+      if (!st) return false
+      const ammo = ammoState.get(c.placementId)
+      if (ammo && ammo.readyWhenEmpty) return false
+      return st.remaining <= epsilon
+    })
     if (!firedNow.length) break
 
     type UseEvent = { card: PlacedCard; forced: boolean }
@@ -1947,7 +2064,17 @@ function simulateCombatStats(cards: PlacedCard[], durationSec = 20): CombatSumma
       if (!evt.forced) queuedNormal.delete(fired.placementId)
       const fs = state.get(fired.placementId)
       if (!fs) continue
+      const firedAmmo = ammoState.get(fired.placementId)
+      if (firedAmmo && firedAmmo.current <= 0) {
+        firedAmmo.readyWhenEmpty = true
+        fs.remaining = 0
+        continue
+      }
       const casts = Math.max(1, Number(multicastMap.get(fired.placementId) || 1))
+      if (firedAmmo) {
+        firedAmmo.current = Math.max(0, firedAmmo.current - 1)
+        firedAmmo.readyWhenEmpty = false
+      }
       if (!evt.forced) {
         fs.remaining += getCardCooldownSec(fired)
         if (fs.remaining <= epsilon && !queuedNormal.has(fired.placementId)) {
@@ -2002,6 +2129,26 @@ function simulateCombatStats(cards: PlacedCard[], durationSec = 20): CombatSumma
           const targets = resolveTargetsForTrigger(cards, source, fired, rule, auraTags)
           for (let c = 0; c < casts; c += 1) {
             for (const t of targets) queue.push({ card: t, forced: true })
+          }
+        }
+
+        const reloadRules = reloadRulesBySource.get(source.placementId) || []
+        for (const rule of reloadRules) {
+          if (!resolveEventTriggerMatch(source, rule, fired)) continue
+          const targets = resolveTargetsForTrigger(cards, source, fired, rule, auraTags)
+          const amount = Math.max(0, Number(rule.amount || 0)) * casts
+          if (amount <= 0) continue
+          for (const t of targets) {
+            const ammo = ammoState.get(t.placementId)
+            const ts = state.get(t.placementId)
+            if (!ammo || !ts) continue
+            const before = ammo.current
+            ammo.current = Math.min(ammo.max, ammo.current + amount)
+            if (before <= 0 && ammo.current > 0 && ammo.readyWhenEmpty && ts.remaining <= epsilon && !queuedNormal.has(t.placementId)) {
+              ammo.readyWhenEmpty = false
+              queue.push({ card: t, forced: false })
+              queuedNormal.add(t.placementId)
+            }
           }
         }
 
@@ -2063,6 +2210,88 @@ function scoreLayout(cards: PlacedCard[], windowSec = 20): {
   // 方案优先级改为“总伤害优先”
   const score = combat.totalDamage
   return { analysis, metrics, valueSynergy, usage, combat, score }
+}
+
+function normalizeSequentialLayout(cards: PlacedCard[]): PlacedCard[] {
+  const sorted = [...cards].sort((a, b) => a.start - b.start || a.item.id.localeCompare(b.item.id))
+  const out: PlacedCard[] = []
+  let cursor = 0
+  for (const c of sorted) {
+    if (cursor + c.width > MAX_UNITS) continue
+    out.push({ ...c, start: cursor })
+    cursor += c.width
+  }
+  return out
+}
+
+function buildOptimizationPools(mainCards: PlacedCard[], reserveCards: PlacedCard[], windowSec: number): PlacedCard[][] {
+  const allMap = new Map<string, PlacedCard>()
+  for (const c of [...mainCards, ...reserveCards]) {
+    if (!allMap.has(c.placementId)) allMap.set(c.placementId, c)
+  }
+  const all = Array.from(allMap.values())
+  if (!all.length) return []
+
+  const totalWidth = all.reduce((s, c) => s + c.width, 0)
+  const addPool = (rows: PlacedCard[], bag: Map<string, PlacedCard[]>) => {
+    const packed = normalizeSequentialLayout(rows)
+    if (!packed.length) return
+    const sig = packed.map((x) => x.placementId).join('|')
+    if (!bag.has(sig)) bag.set(sig, packed)
+  }
+
+  const pools = new Map<string, PlacedCard[]>()
+  if (totalWidth <= MAX_UNITS) {
+    addPool(all, pools)
+    return Array.from(pools.values())
+  }
+
+  const quickScore = new Map<string, number>()
+  for (const c of all) {
+    const single = scoreLayout([{ ...c, start: 0 }], windowSec).combat.totalDamage
+    quickScore.set(c.placementId, single / Math.max(1, c.width))
+  }
+  const byScore = [...all].sort((a, b) => (quickScore.get(b.placementId) || 0) - (quickScore.get(a.placementId) || 0))
+  const byWidthAsc = [...all].sort((a, b) => a.width - b.width || (quickScore.get(b.placementId) || 0) - (quickScore.get(a.placementId) || 0))
+  const byCooldown = [...all].sort((a, b) => getCardCooldownSec(a) - getCardCooldownSec(b))
+  const byCooldownDesc = [...all].sort((a, b) => getCardCooldownSec(b) - getCardCooldownSec(a))
+  const byCurrentOrder = [...mainCards, ...reserveCards].filter((c) => allMap.has(c.placementId))
+
+  const greedyPick = (ordered: PlacedCard[]) => {
+    const chosen: PlacedCard[] = []
+    let used = 0
+    for (const c of ordered) {
+      if (used + c.width > MAX_UNITS) continue
+      chosen.push(c)
+      used += c.width
+      if (used >= MAX_UNITS) break
+    }
+    return chosen
+  }
+
+  addPool(greedyPick(byScore), pools)
+  addPool(greedyPick(byWidthAsc), pools)
+  addPool(greedyPick(byCooldown), pools)
+  addPool(greedyPick(byCooldownDesc), pools)
+  addPool(greedyPick(byCurrentOrder), pools)
+
+  const seed = byCurrentOrder.reduce((s, c) => s + c.item.id.charCodeAt(0), 31)
+  const rand = (n: number) => {
+    const x = Math.sin(seed * 12.13 + n * 17.91) * 10000
+    return x - Math.floor(x)
+  }
+  for (let r = 0; r < 16; r += 1) {
+    const order = [...all]
+    for (let i = order.length - 1; i > 0; i -= 1) {
+      const j = Math.floor(rand(r * 97 + i * 11) * (i + 1))
+      const t = order[i]
+      order[i] = order[j]
+      order[j] = t
+    }
+    addPool(greedyPick(order), pools)
+    if (pools.size >= 8) break
+  }
+  return Array.from(pools.values()).slice(0, 8)
 }
 
 function suggestTop(cards: PlacedCard[], limit = 5, windowSec = 20): SuggestionCandidate[] {
@@ -2705,61 +2934,6 @@ function simulateCoreContributions(
   }
 }
 
-function sizeClass(width: number): string {
-  if (width === 1) return styles.cardSmall
-  if (width === 3) return styles.cardLarge
-  return styles.cardMedium
-}
-
-function DraggablePlacedCard({
-  card,
-  selected,
-  useCount,
-  totalDamage,
-  onSelect,
-  onRemove,
-}: {
-  card: PlacedCard
-  selected: boolean
-  useCount?: number
-  totalDamage?: number
-  onSelect: () => void
-  onRemove: () => void
-}) {
-  const [{ isDragging }, drag] = useDrag(() => ({
-    type: 'ITEM',
-    item: {
-      placementId: card.placementId,
-      item: card.item,
-      width: card.width,
-      sourceType: 'items',
-    } as DragPayload,
-    collect: (monitor) => ({ isDragging: monitor.isDragging() }),
-  }))
-
-  return (
-    <button
-      ref={drag as any}
-      className={`${styles.placedCard} ${sizeClass(card.width)} ${selected ? styles.placedCardSelected : ''} ${
-        isDragging ? styles.dragging : ''
-      }`}
-      style={{ left: `calc(${card.start} * var(--slot-unit))` }}
-      onClick={onSelect}
-      title={card.item.name_cn || card.item.name_en || card.item.id}
-    >
-      <ItemImage
-        item={card.item}
-        alt={card.item.name_cn || card.item.name_en || card.item.id}
-        className={styles.cardImage}
-        fallbackClassName={styles.cardFallback}
-      />
-      <span className={styles.useBadge}>{useCount ?? 0}</span>
-      <span className={styles.damageBadge}>{Number(totalDamage || 0).toFixed(1)}</span>
-      <span className={styles.removeBtn} onClick={(e) => { e.stopPropagation(); onRemove() }}>×</span>
-    </button>
-  )
-}
-
 export default function JibaoWorkbench({
   onSelectItem,
   itemsPool = [],
@@ -2768,28 +2942,84 @@ export default function JibaoWorkbench({
   itemsPool?: LabItem[]
 }) {
   const [cards, setCards] = useState<PlacedCard[]>([])
+  const [reserveCards, setReserveCards] = useState<PlacedCard[]>([])
   const [selectedId, setSelectedId] = useState<string | null>(null)
   const [preview, setPreview] = useState<PlacedCard[] | null>(null)
+  const [reservePreview, setReservePreview] = useState<PlacedCard[] | null>(null)
   const [suggestPreviewId, setSuggestPreviewId] = useState<string | null>(null)
   const [paramCollapsed, setParamCollapsed] = useState(false)
   const [suggestCollapsed, setSuggestCollapsed] = useState(false)
   const [simSeconds, setSimSeconds] = useState(20)
+  const [simSecondsDraft, setSimSecondsDraft] = useState(20)
+  const [boardScale, setBoardScale] = useState(1.6)
+  const [slotMode, setSlotMode] = useState<SlotMode>(10)
   const boardRef = useRef<HTMLDivElement | null>(null)
+  const reserveBoardRef = useRef<HTMLDivElement | null>(null)
+  const deferredCards = useDeferredValue(cards)
+  const deferredReserveCards = useDeferredValue(reserveCards)
+  const deferredSimSeconds = useDeferredValue(simSeconds)
+  const isOptimizing =
+    deferredCards !== cards || deferredReserveCards !== reserveCards || deferredSimSeconds !== simSeconds
+  const slotMask = useMemo(() => {
+    if (slotMode === 6) return [false, false, true, true, true, true, true, true, false, false]
+    if (slotMode === 8) return [false, true, true, true, true, true, true, true, true, false]
+    return Array.from({ length: 10 }, () => true)
+  }, [slotMode])
+  const enabledUnits = useMemo(() => slotMask.filter(Boolean).length, [slotMask])
 
   const analysis = useMemo(() => analyze(cards), [cards])
   const combatCurrent = useMemo(() => simulateCombatStats(cards, simSeconds), [cards, simSeconds])
   const cycles = useMemo(() => analyzeCycles(cards, analysis.links), [cards, analysis.links])
-  const suggestions = useMemo(() => suggestTop(cards, 5, simSeconds), [cards, simSeconds])
+  const optimizationPools = useMemo(
+    () => buildOptimizationPools(deferredCards, deferredReserveCards, deferredSimSeconds),
+    [deferredCards, deferredReserveCards, deferredSimSeconds],
+  )
+  const optimizationBase = useMemo(() => {
+    if (optimizationPools.length > 0) return optimizationPools[0]
+    return deferredCards
+  }, [optimizationPools, deferredCards])
+  const deferredCombatCurrent = useMemo(
+    () => simulateCombatStats(deferredCards, deferredSimSeconds),
+    [deferredCards, deferredSimSeconds],
+  )
+  const suggestions = useMemo(() => {
+    const merged = new Map<string, SuggestionCandidate>()
+    const localPools =
+      optimizationPools.length > 0 ? optimizationPools : (deferredCards.length > 0 ? [deferredCards] : [])
+    for (const pool of localPools) {
+      const local = suggestTop(pool, 5, deferredSimSeconds)
+      for (const s of local) {
+        const prev = merged.get(s.id)
+        if (!prev || s.totalDamage > prev.totalDamage) {
+          merged.set(s.id, s)
+        } else if (prev && s.totalDamage === prev.totalDamage) {
+          merged.set(s.id, {
+            ...prev,
+            championSeconds: Array.from(new Set([...(prev.championSeconds || []), ...(s.championSeconds || [])])).sort((a, b) => a - b),
+          })
+        }
+      }
+    }
+    return Array.from(merged.values())
+      .sort((a, b) => b.totalDamage - a.totalDamage || b.totalUses - a.totalUses)
+      .slice(0, 5)
+      .map((x, idx) => ({
+        ...x,
+        rank: idx + 1,
+        damageGain: x.totalDamage - deferredCombatCurrent.totalDamage,
+      }))
+  }, [optimizationPools, deferredCards, deferredSimSeconds, deferredCombatCurrent.totalDamage])
   const suggestionPreview = useMemo(
     () => suggestions.find((s) => s.id === suggestPreviewId)?.next || null,
     [suggestions, suggestPreviewId],
   )
   const renderCards = preview || suggestionPreview || cards
+  const renderReserveCards = reservePreview || reserveCards
   const combatDisplay = useMemo(() => simulateCombatStats(renderCards, simSeconds), [renderCards, simSeconds])
   const chartLayouts = useMemo(() => {
-    const baseCurve = combatCurrent.cumulativeDamageBySecond
+    const baseCurve = deferredCombatCurrent.cumulativeDamageBySecond
     const rows: Array<{ id: string; label: string; color: string; curve: number[]; totalDamage: number }> = [
-      { id: 'current', label: '当前摆法', color: '#ffd447', curve: baseCurve, totalDamage: combatCurrent.totalDamage },
+      { id: 'current', label: '当前摆法', color: '#ffd447', curve: baseCurve, totalDamage: deferredCombatCurrent.totalDamage },
     ]
     const palette = ['#ff6b6b', '#4fc3f7', '#81c784', '#ba68c8', '#ffb74d', '#64ffda']
     suggestions.forEach((s, i) => {
@@ -2802,13 +3032,44 @@ export default function JibaoWorkbench({
       })
     })
     return rows
-  }, [combatCurrent.cumulativeDamageBySecond, combatCurrent.totalDamage, suggestions])
+  }, [deferredCombatCurrent.cumulativeDamageBySecond, deferredCombatCurrent.totalDamage, suggestions])
+
+  const compactByOrder = (rows: PlacedCard[], allowedMask?: boolean[]): PlacedCard[] => {
+    const sorted = [...rows].sort((a, b) => a.start - b.start || a.item.id.localeCompare(b.item.id))
+    if (!allowedMask) {
+      let cursor = 0
+      const out: PlacedCard[] = []
+      for (const c of sorted) {
+        if (cursor + c.width > MAX_UNITS) continue
+        out.push({ ...c, start: cursor })
+        cursor += c.width
+      }
+      return out
+    }
+    const occ = buildOccupancy()
+    const out: PlacedCard[] = []
+    for (const c of sorted) {
+      const s = findNearestStart(occ, c.width, c.start, allowedMask)
+      if (s == null) continue
+      reserve(occ, s, c.width)
+      out.push({ ...c, start: s })
+    }
+    return out
+  }
 
   const commit = (next: PlacedCard[]) => {
-    const sorted = [...next].sort((a, b) => a.start - b.start)
+    const sorted = compactByOrder(next, slotMask)
     setCards(sorted)
     setSuggestPreviewId(null)
     if (selectedId && !sorted.some((c) => c.placementId === selectedId)) {
+      setSelectedId(null)
+    }
+  }
+
+  const commitReserve = (next: PlacedCard[]) => {
+    const sorted = compactByOrder(next, slotMask)
+    setReserveCards(sorted)
+    if (selectedId && !cards.some((c) => c.placementId === selectedId) && !sorted.some((c) => c.placementId === selectedId)) {
       setSelectedId(null)
     }
   }
@@ -2820,13 +3081,72 @@ export default function JibaoWorkbench({
       return
     }
     commit(demoCards)
+    setReserveCards([])
     setPreview(null)
+    setReservePreview(null)
     setSuggestPreviewId(null)
     setSelectedId(demoCards[0]?.placementId || null)
     if (demoCards[0]) onSelectItem(demoCards[0].item)
     if (missing.length > 0) {
       window.alert(`示例1已摆放，但缺少以下卡牌：${missing.join('、')}`)
     }
+  }
+
+  const applySuggestion = (nextMain: PlacedCard[]) => {
+    const allMap = new Map<string, PlacedCard>()
+    for (const c of [...cards, ...reserveCards]) allMap.set(c.placementId, c)
+    const nextMainPacked = compactByOrder(nextMain, slotMask)
+    const used = new Set(nextMainPacked.map((x) => x.placementId))
+    const leftOver = Array.from(allMap.values()).filter((x) => !used.has(x.placementId))
+    const nextReservePacked = compactByOrder(leftOver, slotMask)
+    commit(nextMainPacked)
+    setReserveCards(nextReservePacked)
+    setPreview(null)
+    setReservePreview(null)
+    setSuggestPreviewId(null)
+  }
+
+  const buildDropPreview = (
+    targetBoard: BoardKey,
+    dragged: DragPayload,
+    target: number,
+  ): { nextMain: PlacedCard[]; nextReserve: PlacedCard[]; movingItem: LabItem } | null => {
+    const sourceBoard = dragged.sourceBoard
+    const sourceMain = dragged.placementId ? cards.find((c) => c.placementId === dragged.placementId) : null
+    const sourceReserve = dragged.placementId ? reserveCards.find((c) => c.placementId === dragged.placementId) : null
+    const movingExisting = sourceMain || sourceReserve
+    const movingItem = movingExisting?.item || dragged.item
+    if (!movingItem) return null
+    const width = movingExisting?.width || dragged.width || getCardWidth(movingItem.size)
+    const moving: PlacedCard = movingExisting || {
+      placementId: `${movingItem.id || 'card'}-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
+      item: movingItem,
+      width,
+      start: target,
+      tier: asTier(movingItem.starting_tier),
+    }
+
+    const nextMainBase = [...cards]
+    const nextReserveBase = [...reserveCards]
+    if (movingExisting) {
+      if ((sourceBoard === 'main' || sourceMain) && sourceMain) {
+        const idx = nextMainBase.findIndex((c) => c.placementId === movingExisting.placementId)
+        if (idx >= 0) nextMainBase.splice(idx, 1)
+      }
+      if ((sourceBoard === 'reserve' || sourceReserve) && sourceReserve) {
+        const idx = nextReserveBase.findIndex((c) => c.placementId === movingExisting.placementId)
+        if (idx >= 0) nextReserveBase.splice(idx, 1)
+      }
+    }
+
+    if (targetBoard === 'main') {
+      const nextTarget = autoLayout(nextMainBase, { ...moving, start: target, width }, target, slotMask)
+      if (!nextTarget) return null
+      return { nextMain: [...nextTarget].sort((a, b) => a.start - b.start), nextReserve: [...nextReserveBase].sort((a, b) => a.start - b.start), movingItem }
+    }
+    const nextTarget = autoLayout(nextReserveBase, { ...moving, start: target, width }, target, slotMask)
+    if (!nextTarget) return null
+    return { nextMain: [...nextMainBase].sort((a, b) => a.start - b.start), nextReserve: [...nextTarget].sort((a, b) => a.start - b.start), movingItem }
   }
 
   const [{ isOver }, drop] = useDrop(() => ({
@@ -2839,18 +3159,13 @@ export default function JibaoWorkbench({
       const unit = rect.width / MAX_UNITS
       const width = dragged.width || getCardWidth(dragged.item?.size)
       const target = Math.max(0, Math.min(MAX_UNITS - width, Math.round((pt.x - rect.left) / unit - width / 2)))
-
-      const movingExisting = dragged.placementId ? cards.find((c) => c.placementId === dragged.placementId) : null
-      const moving: PlacedCard = movingExisting || {
-        placementId: `${dragged.item?.id || 'card'}-${Date.now()}`,
-        item: dragged.item!,
-        width,
-        start: target,
-        tier: asTier(dragged.item?.starting_tier),
+      const res = buildDropPreview('main', dragged, target)
+      if (!res) {
+        setPreview(null)
+        return
       }
-      const others = movingExisting ? cards.filter((c) => c.placementId !== movingExisting.placementId) : cards
-      const next = autoLayout(others, { ...moving, width, start: target }, target)
-      setPreview(next)
+      setPreview(res.nextMain)
+      setReservePreview(res.nextReserve)
     },
     drop: (dragged: DragPayload, monitor) => {
       if (dragged.sourceType === 'skills') return
@@ -2862,29 +3177,81 @@ export default function JibaoWorkbench({
       const width = dragged.width || getCardWidth(dragged.item?.size)
       const target = Math.max(0, Math.min(MAX_UNITS - width, Math.round((pt.x - rect.left) / unit - width / 2)))
 
-      const movingExisting = dragged.placementId ? cards.find((c) => c.placementId === dragged.placementId) : null
-      const moving: PlacedCard = movingExisting || {
-        placementId: `${dragged.item?.id || 'card'}-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
-        item: dragged.item!,
-        width,
-        start: target,
-        tier: asTier(dragged.item?.starting_tier),
-      }
-      const others = movingExisting ? cards.filter((c) => c.placementId !== movingExisting.placementId) : cards
-      const next = autoLayout(others, { ...moving, width, start: target }, target)
-      if (next) {
-        commit(next)
-        onSelectItem(moving.item)
+      const res = buildDropPreview('main', dragged, target)
+      if (res) {
+        setCards(res.nextMain)
+        setReserveCards(res.nextReserve)
+        onSelectItem(res.movingItem)
       }
       setPreview(null)
+      setReservePreview(null)
     },
     collect: (monitor) => ({ isOver: monitor.isOver({ shallow: true }) }),
-  }), [cards, selectedId])
+  }), [cards, reserveCards, selectedId, slotMask])
+
+  const [{ isOverReserve }, dropReserve] = useDrop(() => ({
+    accept: 'ITEM',
+    hover: (dragged: DragPayload, monitor) => {
+      if (!reserveBoardRef.current || dragged.sourceType === 'skills') return
+      const pt = monitor.getClientOffset()
+      if (!pt) return
+      const rect = reserveBoardRef.current.getBoundingClientRect()
+      const unit = rect.width / MAX_UNITS
+      const width = dragged.width || getCardWidth(dragged.item?.size)
+      const target = Math.max(0, Math.min(MAX_UNITS - width, Math.round((pt.x - rect.left) / unit - width / 2)))
+      const res = buildDropPreview('reserve', dragged, target)
+      if (!res) {
+        setReservePreview(null)
+        return
+      }
+      setPreview(res.nextMain)
+      setReservePreview(res.nextReserve)
+    },
+    drop: (dragged: DragPayload, monitor) => {
+      if (dragged.sourceType === 'skills') return
+      if (!reserveBoardRef.current) return
+      const pt = monitor.getClientOffset()
+      if (!pt) return
+      const rect = reserveBoardRef.current.getBoundingClientRect()
+      const unit = rect.width / MAX_UNITS
+      const width = dragged.width || getCardWidth(dragged.item?.size)
+      const target = Math.max(0, Math.min(MAX_UNITS - width, Math.round((pt.x - rect.left) / unit - width / 2)))
+      const res = buildDropPreview('reserve', dragged, target)
+      if (res) {
+        setCards(res.nextMain)
+        setReserveCards(res.nextReserve)
+        onSelectItem(res.movingItem)
+      }
+      setPreview(null)
+      setReservePreview(null)
+    },
+    collect: (monitor) => ({ isOverReserve: monitor.isOver({ shallow: true }) }),
+  }), [cards, reserveCards, selectedId, slotMask])
+
+  useEffect(() => {
+    setCards((prev) => compactByOrder(prev, slotMask))
+    setReserveCards((prev) => compactByOrder(prev, slotMask))
+    setPreview(null)
+    setReservePreview(null)
+    setSuggestPreviewId(null)
+  }, [slotMask])
 
   const bindBoardRef = (node: HTMLDivElement | null) => {
     boardRef.current = node
     drop(node)
   }
+  const bindReserveBoardRef = (node: HTMLDivElement | null) => {
+    reserveBoardRef.current = node
+    dropReserve(node)
+  }
+
+  useEffect(() => {
+    if (!isOver) setPreview(null)
+  }, [isOver])
+
+  useEffect(() => {
+    if (!isOverReserve) setReservePreview(null)
+  }, [isOverReserve])
 
   return (
     <div className={styles.panel}>
@@ -2893,49 +3260,90 @@ export default function JibaoWorkbench({
           <h3 className={styles.title}>机煲实验室 · 结构化充能解析</h3>
         </div>
         <div className={styles.headerActions}>
+          <div className={styles.sizeControl}>
+            <span className={styles.axisLabel}>卡牌大小</span>
+            <button
+              className={styles.sizeBtn}
+              onClick={() => setBoardScale((v) => Math.max(0.8, Math.round((v - 0.1) * 10) / 10))}
+            >
+              -
+            </button>
+            <span className={styles.sizeValue}>{Math.round(boardScale * 100)}%</span>
+            <button
+              className={styles.sizeBtn}
+              onClick={() => setBoardScale((v) => Math.min(2.0, Math.round((v + 0.1) * 10) / 10))}
+            >
+              +
+            </button>
+          </div>
+          <div className={styles.modeTabs}>
+            {[6, 8, 10].map((m) => (
+              <button
+                key={m}
+                className={`${styles.modeTab} ${slotMode === m ? styles.modeTabActive : ''}`}
+                onClick={() => setSlotMode(m as SlotMode)}
+              >
+                {m}格
+              </button>
+            ))}
+          </div>
           <button className={styles.applyBtn} onClick={applyExample1}>示例1一键摆放</button>
-          <button className={styles.clearBtn} onClick={() => { setCards([]); setPreview(null); setSelectedId(null) }}>清空</button>
+          <button className={styles.clearBtn} onClick={() => { setCards([]); setReserveCards([]); setPreview(null); setReservePreview(null); setSelectedId(null) }}>清空</button>
         </div>
       </div>
 
-      <div className={`${styles.board} ${isOver ? styles.boardOver : ''}`} ref={bindBoardRef}>
-        <div className={styles.grid}>
-          {Array.from({ length: MAX_UNITS }).map((_, i) => (
-            <div key={i} className={styles.slot}>{i + 1}</div>
-          ))}
-        </div>
-        {renderCards.map((card) => (
-          <DraggablePlacedCard
-            key={card.placementId}
-            card={card}
-            selected={selectedId === card.placementId}
-            useCount={combatDisplay.byCard[card.placementId] || 0}
-            totalDamage={combatDisplay.byCardDamage[card.placementId] || 0}
-            onSelect={() => {
-              setSelectedId(card.placementId)
-              onSelectItem(card.item)
-            }}
-            onRemove={() => commit(cards.filter((c) => c.placementId !== card.placementId))}
-          />
-        ))}
-      </div>
+      <LineupEditBoard
+        title={`主阵容（最多${enabledUnits}格）`}
+        cards={renderCards.map((c) => ({ ...c, borderTier: String(c.tier || 'bronze').toLowerCase() }))}
+        sourceBoard="main"
+        selectedId={selectedId}
+        onSelectCard={(card) => {
+          setSelectedId(card.placementId)
+          onSelectItem(card.item)
+        }}
+        onRemoveCard={(placementId) => commit(cards.filter((c) => c.placementId !== placementId))}
+        onAttachRef={bindBoardRef}
+        isOver={isOver}
+        useCountMap={combatDisplay.byCard}
+        damageMap={combatDisplay.byCardDamage}
+        enabledMask={slotMask}
+        boardScale={boardScale}
+      />
+
+      <LineupEditBoard
+        title={`备选卡牌库（最多${enabledUnits}格，参与联合优化）`}
+        cards={renderReserveCards.map((c) => ({ ...c, borderTier: String(c.tier || 'bronze').toLowerCase() }))}
+        sourceBoard="reserve"
+        selectedId={selectedId}
+        onSelectCard={(card) => {
+          setSelectedId(card.placementId)
+          onSelectItem(card.item)
+        }}
+        onRemoveCard={(placementId) => commitReserve(reserveCards.filter((c) => c.placementId !== placementId))}
+        onAttachRef={bindReserveBoardRef}
+        isOver={isOverReserve}
+        enabledMask={slotMask}
+        boardScale={boardScale}
+      />
 
       <div className={styles.statsRow}>
         <div className={styles.statItem}>{simSeconds}秒总伤害：<strong>{combatCurrent.totalDamage.toFixed(1)}</strong></div>
+        <div className={styles.statItem}>联合优化池：<strong>{optimizationBase.length}</strong> 张</div>
         <div className={styles.useCtrl}>
-          <button className={styles.spinBtn} onClick={() => setSimSeconds((v) => Math.max(1, v - 1))}>-</button>
+          <button className={styles.spinBtn} onClick={() => setSimSecondsDraft((v) => Math.max(1, v - 1))}>-</button>
           <input
             className={styles.useInput}
             type="number"
             min={1}
             max={90}
-            value={simSeconds}
+            value={simSecondsDraft}
             onChange={(e) => {
               const n = Number(e.target.value || 1)
-              setSimSeconds(Math.max(1, Math.min(90, Number.isFinite(n) ? Math.floor(n) : 1)))
+              setSimSecondsDraft(Math.max(1, Math.min(90, Number.isFinite(n) ? Math.floor(n) : 1)))
             }}
           />
-          <button className={styles.spinBtn} onClick={() => setSimSeconds((v) => Math.min(90, v + 1))}>+</button>
+          <button className={styles.spinBtn} onClick={() => setSimSecondsDraft((v) => Math.min(90, v + 1))}>+</button>
+          <button className={styles.applyBtn} onClick={() => setSimSeconds(simSecondsDraft)}>计算伤害</button>
         </div>
       </div>
 
@@ -2949,80 +3357,102 @@ export default function JibaoWorkbench({
         {paramCollapsed ? null : cards.length === 0 ? (
           <div className={styles.empty}>先拖入卡牌</div>
         ) : (
-          cards.map((c) => {
-            const allowedTiers = getAllowedTiers(c.item)
-            const effectiveTier = getEffectiveTier(c)
-            const defaultCd = getCardCooldownSecByTier(c.item, effectiveTier)
-            const currentCd = getCardCooldownSec(c)
+          (() => {
+            const selected = cards.find((c) => c.placementId === selectedId) || cards[0]
+            if (!selected) return null
+            const allowedTiers = getAllowedTiers(selected.item)
+            const effectiveTier = getEffectiveTier(selected)
+            const startTier = parseTierToken(
+              selected.item?.starting_tier ||
+                (selected.item as any)?.startingTier ||
+                selected.item?.__raw?.starting_tier ||
+                (selected.item?.__raw as any)?.startingTier ||
+                'Bronze',
+            ) as TierToken
+            const defaultCd = getCardCooldownSecByTier(selected.item, effectiveTier)
+            const currentCd = getCardCooldownSec(selected)
             const editableCd = defaultCd > 0
+            const editableTier =
+              allowedTiers.length > 1 && !(startTier === 'Diamond' || startTier === 'Legendary')
             return (
-              <div key={`param-${c.placementId}`} className={styles.paramRow}>
-                <div className={styles.paramName}>{c.item.name_cn || c.item.name_en || c.item.id}</div>
-                <select
-                  className={styles.paramSelect}
-                  value={effectiveTier}
-                  onChange={(e) => {
-                    const nextTier = e.target.value as PlacedCard['tier']
-                    commit(cards.map((x) => (x.placementId === c.placementId ? { ...x, tier: nextTier, cooldownOverrideSec: undefined } : x)))
+              <>
+                <BorderTierSelector
+                  title={`卡牌等级 · ${selected.item.name_cn || selected.item.name_en || selected.item.id}`}
+                  options={allowedTiers.map((x) => String(x).toLowerCase())}
+                  selected={String(effectiveTier).toLowerCase()}
+                  editable={editableTier}
+                  onSelect={(tier) => {
+                    const nextTier = String(tier || '').toLowerCase()
+                    const mapTier: Record<string, PlacedCard['tier']> = {
+                      bronze: 'Bronze',
+                      silver: 'Silver',
+                      gold: 'Gold',
+                      diamond: 'Diamond',
+                      legendary: 'Legendary',
+                    }
+                    const normalized = mapTier[nextTier] || 'Bronze'
+                    commit(cards.map((x) => (x.placementId === selected.placementId ? { ...x, tier: normalized, cooldownOverrideSec: undefined } : x)))
                   }}
-                >
-                  {allowedTiers.map((t) => (
-                    <option key={t} value={t}>{TIER_LABEL_CN[t]}</option>
-                  ))}
-                </select>
-                <button
-                  className={`${styles.tagToggle} ${c.shieldEnchanted ? styles.tagToggleOn : ''}`}
-                  onClick={() =>
-                    commit(cards.map((x) => (x.placementId === c.placementId ? { ...x, shieldEnchanted: !x.shieldEnchanted } : x)))
-                  }
-                >
-                  护盾附魔
-                </button>
-                {editableCd ? (
-                  <>
-                    <input
-                      className={styles.paramInput}
-                      type="number"
-                      min={0}
-                      step={0.1}
-                      placeholder={defaultCd.toFixed(1)}
-                      value={Number.isFinite(c.cooldownOverrideSec) ? String(c.cooldownOverrideSec) : ''}
-                      onChange={(e) => {
-                        const v = e.target.value.trim()
-                        const next = v === '' ? undefined : Math.max(0, Number(v))
-                        commit(cards.map((x) => (x.placementId === c.placementId ? { ...x, cooldownOverrideSec: next } : x)))
-                      }}
-                    />
-                    <button
-                      className={styles.paramReset}
-                      onClick={() => commit(cards.map((x) => (x.placementId === c.placementId ? { ...x, cooldownOverrideSec: undefined } : x)))}
-                    >
-                      重置
-                    </button>
-                    <div className={styles.paramHint}>当前CD {currentCd.toFixed(1)}s</div>
-                  </>
-                ) : (
-                  <div className={styles.paramPassive}>被动（无冷却）</div>
-                )}
-              </div>
+                />
+                <div className={styles.paramRow}>
+                  <div className={styles.paramName}>冷却与附魔</div>
+                  <button
+                    className={`${styles.tagToggle} ${selected.shieldEnchanted ? styles.tagToggleOn : ''}`}
+                    onClick={() =>
+                      commit(cards.map((x) => (x.placementId === selected.placementId ? { ...x, shieldEnchanted: !x.shieldEnchanted } : x)))
+                    }
+                  >
+                    护盾附魔
+                  </button>
+                  {editableCd ? (
+                    <>
+                      <input
+                        className={styles.paramInput}
+                        type="number"
+                        min={0}
+                        step={0.1}
+                        placeholder={defaultCd.toFixed(1)}
+                        value={Number.isFinite(selected.cooldownOverrideSec) ? String(selected.cooldownOverrideSec) : ''}
+                        onChange={(e) => {
+                          const v = e.target.value.trim()
+                          const next = v === '' ? undefined : Math.max(0, Number(v))
+                          commit(cards.map((x) => (x.placementId === selected.placementId ? { ...x, cooldownOverrideSec: next } : x)))
+                        }}
+                      />
+                      <button
+                        className={styles.paramReset}
+                        onClick={() => commit(cards.map((x) => (x.placementId === selected.placementId ? { ...x, cooldownOverrideSec: undefined } : x)))}
+                      >
+                        重置
+                      </button>
+                      <div className={styles.paramHint}>当前CD {currentCd.toFixed(1)}s</div>
+                    </>
+                  ) : (
+                    <div className={styles.paramPassive}>被动（无冷却）</div>
+                  )}
+                </div>
+              </>
             )
-          })
+          })()
         )}
       </div>
 
       {suggestions.length > 0 ? (
         <div className={styles.suggestWrap}>
           <div className={styles.sectionHead}>
-            <div className={styles.suggestHead}>发现 {suggestions.length} 个备选方案（多时间点优选，可预览切换）</div>
+            <div className={styles.suggestHead}>
+              发现 {suggestions.length} 个备选方案（主阵容 + 备选库联合计算）
+              {isOptimizing ? ' · 计算中…' : ''}
+            </div>
             <button className={styles.collapseBtn} onClick={() => setSuggestCollapsed((v) => !v)}>
               {suggestCollapsed ? '展开' : '收起'}
             </button>
           </div>
           {suggestCollapsed ? null : suggestions.map((s) => (
             <div key={s.id} className={styles.suggestRow}>
-              <div className={styles.suggestText}>
-                方案{s.rank}：{simSeconds}秒总伤害 <strong>{s.totalDamage.toFixed(1)}</strong>
-                {' '}（较当前 {s.damageGain >= 0 ? '+' : ''}{s.damageGain.toFixed(1)}） · 总出手 {s.totalUses}
+                <div className={styles.suggestText}>
+                  方案{s.rank}：{simSeconds}秒总伤害 <strong>{s.totalDamage.toFixed(1)}</strong>
+                  {' '}（较当前 {s.damageGain >= 0 ? '+' : ''}{s.damageGain.toFixed(1)}） · 总出手 {s.totalUses}
                 {s.championSeconds.length > 0
                   ? ` · 冠军秒：${formatSecondRanges(s.championSeconds)}`
                   : ''}
@@ -3034,7 +3464,7 @@ export default function JibaoWorkbench({
                 >
                   {suggestPreviewId === s.id ? '取消预览' : '预览'}
                 </button>
-                <button className={styles.applyBtn} onClick={() => commit(s.next)}>应用</button>
+                <button className={styles.applyBtn} onClick={() => applySuggestion(s.next)}>应用</button>
               </div>
             </div>
           ))}

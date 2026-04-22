@@ -4,6 +4,7 @@ import styles from './ItemDetail.module.css'
 import ItemDetailContent from './ItemDetailContent'
 import ItemImage from './ItemImage'
 import { heroAvatarUrl } from '@/lib/cdn'
+import { deriveAmmoMax, deriveCritChance, getDisplayTags } from '@/lib/itemDerived'
 
 // 定义了组件所需的所有数据字段
 interface Item {
@@ -67,19 +68,9 @@ export default function ItemDetail({ item }: ItemDetailProps) {
   const isCommon = !heroEn || heroSlug === 'common'
 
   // 标签处理
-  const getTags = () => {
-    if (item.processed_tags?.length) {
-      return item.processed_tags
-    }
-    if (typeof item.tags === 'string') {
-      return item.tags.split('|').map(t => {
-        const parts = t.trim().split('/')
-        return parts[1]?.trim() || parts[0].trim()
-      }).filter(Boolean)
-    }
-    return []
-  }
-  const displayTags = getTags()
+  const displayTags = getDisplayTags(item)
+  const ammoMax = deriveAmmoMax(item, startingTierRaw)
+  const critChance = deriveCritChance(item, startingTierRaw)
 
   return (
     <div className={styles.container}>
@@ -106,9 +97,15 @@ export default function ItemDetail({ item }: ItemDetailProps) {
           </div>
           <div className={styles.nameEn}>{item.name_en}</div>
           <div className={styles.tagsLine}>
-            {displayTags.slice(0, 4).map((tag, idx) => (
+            {displayTags.slice(0, 6).map((tag, idx) => (
               <span key={idx} className={styles.tagBadge}>{tag}</span>
             ))}
+            {ammoMax != null && ammoMax > 0 && (
+              <span className={styles.tagBadge}>弹药：{ammoMax}</span>
+            )}
+            {critChance != null && critChance > 0 && (
+              <span className={styles.tagBadge}>暴击：{critChance}%</span>
+            )}
           </div>
         </div>
 
