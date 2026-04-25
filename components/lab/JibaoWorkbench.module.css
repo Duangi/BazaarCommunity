@@ -1,6 +1,7 @@
 .panel {
   height: auto;
   min-height: 100%;
+  position: relative;
   border: 1px solid #333;
   border-radius: 12px;
   background: #171717;
@@ -9,6 +10,27 @@
   flex-direction: column;
   gap: 10px;
   overflow: visible;
+}
+
+.calculatingOverlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(7, 8, 12, 0.58);
+  backdrop-filter: blur(2px);
+  z-index: 999;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.calculatingCard {
+  border: 1px solid #5a4727;
+  border-radius: 12px;
+  background: linear-gradient(180deg, rgba(33, 27, 16, 0.96), rgba(16, 13, 9, 0.96));
+  color: #ffdf98;
+  font-size: 14px;
+  padding: 14px 18px;
+  box-shadow: 0 10px 36px rgba(0, 0, 0, 0.45);
 }
 
 .header {

@@ -37,19 +37,33 @@ export default function JibaoLabPage() {
         const normalizedSkills = enrichItemsWithResolvedText(Array.isArray(skillsData) ? skillsData : [], resolvedTextMap)
 
         const rawList = Array.isArray(rawData) ? rawData : []
+        const normalizeName = (v: any) =>
+          String(v || '')
+            .toLowerCase()
+            .replace(/\s+/g, '')
+            .replace(/[·•\-_.]/g, '')
+            .trim()
         const byNameCn = new Map<string, any>()
         const byNameEn = new Map<string, any>()
         for (const r of rawList) {
-          const cn = String(r?.name_cn || '').trim().toLowerCase()
-          const en = String(r?.name_en || '').trim().toLowerCase()
+          const cn = normalizeName(r?.name_cn)
+          const en = normalizeName(r?.name_en)
           if (cn && !byNameCn.has(cn)) byNameCn.set(cn, r)
           if (en && !byNameEn.has(en)) byNameEn.set(en, r)
         }
 
         const mergedItems = normalizedItems.map((it: any) => {
-          const cn = String(it?.name_cn || '').trim().toLowerCase()
-          const en = String(it?.name_en || '').trim().toLowerCase()
-          const raw = byNameCn.get(cn) || byNameEn.get(en) || null
+          const cn = normalizeName(it?.name_cn)
+          const en = normalizeName(it?.name_en)
+          let raw = byNameCn.get(cn) || byNameEn.get(en) || null
+          if (!raw) {
+            raw =
+              rawList.find((r: any) => {
+                const rcn = normalizeName(r?.name_cn)
+                const ren = normalizeName(r?.name_en)
+                return (cn && (rcn.includes(cn) || cn.includes(rcn))) || (en && (ren.includes(en) || en.includes(ren)))
+              }) || null
+          }
           return raw ? { ...it, __raw: raw } : it
         })
 

@@ -34,6 +34,7 @@ function DraggableCard({
   onRemove,
   useCount,
   totalDamage,
+  totalShield,
 }: {
   card: LineupBoardCard
   sourceBoard: 'main' | 'reserve'
@@ -42,6 +43,7 @@ function DraggableCard({
   onRemove: () => void
   useCount?: number
   totalDamage?: number
+  totalShield?: number
 }) {
   const [{ isDragging }, drag] = useDrag(() => ({
     type: 'ITEM',
@@ -73,7 +75,12 @@ function DraggableCard({
         className={styles.placedImage}
       />
       {useCount != null && <span className={styles.useBadge}>{useCount}</span>}
-      {totalDamage != null && <span className={styles.damageBadge}>{Number(totalDamage || 0).toFixed(1)}</span>}
+      {(Number(totalDamage || 0) > 0 || Number(totalShield || 0) > 0) && (
+        <div className={styles.statBadges}>
+          {Number(totalShield || 0) > 0 && <span className={styles.shieldBadge}>{Number(totalShield || 0).toFixed(1)}</span>}
+          {Number(totalDamage || 0) > 0 && <span className={styles.damageBadge}>{Number(totalDamage || 0).toFixed(1)}</span>}
+        </div>
+      )}
       <button
         className={styles.removeButton}
         onClick={(e) => {
@@ -98,6 +105,7 @@ export default function LineupEditBoard({
   isOver,
   useCountMap,
   damageMap,
+  shieldMap,
   enabledMask,
   boardScale = 1,
 }: {
@@ -111,6 +119,7 @@ export default function LineupEditBoard({
   isOver?: boolean
   useCountMap?: Record<string, number>
   damageMap?: Record<string, number>
+  shieldMap?: Record<string, number>
   enabledMask?: boolean[]
   boardScale?: number
 }) {
@@ -147,6 +156,7 @@ export default function LineupEditBoard({
               onRemove={() => onRemoveCard(card.placementId)}
               useCount={useCountMap ? useCountMap[card.placementId] || 0 : undefined}
               totalDamage={damageMap ? damageMap[card.placementId] || 0 : undefined}
+              totalShield={shieldMap ? shieldMap[card.placementId] || 0 : undefined}
             />
           ))}
         </div>
