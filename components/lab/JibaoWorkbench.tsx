@@ -3224,21 +3224,7 @@ export default function JibaoWorkbench({
   )
   const renderCards = preview || suggestionPreview || cards
   const renderReserveCards = reservePreview || reserveCards
-  const combatDisplay = useMemo(() => {
-    if (preview || suggestionPreview) {
-      return {
-        durationSec: simSeconds,
-        totalUses: 0,
-        byCard: {},
-        totalDamage: 0,
-        totalShield: 0,
-        byCardDamage: {},
-        byCardShield: {},
-        cumulativeDamageBySecond: [],
-      } as CombatSummary
-    }
-    return calc.combatCurrent
-  }, [preview, suggestionPreview, calc.combatCurrent, simSeconds])
+  const combatDisplay = calc.combatCurrent
 
   const commit = (next: PlacedCard[]) => {
     const sorted = compactByOrder(next, slotMask)
@@ -3448,7 +3434,16 @@ export default function JibaoWorkbench({
       if (dragged.sourceType === 'skills') return
       if (!boardRef.current) return
       const pt = monitor.getClientOffset()
-      if (!pt) return
+      if (!pt) {
+        if (preview) setCards(preview)
+        if (reservePreview) setReserveCards(reservePreview)
+        if (dragged.item) onSelectItem(dragged.item)
+        window.requestAnimationFrame(() => {
+          setPreview(null)
+          setReservePreview(null)
+        })
+        return
+      }
       const rect = boardRef.current.getBoundingClientRect()
       const unit = rect.width / MAX_UNITS
       const width = dragged.width || getCardWidth(dragged.item?.size)
@@ -3460,11 +3455,13 @@ export default function JibaoWorkbench({
         setReserveCards(res.nextReserve)
         onSelectItem(res.movingItem)
       }
-      setPreview(null)
-      setReservePreview(null)
+      window.requestAnimationFrame(() => {
+        setPreview(null)
+        setReservePreview(null)
+      })
     },
     collect: (monitor) => ({ isOver: monitor.isOver({ shallow: true }) }),
-  }), [cards, reserveCards, selectedId, slotMask])
+  }), [cards, reserveCards, selectedId, slotMask, preview, reservePreview, onSelectItem])
 
   const [{ isOverReserve }, dropReserve] = useDrop(() => ({
     accept: 'ITEM',
@@ -3488,7 +3485,16 @@ export default function JibaoWorkbench({
       if (dragged.sourceType === 'skills') return
       if (!reserveBoardRef.current) return
       const pt = monitor.getClientOffset()
-      if (!pt) return
+      if (!pt) {
+        if (preview) setCards(preview)
+        if (reservePreview) setReserveCards(reservePreview)
+        if (dragged.item) onSelectItem(dragged.item)
+        window.requestAnimationFrame(() => {
+          setPreview(null)
+          setReservePreview(null)
+        })
+        return
+      }
       const rect = reserveBoardRef.current.getBoundingClientRect()
       const unit = rect.width / MAX_UNITS
       const width = dragged.width || getCardWidth(dragged.item?.size)
@@ -3499,11 +3505,13 @@ export default function JibaoWorkbench({
         setReserveCards(res.nextReserve)
         onSelectItem(res.movingItem)
       }
-      setPreview(null)
-      setReservePreview(null)
+      window.requestAnimationFrame(() => {
+        setPreview(null)
+        setReservePreview(null)
+      })
     },
     collect: (monitor) => ({ isOverReserve: monitor.isOver({ shallow: true }) }),
-  }), [cards, reserveCards, selectedId, slotMask])
+  }), [cards, reserveCards, selectedId, slotMask, preview, reservePreview, onSelectItem])
 
   useEffect(() => {
     setCards((prev) => compactByOrder(prev, slotMask))

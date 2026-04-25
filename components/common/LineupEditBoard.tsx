@@ -74,7 +74,7 @@ function DraggableCard({
         alt={card.item?.name_cn || card.item?.name_en || card.item?.id || 'card'}
         className={styles.placedImage}
       />
-      {useCount != null && <span className={styles.useBadge}>{useCount}</span>}
+      {Number(useCount || 0) > 0 && <span className={styles.useBadge}>{useCount}</span>}
       {(Number(totalDamage || 0) > 0 || Number(totalShield || 0) > 0) && (
         <div className={styles.statBadges}>
           {Number(totalShield || 0) > 0 && <span className={styles.shieldBadge}>{Number(totalShield || 0).toFixed(1)}</span>}
