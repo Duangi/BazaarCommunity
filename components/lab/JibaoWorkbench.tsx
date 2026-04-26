@@ -1,6 +1,6 @@
 'use client'
 
-import { Fragment, useEffect, useMemo, useRef, useState } from 'react'
+import { Fragment, useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { useDrop } from 'react-dnd'
 import LineupEditBoard from '@/components/common/LineupEditBoard'
 import BorderTierSelector from '@/components/common/BorderTierSelector'
@@ -246,6 +246,65 @@ type WorkbenchCalcResult = {
   suggestions: SuggestionCandidate[]
   chartLayouts: Array<{ id: string; label: string; color: string; curve: number[]; totalDamage: number }>
   optimizationBaseLen: number
+}
+
+function getDnDPoint(monitor: any): { x: number; y: number } | null {
+  return (
+    monitor?.getClientOffset?.() ||
+    monitor?.getSourceClientOffset?.() ||
+    monitor?.getInitialClientOffset?.() ||
+    null
+  )
+}
+
+function resolveBoardRect(node: HTMLDivElement): DOMRect {
+  const inner = node.querySelector('[data-board-area="1"]') as HTMLDivElement | null
+  return (inner || node).getBoundingClientRect()
+}
+
+function isLocalRuntimeDebug(): boolean {
+  if (typeof window === 'undefined') return false
+  const host = String(window.location.hostname || '').toLowerCase()
+  if (host === 'localhost' || host === '127.0.0.1') return true
+  if (host.startsWith('192.168.')) return true
+  if (host.startsWith('10.')) return true
+  const m = host.match(/^172\.(\d+)\./)
+  if (m) {
+    const seg = Number(m[1])
+    if (seg >= 16 && seg <= 31) return true
+  }
+  return false
+}
+
+function logDndLocal(stage: string, data?: any) {
+  if (!isLocalRuntimeDebug()) return
+  try {
+    if (data === undefined) console.info(`[JibaoDnD] ${stage}`)
+    else console.info(`[JibaoDnD] ${stage}`, data)
+  } catch {}
+}
+
+function diagnoseAutoLayoutFailure(
+  cardsWithoutMoving: PlacedCard[],
+  moving: PlacedCard,
+  targetStart: number,
+  allowedMask?: boolean[],
+): string {
+  if (!Number.isFinite(moving.width) || moving.width <= 0) return `非法宽度 width=${moving.width}`
+  if (moving.width > MAX_UNITS) return `宽度超上限 width=${moving.width}`
+  const occ = buildOccupancy()
+  const mStart = findNearestStart(occ, moving.width, targetStart, allowedMask)
+  if (mStart == null) return `无法放入拖拽卡（target=${targetStart}, width=${moving.width}）`
+  reserve(occ, mStart, moving.width)
+  const sorted = [...cardsWithoutMoving].sort((a, b) => a.start - b.start)
+  for (const c of sorted) {
+    const s = findNearestStart(occ, c.width, c.start, allowedMask)
+    if (s == null) {
+      return `为拖拽卡腾位后，原卡无法回填：${c.item?.name_cn || c.item?.name_en || c.item?.id} width=${c.width} prefer=${c.start}`
+    }
+    reserve(occ, s, c.width)
+  }
+  return '未知失败'
 }
 
 const MAX_UNITS = 10
@@ -3143,12 +3202,24 @@ export default function JibaoWorkbench({
   const [autoOptimizeNote, setAutoOptimizeNote] = useState('')
   const boardRef = useRef<HTMLDivElement | null>(null)
   const reserveBoardRef = useRef<HTMLDivElement | null>(null)
+  const nativeMainCleanupRef = useRef<(() => void) | null>(null)
+  const nativeReserveCleanupRef = useRef<(() => void) | null>(null)
+  const lastHoverMainStartRef = useRef<number>(0)
+  const lastHoverReserveStartRef = useRef<number>(0)
+  const cardsRef = useRef<PlacedCard[]>([])
+  const reserveCardsRef = useRef<PlacedCard[]>([])
+  const previewRef = useRef<PlacedCard[] | null>(null)
+  const reservePreviewRef = useRef<PlacedCard[] | null>(null)
   const slotMask = useMemo(() => {
     if (slotMode === 6) return [false, false, true, true, true, true, true, true, false, false]
     if (slotMode === 8) return [false, true, true, true, true, true, true, true, true, false]
     return Array.from({ length: 10 }, () => true)
   }, [slotMode])
   const enabledUnits = useMemo(() => slotMask.filter(Boolean).length, [slotMask])
+  useEffect(() => { cardsRef.current = cards }, [cards])
+  useEffect(() => { reserveCardsRef.current = reserveCards }, [reserveCards])
+  useEffect(() => { previewRef.current = preview }, [preview])
+  useEffect(() => { reservePreviewRef.current = reservePreview }, [reservePreview])
   const buildCalcResult = (mainCards: PlacedCard[], reserve: PlacedCard[], sec: number): WorkbenchCalcResult => {
     const analysis = analyze(mainCards)
     const combatCurrent = simulateCombatStats(mainCards, sec)
@@ -3374,12 +3445,17 @@ export default function JibaoWorkbench({
     dragged: DragPayload,
     target: number,
   ): { nextMain: PlacedCard[]; nextReserve: PlacedCard[]; movingItem: LabItem } | null => {
+    const currentCards = cardsRef.current
+    const currentReserveCards = reserveCardsRef.current
     const sourceBoard = dragged.sourceBoard
-    const sourceMain = dragged.placementId ? cards.find((c) => c.placementId === dragged.placementId) : null
-    const sourceReserve = dragged.placementId ? reserveCards.find((c) => c.placementId === dragged.placementId) : null
+    const sourceMain = dragged.placementId ? currentCards.find((c) => c.placementId === dragged.placementId) : null
+    const sourceReserve = dragged.placementId ? currentReserveCards.find((c) => c.placementId === dragged.placementId) : null
     const movingExisting = sourceMain || sourceReserve
     const movingItem = movingExisting?.item || dragged.item
-    if (!movingItem) return null
+    if (!movingItem) {
+      logDndLocal('buildDropPreview:missing-moving-item', { targetBoard, dragged, target })
+      return null
+    }
     const width = movingExisting?.width || dragged.width || getCardWidth(movingItem.size)
     const moving: PlacedCard = movingExisting || {
       placementId: `${movingItem.id || 'card'}-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
@@ -3389,8 +3465,8 @@ export default function JibaoWorkbench({
       tier: asTier(movingItem.starting_tier),
     }
 
-    const nextMainBase = [...cards]
-    const nextReserveBase = [...reserveCards]
+    const nextMainBase = [...currentCards]
+    const nextReserveBase = [...currentReserveCards]
     if (movingExisting) {
       if ((sourceBoard === 'main' || sourceMain) && sourceMain) {
         const idx = nextMainBase.findIndex((c) => c.placementId === movingExisting.placementId)
@@ -3404,24 +3480,132 @@ export default function JibaoWorkbench({
 
     if (targetBoard === 'main') {
       const nextTarget = autoLayout(nextMainBase, { ...moving, start: target, width }, target, slotMask)
-      if (!nextTarget) return null
+      if (!nextTarget) {
+        logDndLocal('buildDropPreview:main-failed', {
+          targetBoard,
+          target,
+          width,
+          sourceBoard,
+          moving: movingItem?.name_cn || movingItem?.name_en || movingItem?.id,
+          reason: diagnoseAutoLayoutFailure(nextMainBase, { ...moving, start: target, width }, target, slotMask),
+        })
+        return null
+      }
       return { nextMain: [...nextTarget].sort((a, b) => a.start - b.start), nextReserve: [...nextReserveBase].sort((a, b) => a.start - b.start), movingItem }
     }
     const nextTarget = autoLayout(nextReserveBase, { ...moving, start: target, width }, target, slotMask)
-    if (!nextTarget) return null
+    if (!nextTarget) {
+      logDndLocal('buildDropPreview:reserve-failed', {
+        targetBoard,
+        target,
+        width,
+        sourceBoard,
+        moving: movingItem?.name_cn || movingItem?.name_en || movingItem?.id,
+        reason: diagnoseAutoLayoutFailure(nextReserveBase, { ...moving, start: target, width }, target, slotMask),
+      })
+      return null
+    }
     return { nextMain: [...nextMainBase].sort((a, b) => a.start - b.start), nextReserve: [...nextTarget].sort((a, b) => a.start - b.start), movingItem }
   }
 
-  const [{ isOver }, drop] = useDrop(() => ({
-    accept: 'ITEM',
-    hover: (dragged: DragPayload, monitor) => {
-      if (!boardRef.current || dragged.sourceType === 'skills') return
-      const pt = monitor.getClientOffset()
-      if (!pt) return
-      const rect = boardRef.current.getBoundingClientRect()
+  const readNativeDragPayload = (): DragPayload | null => {
+    if (typeof window === 'undefined') return null
+    const raw = (window as any).__JIBAO_LAST_DRAG_PAYLOAD
+    if (!raw || typeof raw !== 'object') return null
+    return raw as DragPayload
+  }
+
+  const writeLastDragTarget = (board: BoardKey, target: number) => {
+    if (typeof window === 'undefined') return
+    ;(window as any).__JIBAO_LAST_DRAG_TARGET = {
+      board,
+      target,
+      ts: Date.now(),
+    }
+  }
+
+  const attachNativeDropFallback = (node: HTMLDivElement, targetBoard: BoardKey): (() => void) => {
+    const onDragOver = (e: DragEvent) => {
+      const payload = readNativeDragPayload()
+      if (!payload || payload.sourceType === 'skills') return
+      e.preventDefault()
+      e.dataTransfer && (e.dataTransfer.dropEffect = 'move')
+      const clientX = Number(e.clientX || 0)
+      const rect = resolveBoardRect(node)
       const unit = rect.width / MAX_UNITS
+      if (!Number.isFinite(unit) || unit <= 0) return
+      const width = payload.width || getCardWidth(payload.item?.size)
+      const target = Math.max(0, Math.min(MAX_UNITS - width, Math.round((clientX - rect.left) / unit - width / 2)))
+      writeLastDragTarget(targetBoard, target)
+    }
+    const onDrop = (e: DragEvent) => {
+      const payload = readNativeDragPayload()
+      if (!payload || payload.sourceType === 'skills') return
+      e.preventDefault()
+      const clientX = Number(e.clientX || 0)
+      const rect = resolveBoardRect(node)
+      const unit = rect.width / MAX_UNITS
+      if (!Number.isFinite(unit) || unit <= 0) {
+        logDndLocal(`native-drop-${targetBoard}:invalid-unit`, { rectWidth: rect.width, unit })
+        return
+      }
+      const width = payload.width || getCardWidth(payload.item?.size)
+      const target = Math.max(0, Math.min(MAX_UNITS - width, Math.round((clientX - rect.left) / unit - width / 2)))
+      writeLastDragTarget(targetBoard, target)
+      const res = buildDropPreview(targetBoard, payload, target)
+      logDndLocal(`native-drop-${targetBoard}`, {
+        x: clientX,
+        left: rect.left,
+        unit,
+        width,
+        target,
+        ok: Boolean(res),
+      })
+      if (!res) return
+      setCards(res.nextMain)
+      setReserveCards(res.nextReserve)
+      onSelectItem(res.movingItem)
+      if (typeof window !== 'undefined') {
+        ;(window as any).__JIBAO_LAST_DRAG_TARGET = null
+      }
+      window.requestAnimationFrame(() => {
+        setPreview(null)
+        setReservePreview(null)
+      })
+    }
+    node.addEventListener('dragover', onDragOver)
+    node.addEventListener('drop', onDrop)
+    return () => {
+      node.removeEventListener('dragover', onDragOver)
+      node.removeEventListener('drop', onDrop)
+    }
+  }
+
+  const [{ isOver }, drop] = useDrop(() => ({
+    accept: ['ITEM', 'LINEUP_CARD'],
+    hover: (dragged: DragPayload, monitor) => {
+      if (!monitor.isOver({ shallow: true })) return
+      if (!boardRef.current) return
+      if (dragged.sourceType === 'skills') {
+        logDndLocal('hover-main:ignored-skill', { dragged })
+        return
+      }
+      const pt = getDnDPoint(monitor)
+      if (!pt) {
+        logDndLocal('hover-main:no-point', { dragged })
+        return
+      }
+      const rect = resolveBoardRect(boardRef.current)
+      const unit = rect.width / MAX_UNITS
+      if (!Number.isFinite(unit) || unit <= 0) {
+        logDndLocal('hover-main:invalid-unit', { rectWidth: rect.width, unit })
+        return
+      }
       const width = dragged.width || getCardWidth(dragged.item?.size)
       const target = Math.max(0, Math.min(MAX_UNITS - width, Math.round((pt.x - rect.left) / unit - width / 2)))
+      logDndLocal('hover-main', { x: pt.x, left: rect.left, unit, width, target, sourceType: dragged.sourceType })
+      lastHoverMainStartRef.current = target
+      writeLastDragTarget('main', target)
       const res = buildDropPreview('main', dragged, target)
       if (!res) {
         setPreview(null)
@@ -3431,29 +3615,73 @@ export default function JibaoWorkbench({
       setReservePreview(res.nextReserve)
     },
     drop: (dragged: DragPayload, monitor) => {
-      if (dragged.sourceType === 'skills') return
+      if (monitor.didDrop()) return
+      if (dragged.sourceType === 'skills') {
+        logDndLocal('drop-main:ignored-skill', { dragged })
+        return
+      }
       if (!boardRef.current) return
-      const pt = monitor.getClientOffset()
+      const pt = getDnDPoint(monitor)
       if (!pt) {
-        if (preview) setCards(preview)
-        if (reservePreview) setReserveCards(reservePreview)
-        if (dragged.item) onSelectItem(dragged.item)
+        logDndLocal('drop-main:no-point', {
+          dragged,
+          hasPreview: Boolean(previewRef.current),
+          hasReservePreview: Boolean(reservePreviewRef.current),
+          fallbackTarget: lastHoverMainStartRef.current,
+        })
+        if (previewRef.current || reservePreviewRef.current) {
+          if (previewRef.current) setCards(previewRef.current)
+          if (reservePreviewRef.current) setReserveCards(reservePreviewRef.current)
+          if (dragged.item) onSelectItem(dragged.item)
+        } else {
+          const width = dragged.width || getCardWidth(dragged.item?.size)
+          const fallbackTarget = Math.max(0, Math.min(MAX_UNITS - width, lastHoverMainStartRef.current || 0))
+          const fallback = buildDropPreview('main', dragged, fallbackTarget)
+          if (fallback) {
+            setCards(fallback.nextMain)
+            setReserveCards(fallback.nextReserve)
+            onSelectItem(fallback.movingItem)
+          }
+        }
         window.requestAnimationFrame(() => {
           setPreview(null)
           setReservePreview(null)
         })
         return
       }
-      const rect = boardRef.current.getBoundingClientRect()
+      const rect = resolveBoardRect(boardRef.current)
       const unit = rect.width / MAX_UNITS
+      if (!Number.isFinite(unit) || unit <= 0) {
+        logDndLocal('drop-main:invalid-unit', { rectWidth: rect.width, unit })
+        const width = dragged.width || getCardWidth(dragged.item?.size)
+        const fallbackTarget = Math.max(0, Math.min(MAX_UNITS - width, lastHoverMainStartRef.current || 0))
+        const fallback = buildDropPreview('main', dragged, fallbackTarget)
+        if (fallback) {
+          setCards(fallback.nextMain)
+          setReserveCards(fallback.nextReserve)
+          onSelectItem(fallback.movingItem)
+        }
+        window.requestAnimationFrame(() => {
+          setPreview(null)
+          setReservePreview(null)
+        })
+        return
+      }
       const width = dragged.width || getCardWidth(dragged.item?.size)
       const target = Math.max(0, Math.min(MAX_UNITS - width, Math.round((pt.x - rect.left) / unit - width / 2)))
+      logDndLocal('drop-main', { x: pt.x, left: rect.left, unit, width, target, sourceType: dragged.sourceType })
+      writeLastDragTarget('main', target)
 
       const res = buildDropPreview('main', dragged, target)
       if (res) {
         setCards(res.nextMain)
         setReserveCards(res.nextReserve)
         onSelectItem(res.movingItem)
+        if (typeof window !== 'undefined') {
+          ;(window as any).__JIBAO_LAST_DRAG_TARGET = null
+        }
+      } else {
+        logDndLocal('drop-main:preview-null', { target, width, dragged })
       }
       window.requestAnimationFrame(() => {
         setPreview(null)
@@ -3461,18 +3689,33 @@ export default function JibaoWorkbench({
       })
     },
     collect: (monitor) => ({ isOver: monitor.isOver({ shallow: true }) }),
-  }), [cards, reserveCards, selectedId, slotMask, preview, reservePreview, onSelectItem])
+  }), [slotMask, onSelectItem])
 
   const [{ isOverReserve }, dropReserve] = useDrop(() => ({
-    accept: 'ITEM',
+    accept: ['ITEM', 'LINEUP_CARD'],
     hover: (dragged: DragPayload, monitor) => {
-      if (!reserveBoardRef.current || dragged.sourceType === 'skills') return
-      const pt = monitor.getClientOffset()
-      if (!pt) return
-      const rect = reserveBoardRef.current.getBoundingClientRect()
+      if (!monitor.isOver({ shallow: true })) return
+      if (!reserveBoardRef.current) return
+      if (dragged.sourceType === 'skills') {
+        logDndLocal('hover-reserve:ignored-skill', { dragged })
+        return
+      }
+      const pt = getDnDPoint(monitor)
+      if (!pt) {
+        logDndLocal('hover-reserve:no-point', { dragged })
+        return
+      }
+      const rect = resolveBoardRect(reserveBoardRef.current)
       const unit = rect.width / MAX_UNITS
+      if (!Number.isFinite(unit) || unit <= 0) {
+        logDndLocal('hover-reserve:invalid-unit', { rectWidth: rect.width, unit })
+        return
+      }
       const width = dragged.width || getCardWidth(dragged.item?.size)
       const target = Math.max(0, Math.min(MAX_UNITS - width, Math.round((pt.x - rect.left) / unit - width / 2)))
+      logDndLocal('hover-reserve', { x: pt.x, left: rect.left, unit, width, target, sourceType: dragged.sourceType })
+      lastHoverReserveStartRef.current = target
+      writeLastDragTarget('reserve', target)
       const res = buildDropPreview('reserve', dragged, target)
       if (!res) {
         setReservePreview(null)
@@ -3482,28 +3725,72 @@ export default function JibaoWorkbench({
       setReservePreview(res.nextReserve)
     },
     drop: (dragged: DragPayload, monitor) => {
-      if (dragged.sourceType === 'skills') return
+      if (monitor.didDrop()) return
+      if (dragged.sourceType === 'skills') {
+        logDndLocal('drop-reserve:ignored-skill', { dragged })
+        return
+      }
       if (!reserveBoardRef.current) return
-      const pt = monitor.getClientOffset()
+      const pt = getDnDPoint(monitor)
       if (!pt) {
-        if (preview) setCards(preview)
-        if (reservePreview) setReserveCards(reservePreview)
-        if (dragged.item) onSelectItem(dragged.item)
+        logDndLocal('drop-reserve:no-point', {
+          dragged,
+          hasPreview: Boolean(previewRef.current),
+          hasReservePreview: Boolean(reservePreviewRef.current),
+          fallbackTarget: lastHoverReserveStartRef.current,
+        })
+        if (previewRef.current || reservePreviewRef.current) {
+          if (previewRef.current) setCards(previewRef.current)
+          if (reservePreviewRef.current) setReserveCards(reservePreviewRef.current)
+          if (dragged.item) onSelectItem(dragged.item)
+        } else {
+          const width = dragged.width || getCardWidth(dragged.item?.size)
+          const fallbackTarget = Math.max(0, Math.min(MAX_UNITS - width, lastHoverReserveStartRef.current || 0))
+          const fallback = buildDropPreview('reserve', dragged, fallbackTarget)
+          if (fallback) {
+            setCards(fallback.nextMain)
+            setReserveCards(fallback.nextReserve)
+            onSelectItem(fallback.movingItem)
+          }
+        }
         window.requestAnimationFrame(() => {
           setPreview(null)
           setReservePreview(null)
         })
         return
       }
-      const rect = reserveBoardRef.current.getBoundingClientRect()
+      const rect = resolveBoardRect(reserveBoardRef.current)
       const unit = rect.width / MAX_UNITS
+      if (!Number.isFinite(unit) || unit <= 0) {
+        logDndLocal('drop-reserve:invalid-unit', { rectWidth: rect.width, unit })
+        const width = dragged.width || getCardWidth(dragged.item?.size)
+        const fallbackTarget = Math.max(0, Math.min(MAX_UNITS - width, lastHoverReserveStartRef.current || 0))
+        const fallback = buildDropPreview('reserve', dragged, fallbackTarget)
+        if (fallback) {
+          setCards(fallback.nextMain)
+          setReserveCards(fallback.nextReserve)
+          onSelectItem(fallback.movingItem)
+        }
+        window.requestAnimationFrame(() => {
+          setPreview(null)
+          setReservePreview(null)
+        })
+        return
+      }
       const width = dragged.width || getCardWidth(dragged.item?.size)
       const target = Math.max(0, Math.min(MAX_UNITS - width, Math.round((pt.x - rect.left) / unit - width / 2)))
+      logDndLocal('drop-reserve', { x: pt.x, left: rect.left, unit, width, target, sourceType: dragged.sourceType })
+      writeLastDragTarget('reserve', target)
       const res = buildDropPreview('reserve', dragged, target)
       if (res) {
         setCards(res.nextMain)
         setReserveCards(res.nextReserve)
         onSelectItem(res.movingItem)
+        if (typeof window !== 'undefined') {
+          ;(window as any).__JIBAO_LAST_DRAG_TARGET = null
+        }
+      } else {
+        logDndLocal('drop-reserve:preview-null', { target, width, dragged })
       }
       window.requestAnimationFrame(() => {
         setPreview(null)
@@ -3511,7 +3798,7 @@ export default function JibaoWorkbench({
       })
     },
     collect: (monitor) => ({ isOverReserve: monitor.isOver({ shallow: true }) }),
-  }), [cards, reserveCards, selectedId, slotMask, preview, reservePreview, onSelectItem])
+  }), [slotMask, onSelectItem])
 
   useEffect(() => {
     setCards((prev) => compactByOrder(prev, slotMask))
@@ -3521,14 +3808,92 @@ export default function JibaoWorkbench({
     setSuggestPreviewId(null)
   }, [slotMask])
 
-  const bindBoardRef = (node: HTMLDivElement | null) => {
+  useEffect(() => {
+    if (typeof window === 'undefined') return
+    const forceDrop = (payload: DragPayload): boolean => {
+      if (!payload || payload.sourceType === 'skills') return false
+      const rawTarget = (window as any).__JIBAO_LAST_DRAG_TARGET || null
+      const width = payload.width || getCardWidth(payload.item?.size)
+      const board: BoardKey = rawTarget?.board === 'reserve' ? 'reserve' : 'main'
+      const fallbackMain = Math.max(0, Math.min(MAX_UNITS - width, lastHoverMainStartRef.current || 0))
+      const fallbackReserve = Math.max(0, Math.min(MAX_UNITS - width, lastHoverReserveStartRef.current || 0))
+      const target = Math.max(
+        0,
+        Math.min(
+          MAX_UNITS - width,
+          Number.isFinite(Number(rawTarget?.target))
+            ? Number(rawTarget.target)
+            : board === 'reserve'
+              ? fallbackReserve
+              : fallbackMain,
+        ),
+      )
+      const res = buildDropPreview(board, payload, target)
+      logDndLocal('force-drop', {
+        board,
+        target,
+        width,
+        hasRawTarget: Boolean(rawTarget),
+        ok: Boolean(res),
+      })
+      if (!res) return false
+      setCards(res.nextMain)
+      setReserveCards(res.nextReserve)
+      onSelectItem(res.movingItem)
+      ;(window as any).__JIBAO_LAST_DRAG_TARGET = null
+      window.requestAnimationFrame(() => {
+        setPreview(null)
+        setReservePreview(null)
+      })
+      return true
+    }
+    ;(window as any).__JIBAO_FORCE_DROP = forceDrop
+    return () => {
+      if ((window as any).__JIBAO_FORCE_DROP === forceDrop) {
+        ;(window as any).__JIBAO_FORCE_DROP = null
+      }
+    }
+  }, [buildDropPreview, onSelectItem])
+
+  const bindBoardRef = useCallback((node: HTMLDivElement | null) => {
+    if (nativeMainCleanupRef.current) {
+      nativeMainCleanupRef.current()
+      nativeMainCleanupRef.current = null
+    }
     boardRef.current = node
+    if (node) {
+      const rect = node.getBoundingClientRect()
+      logDndLocal('bind-main-board', { width: rect.width, height: rect.height })
+      nativeMainCleanupRef.current = attachNativeDropFallback(node, 'main')
+    } else {
+      logDndLocal('bind-main-board:null')
+    }
     drop(node)
-  }
-  const bindReserveBoardRef = (node: HTMLDivElement | null) => {
+  }, [drop, onSelectItem, slotMask])
+  const bindReserveBoardRef = useCallback((node: HTMLDivElement | null) => {
+    if (nativeReserveCleanupRef.current) {
+      nativeReserveCleanupRef.current()
+      nativeReserveCleanupRef.current = null
+    }
     reserveBoardRef.current = node
+    if (node) {
+      const rect = node.getBoundingClientRect()
+      logDndLocal('bind-reserve-board', { width: rect.width, height: rect.height })
+      nativeReserveCleanupRef.current = attachNativeDropFallback(node, 'reserve')
+    } else {
+      logDndLocal('bind-reserve-board:null')
+    }
     dropReserve(node)
-  }
+  }, [dropReserve, onSelectItem, slotMask])
+
+  useEffect(() => {
+    return () => {
+      if (nativeMainCleanupRef.current) nativeMainCleanupRef.current()
+      if (nativeReserveCleanupRef.current) nativeReserveCleanupRef.current()
+      nativeMainCleanupRef.current = null
+      nativeReserveCleanupRef.current = null
+    }
+  }, [])
 
   useEffect(() => {
     if (!isOver) setPreview(null)

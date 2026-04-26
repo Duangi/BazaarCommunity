@@ -75,9 +75,60 @@ export function ItemCard({
   isExpanded: boolean
   sourceType: 'items' | 'skills'
 }) {
+  const isLocalDebug = (() => {
+    if (typeof window === 'undefined') return false
+    const host = String(window.location.hostname || '').toLowerCase()
+    if (host === 'localhost' || host === '127.0.0.1') return true
+    if (host.startsWith('192.168.') || host.startsWith('10.')) return true
+    const m = host.match(/^172\.(\d+)\./)
+    if (!m) return false
+    const seg = Number(m[1])
+    return seg >= 16 && seg <= 31
+  })()
   const [{ isDragging }, drag] = useDrag(() => ({
     type: 'ITEM',
-    item: { item, sourceType },
+    item: () => {
+      const payload = { item, sourceType }
+      if (typeof window !== 'undefined') {
+        ;(window as any).__JIBAO_LAST_DRAG_PAYLOAD = payload
+      }
+      if (isLocalDebug) {
+        try {
+          console.info('[JibaoDnD] drag-begin', {
+            id: item?.id,
+            name: item?.name_cn || item?.name_en,
+            sourceType,
+            size: item?.size,
+          })
+        } catch {}
+      }
+      return payload
+    },
+    end: (_, monitor) => {
+      const didDrop = monitor.didDrop?.()
+      if (!didDrop && typeof window !== 'undefined') {
+        const forceDrop = (window as any).__JIBAO_FORCE_DROP
+        if (typeof forceDrop === 'function') {
+          try {
+            forceDrop({ item, sourceType })
+          } catch {}
+        }
+      }
+      if (typeof window !== 'undefined') {
+        window.setTimeout(() => {
+          ;(window as any).__JIBAO_LAST_DRAG_PAYLOAD = null
+        }, 220)
+      }
+      if (!isLocalDebug) return
+      try {
+        console.info('[JibaoDnD] drag-end', {
+          id: item?.id,
+          name: item?.name_cn || item?.name_en,
+          sourceType,
+          didDrop,
+        })
+      } catch {}
+    },
     collect: (monitor) => ({
       isDragging: monitor.isDragging(),
     }),
@@ -157,6 +208,7 @@ export function ItemCard({
                 <img
                   src={heroAvatarUrl(heroSlug)}
                   alt={heroZh}
+                  draggable={false}
                   className={styles.heroAvatar}
                 />
               </div>

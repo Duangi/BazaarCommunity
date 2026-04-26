@@ -34,6 +34,7 @@ export default function ItemImage({
     <img
       src={src}
       alt={alt}
+      draggable={false}
       className={className}
       loading={loading}
       onError={() => setIndex((prev) => prev + 1)}

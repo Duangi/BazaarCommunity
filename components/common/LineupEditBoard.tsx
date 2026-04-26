@@ -47,12 +47,40 @@ function DraggableCard({
 }) {
   const [{ isDragging }, drag] = useDrag(() => ({
     type: 'ITEM',
-    item: {
-      placementId: card.placementId,
-      item: card.item,
-      width: card.width,
-      sourceType: 'items',
-      sourceBoard,
+    item: () => {
+      const payload = {
+        placementId: card.placementId,
+        item: card.item,
+        width: card.width,
+        sourceType: 'items' as const,
+        sourceBoard,
+      }
+      if (typeof window !== 'undefined') {
+        ;(window as any).__JIBAO_LAST_DRAG_PAYLOAD = payload
+      }
+      return payload
+    },
+    end: (_, monitor) => {
+      const didDrop = monitor.didDrop?.()
+      if (!didDrop && typeof window !== 'undefined') {
+        const forceDrop = (window as any).__JIBAO_FORCE_DROP
+        if (typeof forceDrop === 'function') {
+          try {
+            forceDrop({
+              placementId: card.placementId,
+              item: card.item,
+              width: card.width,
+              sourceType: 'items' as const,
+              sourceBoard,
+            })
+          } catch {}
+        }
+      }
+      if (typeof window !== 'undefined') {
+        window.setTimeout(() => {
+          ;(window as any).__JIBAO_LAST_DRAG_PAYLOAD = null
+        }, 220)
+      }
     },
     collect: (monitor) => ({ isDragging: monitor.isDragging() }),
   }))
@@ -131,13 +159,14 @@ export default function LineupEditBoard({
   return (
     <div
       className={`${styles.lineupBoard} ${isOver ? styles.lineupBoardOver : ''}`}
+      ref={onAttachRef}
       style={{
         ['--slot-height' as any]: `${slotHeight}px`,
         ['--slot-unit-width' as any]: `${slotUnit}px`,
       }}
     >
       <div className={styles.title}>{title}</div>
-      <div className={styles.boardArea} ref={onAttachRef}>
+      <div className={styles.boardArea} data-board-area="1">
         <div className={styles.boardGrid}>
           {Array.from({ length: 10 }).map((_, idx) => (
             <div key={idx} className={`${styles.slotCell} ${!mask[idx] ? styles.slotCellDisabled : ''}`}>

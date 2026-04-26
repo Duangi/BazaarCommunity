@@ -2103,6 +2103,7 @@ function PlacedCardView({
       <img
         src={getItemImageUrl(card.item)}
         alt={card.item.name_cn || card.item.name_en || card.item.id}
+        draggable={false}
         className={styles.placedImage}
       />
       <div className={styles.cardRoleTags}>
@@ -2137,6 +2138,7 @@ function PreviewPlacedCardView({ card }: { card: PlacedCard }) {
       <img
         src={getItemImageUrl(card.item)}
         alt={card.item.name_cn || card.item.name_en || card.item.id}
+        draggable={false}
         className={styles.placedImage}
       />
     </div>
