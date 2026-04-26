@@ -78,15 +78,6 @@ export default function Home() {
             <div className={styles.toolsArrow}>→</div>
           </Link>
 
-          <Link href="/analytics" className={styles.testButton}>
-            <div className={styles.testIcon}>📊</div>
-            <div className={styles.toolsContent}>
-              <h2>大数据分析（测试版）</h2>
-              <p>单卡查阵容 · 英雄与卡牌统计 · 胜率热度分析</p>
-            </div>
-            <div className={styles.toolsArrow}>→</div>
-          </Link>
-
           <Link href="/jibao-lab" className={styles.testButton}>
             <div className={styles.testIcon}>🧪</div>
             <div className={styles.toolsContent}>
