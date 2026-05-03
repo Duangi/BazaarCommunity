@@ -1,0 +1,176 @@
+# TCardConditionalAttribute 分布报告
+
+## GreaterThan (347)
+- 3 | 渔网 | CooldownMax | 0
+- 4 | 幸运三叶草 | Custom_0 | NaN
+- 4 | 幸运三叶草 | Custom_0 | NaN
+- 5 | 猎刀 | CooldownMax | 0
+- 17 | 刨丝器 | CooldownMax | 0
+- 20 | 划艇 | CooldownMax | 0
+- 23 | 电鳗 | CooldownMax | 0
+- 24 | 长矛 | CooldownMax | 0
+- 33 | 地窖 | AmmoMax | 0
+- 36 | 烤野猪 | CooldownMax | 0
+- 39 | 马克显微镜 | CooldownMax | 0
+- 53 | 沙袋 | CooldownMax | 0
+- 53 | 沙袋 | CooldownMax | 0
+- 55 | 惯性阻尼器 | CooldownMax | 0
+- 56 | 宇宙护符 | CooldownMax | 0
+- 62 | 天平 | CooldownMax | 0
+- 62 | 天平 | CooldownMax | 0
+- 68 | 羽翼符印 | CooldownMax | 0
+- 71 | 等离子手雷 | CooldownMax | 0
+- 73 | 天文台 | CooldownMax | 0
+- 75 | 弯刀 | Slow | 0
+- 76 | 冰护守卫 | CooldownMax | 0
+- 81 | 瑞士军刀 | CooldownMax | 0
+- 81 | 瑞士军刀 | CooldownMax | 0
+- 88 | 氢气罐 | CooldownMax | 0
+- 93 | 喷气背包 | CooldownMax | 0
+- 93 | 喷气背包 | CooldownMax | 0
+- 94 | 时光指针 | CooldownMax | 1000
+- 95 | 码头缆索 | CooldownMax | 0
+- 102 | 采掘工具 | CooldownMax | 0
+- 106 | 钥匙串 | CooldownMax | 0
+- 109 | 琥珀 | CooldownMax | 0
+- 113 | 私享温泉 | Freeze | 0
+- 115 | 工具箱 | CooldownMax | 0
+- 116 | 磨刀器 | CooldownMax | 0
+- 122 | 辣椒喷雾 | CooldownMax | 0
+- 122 | 辣椒喷雾 | CooldownMax | 0
+- 125 | 中继无人机 | CooldownMax | 0
+- 128 | 糖果锁甲 | AmmoMax | 0
+- 128 | 糖果锁甲 | AmmoMax | 0
+- ... 其余 307 条
+
+## Equal (211)
+- 6 | 特里翼龙 | Flying | 1
+- 15 | 巨龙心 | Flying | NaN
+- 21 | 悬浮科技 | Flying | 0
+- 21 | 悬浮科技 | Flying | 1
+- 21 | 悬浮科技 | Flying | 1
+- 21 | 悬浮科技 | Flying | 1
+- 34 | 冰屋 | Custom_0 | 0
+- 47 | 大红灯笼 | Flying | 1
+- 51 | 鸡农炮 | Flying | 0
+- 53 | 沙袋 | Flying | 0
+- 56 | 宇宙护符 | Flying | 0
+- 56 | 宇宙护符 | Flying | 1
+- 68 | 羽翼符印 | Flying | 0
+- 68 | 羽翼符印 | Flying | 1
+- 73 | 天文台 | Flying | 1
+- 77 | 带刃悬浮板 | Flying | 0
+- 84 | 作战气球 | Flying | 0
+- 89 | 降落伞 | Custom_1 | 0
+- 93 | 喷气背包 | Flying | 1
+- 98 | 贪婪渡鸦 | Flying | 0
+- 104 | 投送无人机 | Flying | 1
+- 107 | 救生圈 | Custom_0 | 0
+- 107 | 救生圈 | Custom_0 | 0
+- 108 | 望远镜 | Flying | 1
+- 113 | 私享温泉 | Custom_1 | 0
+- 114 | 私人喷气机 | Flying | 0
+- 114 | 私人喷气机 | Flying | 1
+- 122 | 辣椒喷雾 | Custom_0 | 0
+- 122 | 辣椒喷雾 | Custom_0 | 0
+- 132 | 发射台 | Flying | 0
+- 132 | 发射台 | Flying | 1
+- 139 | 安保无人机 | Flying | 1
+- 143 | 猎鹰 | Flying | 0
+- 143 | 猎鹰 | Flying | 1
+- 144 | 液压钳 | Flying | 1
+- 170 | 喷射摩托 | Flying | 0
+- 170 | 喷射摩托 | Flying | 1
+- 170 | 喷射摩托 | Flying | 0
+- 174 | 闪电蝴蝶 | Flying | 1
+- 174 | 闪电蝴蝶 | Flying | 0
+- ... 其余 171 条
+
+## NotEqual (66)
+- 26 | 烧烤架 | Heated | 0
+- 31 | 阿扎坎乱炖 | Heated | 0
+- 36 | 烤野猪 | Heated | 0
+- 72 | 冷藏箱 | Chilled | 0
+- 99 | 冰箱 | Chilled | 0
+- 172 | 烤箱 | Heated | 0
+- 192 | 微波炉 | Heated | 0
+- 202 | 披萨切刀 | Heated | 0
+- 241 | 沙滩伞 | Chilled | 0
+- 258 | 冷库 | Chilled | 0
+- 259 | 迷你冰箱 | Chilled | 0
+- 260 | 料理槌 | Heated | 0
+- 273 | 雪葩 | Chilled | 0
+- 377 | 披萨 | Heated | 0
+- 424 | 烤箱手套 | Heated | 0
+- 437 | 松饼 | Heated | 0
+- 457 | 火龙瓜 | Chilled | 0
+- 460 | 巨型棒棒糖 | Heated | 0
+- 481 | 丰饶之角 | Heated | 0
+- 481 | 丰饶之角 | Heated | 0
+- 481 | 丰饶之角 | Chilled | 0
+- 481 | 丰饶之角 | Chilled | 0
+- 482 | 伊姆 | Heated | 0
+- 490 | 陈年佳酿 | Chilled | 0
+- 508 | 巨型三明治 | Heated | 0
+- 525 | 泡泡糖地板 | Heated | 0
+- 616 | 巨型炒锅 | Heated | 0
+- 616 | 巨型炒锅 | Heated | 0
+- 622 | 虹吸茶壶 | Heated | 0
+- 638 | 卷饼 | Heated | 0
+- 645 | 南瓜 | Heated | 0
+- 668 | 蓝莓派 | Heated | 0
+- 702 | 蛋糕糊 | Heated | 0
+- 702 | 蛋糕糊 | Chilled | 0
+- 702 | 蛋糕糊 | Heated | 0
+- 702 | 蛋糕糊 | Chilled | 0
+- 716 | 醒酒器 | Chilled | 0
+- 754 | 洗碗机 | Heated | 0
+- 757 | 米饭 | Heated | 0
+- 793 | 劳劳菜 | Heated | 0
+- ... 其余 26 条
+
+## LessThanOrEqual (13)
+- 4 | 幸运三叶草 | Custom_0 | NaN
+- 4 | 幸运三叶草 | Custom_0 | NaN
+- 4 | 幸运三叶草 | Custom_0 | NaN
+- 128 | 糖果锁甲 | AmmoMax | 0
+- 128 | 糖果锁甲 | AmmoMax | 0
+- 131 | 超级糖浆 | AmmoMax | 0
+- 131 | 超级糖浆 | AmmoMax | 0
+- 220 | 等容冷冻枪 | CooldownMax | 5000
+- 661 | 饼干 | AmmoMax | 0
+- 661 | 饼干 | AmmoMax | 0
+- 661 | 饼干 | AmmoMax | 0
+- 987 | 美食家巧克力 | AmmoMax | 0
+- 987 | 美食家巧克力 | AmmoMax | 0
+
+## GreaterThanOrEqual (13)
+- 20 | 划艇 | Custom_1 | 7
+- 90 | 木桨 | DamageAmount | 0
+- 142 | 银河翻译器 | Custom_0 | 1
+- 142 | 银河翻译器 | Custom_0 | 1
+- 261 | Cybernetic Implants | CritChance | 0
+- 268 | 烤肉叉 | DamageAmount | 0
+- 523 | Unused Card | DamageAmount | 0
+- 930 | 要塞 | CooldownMax | 8000
+- 988 | Cyclops Eye | CritChance | 0
+- 1050 | 自力更升靴 | Custom_1 | 50
+- 1050 | 自力更升靴 | Custom_1 | 50
+- 1050 | 自力更升靴 | Custom_1 | 50
+- 1050 | 自力更升靴 | Custom_1 | 50
+
+## LessThan (13)
+- 339 | 陷阱装置 | Custom_0 | NaN
+- 339 | 陷阱装置 | Custom_0 | NaN
+- 370 | 陷坑 | Custom_0 | NaN
+- 370 | 陷坑 | Custom_0 | NaN
+- 370 | 陷坑 | Custom_0 | NaN
+- 370 | 陷坑 | Custom_0 | NaN
+- 370 | 陷坑 | Custom_0 | NaN
+- 370 | 陷坑 | Custom_0 | NaN
+- 375 | 吉利服 | Custom_0 | NaN
+- 1003 | 原木陷阱 | Custom_0 | NaN
+- 1003 | 原木陷阱 | Custom_0 | NaN
+- 1003 | 原木陷阱 | Custom_0 | NaN
+- 1073 | 拍立蚌 | Custom_0 | NaN
+

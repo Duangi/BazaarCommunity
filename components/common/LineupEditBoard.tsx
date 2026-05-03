@@ -35,6 +35,8 @@ function DraggableCard({
   useCount,
   totalDamage,
   totalShield,
+  totalBurn,
+  totalPoison,
 }: {
   card: LineupBoardCard
   sourceBoard: 'main' | 'reserve'
@@ -44,6 +46,8 @@ function DraggableCard({
   useCount?: number
   totalDamage?: number
   totalShield?: number
+  totalBurn?: number
+  totalPoison?: number
 }) {
   const [{ isDragging }, drag] = useDrag(() => ({
     type: 'ITEM',
@@ -103,8 +107,10 @@ function DraggableCard({
         className={styles.placedImage}
       />
       {Number(useCount || 0) > 0 && <span className={styles.useBadge}>{useCount}</span>}
-      {(Number(totalDamage || 0) > 0 || Number(totalShield || 0) > 0) && (
+      {(Number(totalDamage || 0) > 0 || Number(totalShield || 0) > 0 || Number(totalBurn || 0) > 0 || Number(totalPoison || 0) > 0) && (
         <div className={styles.statBadges}>
+          {Number(totalPoison || 0) > 0 && <span className={styles.poisonBadge}>{Number(totalPoison || 0).toFixed(1)}</span>}
+          {Number(totalBurn || 0) > 0 && <span className={styles.burnBadge}>{Number(totalBurn || 0).toFixed(1)}</span>}
           {Number(totalShield || 0) > 0 && <span className={styles.shieldBadge}>{Number(totalShield || 0).toFixed(1)}</span>}
           {Number(totalDamage || 0) > 0 && <span className={styles.damageBadge}>{Number(totalDamage || 0).toFixed(1)}</span>}
         </div>
@@ -134,6 +140,8 @@ export default function LineupEditBoard({
   useCountMap,
   damageMap,
   shieldMap,
+  burnMap,
+  poisonMap,
   enabledMask,
   boardScale = 1,
 }: {
@@ -148,6 +156,8 @@ export default function LineupEditBoard({
   useCountMap?: Record<string, number>
   damageMap?: Record<string, number>
   shieldMap?: Record<string, number>
+  burnMap?: Record<string, number>
+  poisonMap?: Record<string, number>
   enabledMask?: boolean[]
   boardScale?: number
 }) {
@@ -186,6 +196,8 @@ export default function LineupEditBoard({
               useCount={useCountMap ? useCountMap[card.placementId] || 0 : undefined}
               totalDamage={damageMap ? damageMap[card.placementId] || 0 : undefined}
               totalShield={shieldMap ? shieldMap[card.placementId] || 0 : undefined}
+              totalBurn={burnMap ? burnMap[card.placementId] || 0 : undefined}
+              totalPoison={poisonMap ? poisonMap[card.placementId] || 0 : undefined}
             />
           ))}
         </div>

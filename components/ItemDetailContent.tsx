@@ -44,6 +44,13 @@ export default function ItemDetailContent({ item }: ItemDetailContentProps) {
   const passiveLines = Array.isArray(item.skills_passive) ? item.skills_passive : []
   const questLines = item.quests ? (Array.isArray(item.quests) ? item.quests : [item.quests]) : []
   const enchantEntries = item.enchantments ? Object.entries(item.enchantments) : []
+  const normalizeEnchantmentName = (key: string, data: any): string => {
+    const cn = String(data?.name_cn || '').trim()
+    if (cn && cn !== 'Mossy') return cn
+    if (String(key || '').toLowerCase() === 'mossy' || cn === 'Mossy') return '长青'
+    const en = String(data?.name_en || key || '').trim()
+    return en
+  }
 
   return (
     <>
@@ -127,7 +134,7 @@ export default function ItemDetailContent({ item }: ItemDetailContentProps) {
         <div className={styles.itemEnchantmentsRow}>
           {enchantEntries.map(([enchKey, ench]) => {
             const data = (ench && typeof ench === 'object') ? ench : { effect_cn: String(ench || '') }
-            const name = data.name_cn || enchKey
+            const name = normalizeEnchantmentName(enchKey, data)
             const effect = data.effect_cn || data.effect_en || ''
             const color = ENCHANT_COLORS[name] || '#ffcd19'
             

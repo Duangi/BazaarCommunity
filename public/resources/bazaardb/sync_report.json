@@ -1,33 +1,34 @@
 {
-  "generatedAt": "2026-04-16T03:39:46.735Z",
+  "generatedAt": "2026-04-29T00:46:51.894Z",
   "source": {
-    "type": "file",
-    "value": "/Users/duang/Downloads/dump.zh-CN.json"
+    "type": "split-files",
+    "itemsFile": "public/resources/raw_exports/items_export_latest.json",
+    "skillsFile": "public/resources/raw_exports/skills_export_latest.json"
   },
   "detected": {
-    "rawItems": 1036,
-    "rawSkills": 415,
-    "normalizedItems": 1036,
-    "normalizedSkills": 415
+    "rawItems": 1096,
+    "rawSkills": 478,
+    "normalizedItems": 1096,
+    "normalizedSkills": 478
   },
   "compareWithExisting": {
     "items": {
       "existingCount": 1072,
-      "nextCount": 1036,
-      "overlap": 0,
-      "onlyExisting": 1072,
-      "onlyNext": 1036
+      "nextCount": 1096,
+      "overlap": 1072,
+      "onlyExisting": 0,
+      "onlyNext": 24
     },
     "skills": {
       "existingCount": 478,
-      "nextCount": 415,
-      "overlap": 0,
-      "onlyExisting": 478,
-      "onlyNext": 415
+      "nextCount": 478,
+      "overlap": 478,
+      "onlyExisting": 0,
+      "onlyNext": 0
     }
   },
   "mergedCooldownFromLegacy": {
-    "itemMerged": 812,
+    "itemMerged": 853,
     "skillMerged": 0
   },
   "imageConfig": {

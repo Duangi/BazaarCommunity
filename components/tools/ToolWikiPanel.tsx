@@ -7,6 +7,7 @@ interface ToolWikiPanelProps {
   items: any[]
   skills: any[]
   onSelectItem: (item: any) => void
+  supportByItemId?: Record<string, boolean>
   enableBuildLookup?: boolean
   onLookupBuilds?: (item: any) => void
 }
@@ -15,6 +16,7 @@ export default function ToolWikiPanel({
   items,
   skills,
   onSelectItem,
+  supportByItemId,
   enableBuildLookup = false,
   onLookupBuilds,
 }: ToolWikiPanelProps) {
@@ -24,6 +26,7 @@ export default function ToolWikiPanel({
         items={items}
         skills={skills}
         onSelectItem={onSelectItem}
+        supportByItemId={supportByItemId}
         enableBuildLookup={enableBuildLookup}
         onLookupBuilds={onLookupBuilds}
       />

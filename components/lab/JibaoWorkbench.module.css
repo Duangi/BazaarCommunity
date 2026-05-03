@@ -29,8 +29,36 @@
   background: linear-gradient(180deg, rgba(33, 27, 16, 0.96), rgba(16, 13, 9, 0.96));
   color: #ffdf98;
   font-size: 14px;
-  padding: 14px 18px;
+  padding: 14px 18px 12px;
   box-shadow: 0 10px 36px rgba(0, 0, 0, 0.45);
+  width: min(360px, 86vw);
+}
+
+.calculatingTitle {
+  font-size: 14px;
+  color: #ffdf98;
+  margin-bottom: 8px;
+}
+
+.calculatingBar {
+  width: 100%;
+  height: 10px;
+  border: 1px solid #5a4727;
+  border-radius: 999px;
+  background: rgba(10, 9, 7, 0.85);
+  overflow: hidden;
+}
+
+.calculatingBarFill {
+  height: 100%;
+  background: linear-gradient(90deg, #7f642b, #ffcd19 65%, #ffe49a);
+  transition: width 0.12s ease;
+}
+
+.calculatingHint {
+  margin-top: 8px;
+  font-size: 12px;
+  color: #d7c08f;
 }
 
 .header {
@@ -129,6 +157,87 @@
   padding: 6px 10px;
   font-size: 12px;
   cursor: pointer;
+}
+
+.supportPanel {
+  border: 1px solid #4a4232;
+  border-radius: 10px;
+  background: linear-gradient(180deg, rgba(28, 23, 15, 0.94), rgba(16, 13, 10, 0.96));
+  padding: 10px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.supportStats {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 14px;
+  font-size: 12px;
+  color: #dbc89f;
+}
+
+.supportOk {
+  color: #69dd8a;
+}
+
+.supportPending {
+  color: #ffad6c;
+}
+
+.supportBlock {
+  border: 1px solid #3d3427;
+  border-radius: 8px;
+  background: rgba(14, 12, 9, 0.76);
+  padding: 8px;
+}
+
+.supportTitle {
+  color: #ffd474;
+  font-size: 12px;
+  margin-bottom: 6px;
+}
+
+.supportTags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  max-height: 140px;
+  overflow: auto;
+}
+
+.supportTag {
+  border: 1px solid #655434;
+  border-radius: 999px;
+  padding: 2px 8px;
+  font-size: 11px;
+  color: #f2ddb0;
+  background: rgba(67, 53, 31, 0.32);
+}
+
+.unsupportedList {
+  max-height: 180px;
+  overflow: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.unsupportedRow {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  border: 1px solid #43382a;
+  border-radius: 6px;
+  padding: 4px 8px;
+  font-size: 12px;
+  color: #e8d6ad;
+  background: rgba(25, 20, 14, 0.72);
+}
+
+.supportEmpty {
+  font-size: 12px;
+  color: #9e8c69;
 }
 
 .board {

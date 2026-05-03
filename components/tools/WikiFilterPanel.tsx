@@ -6,6 +6,7 @@ interface WikiFilterPanelProps {
   items: any[]
   skills: any[]
   onSelectItem: (item: any) => void
+  supportByItemId?: Record<string, boolean>
   enableBuildLookup?: boolean
   onLookupBuilds?: (item: any) => void
   lookupFilterItem?: any | null
@@ -16,6 +17,7 @@ export default function WikiFilterPanel({
   items,
   skills,
   onSelectItem,
+  supportByItemId,
   enableBuildLookup = false,
   onLookupBuilds,
   lookupFilterItem = null,
@@ -26,6 +28,7 @@ export default function WikiFilterPanel({
       items={items}
       skills={skills}
       onSelectItem={onSelectItem}
+      supportByItemId={supportByItemId}
       enableBuildLookup={enableBuildLookup}
       onLookupBuilds={onLookupBuilds}
       lookupFilterItem={lookupFilterItem}

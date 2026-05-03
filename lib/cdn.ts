@@ -29,10 +29,10 @@ export function iconUrl(iconName: string): string {
 
 export function itemsDbUrl(): string {
   // Use the bundled latest dump-derived data in this app build.
-  return '/resources/bazaardb/items_db.json?v=20260416a'
+  return '/resources/bazaardb/items_db.json?v=20260429a'
 }
 
 export function skillsDbUrl(): string {
   // Use the bundled latest dump-derived data in this app build.
-  return '/resources/bazaardb/skills_db.json?v=20260416a'
+  return '/resources/bazaardb/skills_db.json?v=20260429a'
 }

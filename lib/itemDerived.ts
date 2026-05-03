@@ -100,19 +100,33 @@ export function deriveCritChance(item: any, tierInput?: unknown): number | null 
 }
 
 export function getDisplayTags(item: any): string[] {
+  const pickTagLabel = (x: any): string => {
+    if (x == null) return ''
+    if (typeof x === 'string') {
+      const t = x.trim()
+      if (!t) return ''
+      const parts = t.split('/')
+      return (parts[1] || parts[0] || '').trim()
+    }
+    if (typeof x === 'object') {
+      const cn = String(x.cn || '').trim()
+      if (cn) return cn
+      const en = String(x.en || x.id || x.name || '').trim()
+      if (en) return en
+      return ''
+    }
+    return String(x).trim()
+  }
+
   if (Array.isArray(item?.processed_tags) && item.processed_tags.length > 0) {
     return item.processed_tags
-      .map((x: any) => String(x || '').trim())
+      .map((x: any) => pickTagLabel(x))
       .filter(Boolean)
   }
   const tags = item?.tags
   if (Array.isArray(tags)) {
     return tags
-      .map((x) => {
-        const t = String(x || '').trim()
-        const parts = t.split('/')
-        return (parts[1] || parts[0] || '').trim()
-      })
+      .map((x) => pickTagLabel(x))
       .filter(Boolean)
   }
   if (typeof tags === 'string' && tags.trim()) {
@@ -139,4 +153,3 @@ export function deriveDisplayedCooldown(item: any, tierInput?: unknown): number 
   }
   return null
 }
-

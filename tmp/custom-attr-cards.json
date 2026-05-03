@@ -1,0 +1,742 @@
+[
+  {
+    "id": "34",
+    "name": "冰屋",
+    "attr": "Custom_0",
+    "op": "Equal",
+    "val": 0,
+    "src": "ability",
+    "idx": 2,
+    "desc": ""
+  },
+  {
+    "id": "451",
+    "name": "不死灵药",
+    "attr": "Custom_0",
+    "op": "Equal",
+    "val": 0,
+    "src": "ability",
+    "idx": 0,
+    "desc": "每场战斗即将首次落败时，永久摧毁此物品，并治疗至生命值全满。"
+  },
+  {
+    "id": "451",
+    "name": "不死灵药",
+    "attr": "Custom_0",
+    "op": "Equal",
+    "val": 0,
+    "src": "ability",
+    "idx": 1,
+    "desc": ""
+  },
+  {
+    "id": "1010",
+    "name": "防爆门",
+    "attr": "Custom_0",
+    "op": "Equal",
+    "val": 0,
+    "src": "ability",
+    "idx": 2,
+    "desc": ""
+  },
+  {
+    "id": "794",
+    "name": "飞镖",
+    "attr": "Custom_0",
+    "op": "Equal",
+    "val": 2,
+    "src": "ability",
+    "idx": 1,
+    "desc": ""
+  },
+  {
+    "id": "794",
+    "name": "飞镖",
+    "attr": "Custom_0",
+    "op": "Equal",
+    "val": 2,
+    "src": "ability",
+    "idx": 3,
+    "desc": "此物品开始飞行。"
+  },
+  {
+    "id": "794",
+    "name": "飞镖",
+    "attr": "Custom_0",
+    "op": "Equal",
+    "val": 2,
+    "src": "aura",
+    "idx": 0,
+    "desc": "Every 3rd hit deals triple."
+  },
+  {
+    "id": "375",
+    "name": "吉利服",
+    "attr": "Custom_0",
+    "op": "LessThan",
+    "val": null,
+    "src": "ability",
+    "idx": 0,
+    "desc": "The first [1/2/3/4] times you Crit with this each fight, you take no Damage for 1 second."
+  },
+  {
+    "id": "107",
+    "name": "救生圈",
+    "attr": "Custom_0",
+    "op": "Equal",
+    "val": 0,
+    "src": "ability",
+    "idx": 1,
+    "desc": "The first time you would be defeated each fight, Heal {ability.1}."
+  },
+  {
+    "id": "107",
+    "name": "救生圈",
+    "attr": "Custom_0",
+    "op": "Equal",
+    "val": 0,
+    "src": "ability",
+    "idx": 3,
+    "desc": "The first time you would be defeated each fight, Heal {ability.1}."
+  },
+  {
+    "id": "722",
+    "name": "开瓶器",
+    "attr": "Custom_0",
+    "op": "Equal",
+    "val": 0,
+    "src": "ability",
+    "idx": 1,
+    "desc": "use the medium food to the left of this"
+  },
+  {
+    "id": "122",
+    "name": "辣椒喷雾",
+    "attr": "Custom_0",
+    "op": "Equal",
+    "val": 0,
+    "src": "ability",
+    "idx": 2,
+    "desc": "The first time you fall below half Health each fight, Slow enemy items for {ability.1} second(s)."
+  },
+  {
+    "id": "122",
+    "name": "辣椒喷雾",
+    "attr": "Custom_0",
+    "op": "Equal",
+    "val": 0,
+    "src": "ability",
+    "idx": 3,
+    "desc": "When this stops Flying destroy this and 1 enemy item for the fight."
+  },
+  {
+    "id": "705",
+    "name": "妈妈暴龙",
+    "attr": "Custom_0",
+    "op": "Equal",
+    "val": 0,
+    "src": "ability",
+    "idx": 0,
+    "desc": "If an enemy has at least 5/4 items, destroy a Small enemy item for the fight."
+  },
+  {
+    "id": "1073",
+    "name": "拍立蚌",
+    "attr": "Custom_0",
+    "op": "LessThan",
+    "val": null,
+    "src": "ability",
+    "idx": 1,
+    "desc": "At the start of each fight, use this."
+  },
+  {
+    "id": "231",
+    "name": "日蚀号",
+    "attr": "Custom_0",
+    "op": "Equal",
+    "val": 0,
+    "src": "ability",
+    "idx": 2,
+    "desc": ""
+  },
+  {
+    "id": "271",
+    "name": "驼鹿角杖",
+    "attr": "Custom_0",
+    "op": "Equal",
+    "val": 0,
+    "src": "ability",
+    "idx": 1,
+    "desc": ""
+  },
+  {
+    "id": "271",
+    "name": "驼鹿角杖",
+    "attr": "Custom_0",
+    "op": "Equal",
+    "val": 0,
+    "src": "ability",
+    "idx": 2,
+    "desc": ""
+  },
+  {
+    "id": "271",
+    "name": "驼鹿角杖",
+    "attr": "Custom_0",
+    "op": "Equal",
+    "val": 0,
+    "src": "ability",
+    "idx": 3,
+    "desc": ""
+  },
+  {
+    "id": "311",
+    "name": "勿忘死亡",
+    "attr": "Custom_0",
+    "op": "Equal",
+    "val": 0,
+    "src": "ability",
+    "idx": 0,
+    "desc": "The first time you would be defeated each fight, take no Damage for [--/--/1/2] seconds."
+  },
+  {
+    "id": "311",
+    "name": "勿忘死亡",
+    "attr": "Custom_0",
+    "op": "Equal",
+    "val": 0,
+    "src": "ability",
+    "idx": 1,
+    "desc": "The first time you would be defeated each fight, take no Damage for [--/--/1/2] seconds."
+  },
+  {
+    "id": "311",
+    "name": "勿忘死亡",
+    "attr": "Custom_0",
+    "op": "Equal",
+    "val": 0,
+    "src": "ability",
+    "idx": 2,
+    "desc": "The first time you would be defeated each fight, take no Damage for [--/--/1/2] seconds."
+  },
+  {
+    "id": "311",
+    "name": "勿忘死亡",
+    "attr": "Custom_0",
+    "op": "Equal",
+    "val": 0,
+    "src": "ability",
+    "idx": 3,
+    "desc": "The first time you would be defeated each fight, take no Damage for [--/--/1/2] seconds."
+  },
+  {
+    "id": "311",
+    "name": "勿忘死亡",
+    "attr": "Custom_0",
+    "op": "Equal",
+    "val": 0,
+    "src": "ability",
+    "idx": 4,
+    "desc": "The first time you would be defeated each fight, Heal 1."
+  },
+  {
+    "id": "311",
+    "name": "勿忘死亡",
+    "attr": "Custom_0",
+    "op": "Equal",
+    "val": 0,
+    "src": "ability",
+    "idx": 6,
+    "desc": "The first time you would be defeated each fight, Heal 1."
+  },
+  {
+    "id": "339",
+    "name": "陷阱装置",
+    "attr": "Custom_0",
+    "op": "LessThan",
+    "val": null,
+    "src": "ability",
+    "idx": 0,
+    "desc": "Freeze an item {ability.0} second(s)."
+  },
+  {
+    "id": "339",
+    "name": "陷阱装置",
+    "attr": "Custom_0",
+    "op": "LessThan",
+    "val": null,
+    "src": "ability",
+    "idx": 1,
+    "desc": "Freeze an item {ability.0} second(s)."
+  },
+  {
+    "id": "370",
+    "name": "陷坑",
+    "attr": "Custom_0",
+    "op": "LessThan",
+    "val": null,
+    "src": "ability",
+    "idx": 0,
+    "desc": ""
+  },
+  {
+    "id": "370",
+    "name": "陷坑",
+    "attr": "Custom_0",
+    "op": "LessThan",
+    "val": null,
+    "src": "ability",
+    "idx": 1,
+    "desc": ""
+  },
+  {
+    "id": "370",
+    "name": "陷坑",
+    "attr": "Custom_0",
+    "op": "LessThan",
+    "val": null,
+    "src": "ability",
+    "idx": 3,
+    "desc": ""
+  },
+  {
+    "id": "370",
+    "name": "陷坑",
+    "attr": "Custom_0",
+    "op": "LessThan",
+    "val": null,
+    "src": "ability",
+    "idx": 4,
+    "desc": ""
+  },
+  {
+    "id": "370",
+    "name": "陷坑",
+    "attr": "Custom_0",
+    "op": "LessThan",
+    "val": null,
+    "src": "ability",
+    "idx": 6,
+    "desc": ""
+  },
+  {
+    "id": "370",
+    "name": "陷坑",
+    "attr": "Custom_0",
+    "op": "LessThan",
+    "val": null,
+    "src": "ability",
+    "idx": 7,
+    "desc": ""
+  },
+  {
+    "id": "316",
+    "name": "小黛暴龙",
+    "attr": "Custom_0",
+    "op": "Equal",
+    "val": 0,
+    "src": "ability",
+    "idx": 1,
+    "desc": "If an enemy has at least 6/5/4 items, destroy a Small enemy item for the fight."
+  },
+  {
+    "id": "4",
+    "name": "幸运三叶草",
+    "attr": "Custom_0",
+    "op": "LessThanOrEqual",
+    "val": null,
+    "src": "ability",
+    "idx": 2,
+    "desc": ""
+  },
+  {
+    "id": "4",
+    "name": "幸运三叶草",
+    "attr": "Custom_0",
+    "op": "GreaterThan",
+    "val": null,
+    "src": "ability",
+    "idx": 3,
+    "desc": ""
+  },
+  {
+    "id": "4",
+    "name": "幸运三叶草",
+    "attr": "Custom_0",
+    "op": "LessThanOrEqual",
+    "val": null,
+    "src": "ability",
+    "idx": 3,
+    "desc": ""
+  },
+  {
+    "id": "4",
+    "name": "幸运三叶草",
+    "attr": "Custom_0",
+    "op": "GreaterThan",
+    "val": null,
+    "src": "ability",
+    "idx": 4,
+    "desc": ""
+  },
+  {
+    "id": "4",
+    "name": "幸运三叶草",
+    "attr": "Custom_0",
+    "op": "LessThanOrEqual",
+    "val": null,
+    "src": "ability",
+    "idx": 4,
+    "desc": ""
+  },
+  {
+    "id": "435",
+    "name": "靴里剑",
+    "attr": "Custom_0",
+    "op": "Equal",
+    "val": 0,
+    "src": "aura",
+    "idx": 0,
+    "desc": ""
+  },
+  {
+    "id": "903",
+    "name": "耶塔里亚大棒",
+    "attr": "Custom_0",
+    "op": "Equal",
+    "val": 0,
+    "src": "ability",
+    "idx": 1,
+    "desc": "The first time you fall below half Health each fight, Freeze an item for {ability.1} second(s)."
+  },
+  {
+    "id": "142",
+    "name": "银河翻译器",
+    "attr": "Custom_0",
+    "op": "GreaterThanOrEqual",
+    "val": 1,
+    "src": "ability",
+    "idx": 2,
+    "desc": ""
+  },
+  {
+    "id": "142",
+    "name": "银河翻译器",
+    "attr": "Custom_0",
+    "op": "GreaterThanOrEqual",
+    "val": 1,
+    "src": "aura",
+    "idx": 0,
+    "desc": "Your Small items have +{aura.0} sell value."
+  },
+  {
+    "id": "1003",
+    "name": "原木陷阱",
+    "attr": "Custom_0",
+    "op": "LessThan",
+    "val": null,
+    "src": "ability",
+    "idx": 0,
+    "desc": ""
+  },
+  {
+    "id": "1003",
+    "name": "原木陷阱",
+    "attr": "Custom_0",
+    "op": "LessThan",
+    "val": null,
+    "src": "ability",
+    "idx": 1,
+    "desc": ""
+  },
+  {
+    "id": "1003",
+    "name": "原木陷阱",
+    "attr": "Custom_0",
+    "op": "LessThan",
+    "val": null,
+    "src": "ability",
+    "idx": 3,
+    "desc": ""
+  },
+  {
+    "id": "1060",
+    "name": "抓取工具",
+    "attr": "Custom_0",
+    "op": "GreaterThan",
+    "val": 0,
+    "src": "ability",
+    "idx": 2,
+    "desc": "Transform this into your enemy's leftmost Medium item for the fight."
+  },
+  {
+    "id": "928",
+    "name": "冰霜烈焰",
+    "attr": "Custom_1",
+    "op": "Equal",
+    "val": 0,
+    "src": "ability",
+    "idx": 2,
+    "desc": "The first time you fall below half Health each fight, Freeze all enemy items for [--/1/2/3] seconds."
+  },
+  {
+    "id": "20",
+    "name": "划艇",
+    "attr": "Custom_1",
+    "op": "GreaterThanOrEqual",
+    "val": 7,
+    "src": "aura",
+    "idx": 0,
+    "desc": ""
+  },
+  {
+    "id": "89",
+    "name": "降落伞",
+    "attr": "Custom_1",
+    "op": "Equal",
+    "val": 0,
+    "src": "ability",
+    "idx": 3,
+    "desc": "每场战斗己方生命值首次降至一半时，使用此物品。"
+  },
+  {
+    "id": "692",
+    "name": "紧急弹射按钮",
+    "attr": "Custom_1",
+    "op": "Equal",
+    "val": 0,
+    "src": "ability",
+    "idx": 2,
+    "desc": "每场战斗己方生命值首次降至一半时，使用此物品。"
+  },
+  {
+    "id": "244",
+    "name": "警报喇叭",
+    "attr": "Custom_1",
+    "op": "Equal",
+    "val": 0,
+    "src": "ability",
+    "idx": 0,
+    "desc": ""
+  },
+  {
+    "id": "771",
+    "name": "巨魔龙",
+    "attr": "Custom_1",
+    "op": "Equal",
+    "val": 0,
+    "src": "ability",
+    "idx": 2,
+    "desc": "首次有任意玩家的生命值降至一半时，摧毁一件小型物品。"
+  },
+  {
+    "id": "771",
+    "name": "巨魔龙",
+    "attr": "Custom_1",
+    "op": "Equal",
+    "val": 0,
+    "src": "ability",
+    "idx": 3,
+    "desc": "首次有任意玩家的生命值降至一半时，摧毁一件小型物品。"
+  },
+  {
+    "id": "820",
+    "name": "狼面具",
+    "attr": "Custom_1",
+    "op": "Equal",
+    "val": 0,
+    "src": "ability",
+    "idx": 0,
+    "desc": ""
+  },
+  {
+    "id": "820",
+    "name": "狼面具",
+    "attr": "Custom_1",
+    "op": "Equal",
+    "val": 0,
+    "src": "ability",
+    "idx": 3,
+    "desc": ""
+  },
+  {
+    "id": "934",
+    "name": "名片",
+    "attr": "Custom_1",
+    "op": "Equal",
+    "val": 5,
+    "src": "ability",
+    "idx": 2,
+    "desc": ""
+  },
+  {
+    "id": "934",
+    "name": "名片",
+    "attr": "Custom_1",
+    "op": "Equal",
+    "val": 10,
+    "src": "ability",
+    "idx": 3,
+    "desc": ""
+  },
+  {
+    "id": "934",
+    "name": "名片",
+    "attr": "Custom_1",
+    "op": "Equal",
+    "val": 15,
+    "src": "ability",
+    "idx": 5,
+    "desc": ""
+  },
+  {
+    "id": "995",
+    "name": "枪套",
+    "attr": "Custom_1",
+    "op": "Equal",
+    "val": 0,
+    "src": "ability",
+    "idx": 0,
+    "desc": "每场战斗中你首次使用物品时，加速己方小型物品{ability.0}秒。"
+  },
+  {
+    "id": "113",
+    "name": "私享温泉",
+    "attr": "Custom_1",
+    "op": "Equal",
+    "val": 0,
+    "src": "ability",
+    "idx": 1,
+    "desc": "The first time you fall below half Health each fight, Freeze ALL items for {ability.2} seconds."
+  },
+  {
+    "id": "867",
+    "name": "熊面具",
+    "attr": "Custom_1",
+    "op": "Equal",
+    "val": 0,
+    "src": "ability",
+    "idx": 0,
+    "desc": ""
+  },
+  {
+    "id": "867",
+    "name": "熊面具",
+    "attr": "Custom_1",
+    "op": "Equal",
+    "val": 0,
+    "src": "ability",
+    "idx": 2,
+    "desc": ""
+  },
+  {
+    "id": "912",
+    "name": "野猪面具",
+    "attr": "Custom_1",
+    "op": "Equal",
+    "val": 0,
+    "src": "ability",
+    "idx": 0,
+    "desc": ""
+  },
+  {
+    "id": "912",
+    "name": "野猪面具",
+    "attr": "Custom_1",
+    "op": "Equal",
+    "val": 0,
+    "src": "ability",
+    "idx": 3,
+    "desc": ""
+  },
+  {
+    "id": "701",
+    "name": "银制尖桩",
+    "attr": "Custom_1",
+    "op": "Equal",
+    "val": 1,
+    "src": "aura",
+    "idx": 0,
+    "desc": "If fighting a monster, this deals triple Damage."
+  },
+  {
+    "id": "1050",
+    "name": "自力更升靴",
+    "attr": "Custom_1",
+    "op": "GreaterThanOrEqual",
+    "val": 50,
+    "src": "ability",
+    "idx": 1,
+    "desc": ""
+  },
+  {
+    "id": "1050",
+    "name": "自力更升靴",
+    "attr": "Custom_1",
+    "op": "GreaterThanOrEqual",
+    "val": 50,
+    "src": "ability",
+    "idx": 2,
+    "desc": ""
+  },
+  {
+    "id": "1050",
+    "name": "自力更升靴",
+    "attr": "Custom_1",
+    "op": "GreaterThanOrEqual",
+    "val": 50,
+    "src": "ability",
+    "idx": 3,
+    "desc": ""
+  },
+  {
+    "id": "1050",
+    "name": "自力更升靴",
+    "attr": "Custom_1",
+    "op": "GreaterThanOrEqual",
+    "val": 50,
+    "src": "ability",
+    "idx": 4,
+    "desc": ""
+  },
+  {
+    "id": "179",
+    "name": "豪华帐篷",
+    "attr": "Custom_2",
+    "op": "Equal",
+    "val": 0,
+    "src": "ability",
+    "idx": 0,
+    "desc": "The first time you would be defeated each fight, Heal for 25/50 of your Max Health."
+  },
+  {
+    "id": "1046",
+    "name": "加特林机枪",
+    "attr": "Custom_2",
+    "op": "Equal",
+    "val": 0,
+    "src": "ability",
+    "idx": 1,
+    "desc": "首次使用此物品时，其冷却时间减半（限本场战斗）。"
+  },
+  {
+    "id": "744",
+    "name": "蕨叶蜘蛛",
+    "attr": "Custom_3",
+    "op": "GreaterThan",
+    "val": null,
+    "src": "ability",
+    "idx": 2,
+    "desc": "when you win a fight goes to 1 multicast"
+  },
+  {
+    "id": "267",
+    "name": "发射塔",
+    "attr": "Custom_5",
+    "op": "Equal",
+    "val": 0,
+    "src": "ability",
+    "idx": 1,
+    "desc": "The first time you use an item each fight, all your Vehicles start Flying."
+  }
+]

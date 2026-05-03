@@ -33,6 +33,35 @@ interface ItemDetailProps {
   item: Item | null
 }
 
+function normalizeHeroPair(heroValue: any): { en: string; cn: string } {
+  if (typeof heroValue === 'string') {
+    const parts = heroValue.split(' / ').map((x) => x.trim()).filter(Boolean)
+    const en = parts[0] || 'Common'
+    const cn = parts[1] || en
+    return { en, cn }
+  }
+  if (Array.isArray(heroValue) && heroValue.length > 0) {
+    const first = heroValue[0]
+    if (typeof first === 'string') {
+      const parts = first.split(' / ').map((x) => x.trim()).filter(Boolean)
+      const en = parts[0] || first
+      const cn = parts[1] || en
+      return { en, cn }
+    }
+    if (first && typeof first === 'object') {
+      const en = String((first as any).en || (first as any).id || 'Common').trim() || 'Common'
+      const cn = String((first as any).cn || en).trim() || en
+      return { en, cn }
+    }
+  }
+  if (heroValue && typeof heroValue === 'object') {
+    const en = String((heroValue as any).en || (heroValue as any).id || 'Common').trim() || 'Common'
+    const cn = String((heroValue as any).cn || en).trim() || en
+    return { en, cn }
+  }
+  return { en: 'Common', cn: 'Common' }
+}
+
 
 
 export default function ItemDetail({ item }: ItemDetailProps) {
@@ -60,11 +89,10 @@ export default function ItemDetail({ item }: ItemDetailProps) {
   const sizeClass = (item.size || 'Medium').split(' / ')[0].toLowerCase()
   
   // 英雄处理
-  const heroesRaw = item.heroes || ''
-  const heroesStr = Array.isArray(heroesRaw) ? heroesRaw[0] : heroesRaw
-  const heroEn = heroesStr.split(' / ')[0].trim()
+  const heroPair = normalizeHeroPair(item.heroes)
+  const heroEn = heroPair.en
   const heroSlug = heroEn.toLowerCase()
-  const heroCn = heroesStr.split(' / ')[1]?.trim() || heroEn
+  const heroCn = heroPair.cn
   const isCommon = !heroEn || heroSlug === 'common'
 
   // 标签处理

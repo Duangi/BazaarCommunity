@@ -4,6 +4,7 @@ import { Fragment, useCallback, useEffect, useMemo, useRef, useState } from 'rea
 import { useDrop } from 'react-dnd'
 import LineupEditBoard from '@/components/common/LineupEditBoard'
 import BorderTierSelector from '@/components/common/BorderTierSelector'
+import type { RuleSupportSummary } from '@/lib/ruleSupport'
 import styles from './JibaoWorkbench.module.css'
 
 type LabItem = {
@@ -50,13 +51,19 @@ type ChargeRule = {
   requiredNotTriggerSource: boolean
   requiredSizes: string[]
   requiredExcludeSizes: string[]
+  requiredConditionMode: 'and' | 'or'
+  requiredAttrConditions: AttrCondition[]
+  targetCount?: number
   targetExcludeSelf: boolean
+  targetIncludeOrigin?: boolean
   triggerType: string
   triggerRequiredTags: string[]
   triggerRequiredExcludeTags: string[]
   triggerRequireCooldownOnly: boolean
   triggerRequiredSizes: string[]
   triggerRequiredExcludeSizes: string[]
+  triggerConditionMode: 'and' | 'or'
+  triggerAttrConditions: AttrCondition[]
   triggerExcludeSelf: boolean
   triggerSubjectType: string
   triggerSubjectMode: string
@@ -114,6 +121,7 @@ type SuggestionCandidate = {
 
 type BoardKey = 'main' | 'reserve'
 type SlotMode = 6 | 8 | 10
+type CalcMode = 'seconds' | 'target-damage'
 
 type CoreBuffRule = {
   sourceName: string
@@ -127,13 +135,18 @@ type CoreBuffRule = {
   requiredNotTriggerSource: boolean
   requiredSizes: string[]
   requiredExcludeSizes: string[]
+  requiredConditionMode: 'and' | 'or'
+  requiredAttrConditions: AttrCondition[]
   targetExcludeSelf: boolean
+  targetIncludeOrigin?: boolean
   triggerType: string
   triggerRequiredTags: string[]
   triggerRequiredExcludeTags: string[]
   triggerRequireCooldownOnly: boolean
   triggerRequiredSizes: string[]
   triggerRequiredExcludeSizes: string[]
+  triggerConditionMode: 'and' | 'or'
+  triggerAttrConditions: AttrCondition[]
   triggerExcludeSelf: boolean
   triggerSubjectType: string
   triggerSubjectMode: string
@@ -218,10 +231,36 @@ type CombatSummary = {
   totalUses: number
   byCard: Record<string, number>
   totalDamage: number
+  totalBurnApplied: number
+  totalPoisonApplied: number
+  totalBurnTickDamage: number
+  totalPoisonTickDamage: number
+  randomTrials?: number
+  totalDamageMin?: number
+  totalDamageMax?: number
+  totalDamageAvg?: number
   totalShield: number
   byCardDamage: Record<string, number>
+  byCardBurn: Record<string, number>
+  byCardPoison: Record<string, number>
   byCardShield: Record<string, number>
   cumulativeDamageBySecond: number[]
+  debugTimeline: Array<{
+    time: number
+    kind: 'use' | 'charge' | 'burn-apply' | 'burn-tick' | 'poison-apply' | 'poison-tick'
+    source: string
+    target?: string
+    value?: number
+    note?: string
+  }>
+}
+
+type CombatSimOptions = {
+  stopAtDamage?: number
+  opponentActiveCount?: number
+  randomTrials?: number
+  rng?: () => number
+  _singleTrial?: boolean
 }
 
 type CycleHit = {
@@ -309,12 +348,18 @@ function diagnoseAutoLayoutFailure(
 
 const MAX_UNITS = 10
 const EXAMPLE_1_ORDER: Array<{ name: string; tier: PlacedCard['tier'] }> = [
-  { name: '弱点探测器', tier: 'Bronze' },
-  { name: '哈姆锤特', tier: 'Bronze' },
-  { name: '全能核心', tier: 'Silver' },
-  { name: '尖刺铁丝网', tier: 'Bronze' },
-  { name: '炫光 LED', tier: 'Bronze' },
+  { name: '弱点探测器', tier: 'Silver' },
   { name: '布胶带', tier: 'Bronze' },
+  { name: '电钻', tier: 'Silver' },
+  { name: '冲锋枪', tier: 'Silver' },
+  { name: '全能核心', tier: 'Silver' },
+  { name: '炫光 LED', tier: 'Silver' },
+  { name: '尖刺铁丝网', tier: 'Bronze' },
+]
+
+const EXAMPLE_1_RESERVE_ORDER: Array<{ name: string; tier: PlacedCard['tier'] }> = [
+  { name: '哈姆锤特', tier: 'Bronze' },
+  { name: '等离子手雷', tier: 'Silver' },
 ]
 
 function normalizeName(s?: string): string {
@@ -334,12 +379,17 @@ function findItemByName(pool: LabItem[], name: string): LabItem | null {
   return fuzzy || null
 }
 
-function buildExample1Cards(pool: LabItem[]): { cards: PlacedCard[]; missing: string[] } {
+function buildExampleCards(
+  pool: LabItem[],
+  specs: Array<{ name: string; tier: PlacedCard['tier'] }>,
+  capacity: number,
+  prefix: string,
+): { cards: PlacedCard[]; missing: string[] } {
   const out: PlacedCard[] = []
   const missing: string[] = []
   let cursor = 0
   let idx = 0
-  for (const spec of EXAMPLE_1_ORDER) {
+  for (const spec of specs) {
     const name = spec.name
     const item = findItemByName(pool, name)
     if (!item) {
@@ -347,10 +397,9 @@ function buildExample1Cards(pool: LabItem[]): { cards: PlacedCard[]; missing: st
       continue
     }
     const width = getCardWidth(item.size)
-    // 示例固定按 8 格布局
-    if (cursor + width > 8) break
+    if (cursor + width > capacity) break
     out.push({
-      placementId: `example1-${item.id}-${idx}`,
+      placementId: `${prefix}-${item.id}-${idx}`,
       item,
       start: cursor,
       width,
@@ -367,6 +416,10 @@ function getCardWidth(size?: string): number {
   if (normalized.includes('small') || normalized.includes('小')) return 1
   if (normalized.includes('large') || normalized.includes('大')) return 3
   return 2
+}
+
+function resolveRawItem(item: LabItem): any {
+  return (item as any)?.__raw || item || {}
 }
 
 function parseTierToken(input?: string): string {
@@ -455,18 +508,120 @@ function matchesCardTags(
   requiredSizes: string[] = [],
   excludeSizes: string[] = [],
   auraTags?: Map<string, Set<string>>,
+  conditionMode: 'and' | 'or' = 'and',
 ): boolean {
   const set = getCardTagSet(card, auraTags)
   const req = requiredTags.map((x) => normalizeTag(x)).filter(Boolean)
   const ex = excludeTags.map((x) => normalizeTag(x)).filter(Boolean)
-  const sizeNorm = String(card.item.size || '').trim().toLowerCase()
-  const reqSize = requiredSizes.map((x) => String(x || '').trim().toLowerCase()).filter(Boolean)
-  const exSize = excludeSizes.map((x) => String(x || '').trim().toLowerCase()).filter(Boolean)
+  const normalizeSize = (input: any): string => {
+    const s = String(input || '').trim().toLowerCase()
+    if (!s) return ''
+    if (s.includes('small') || s.includes('小')) return 'small'
+    if (s.includes('medium') || s.includes('中')) return 'medium'
+    if (s.includes('large') || s.includes('大')) return 'large'
+    return s.split('/')[0].trim()
+  }
+  const sizeNorm = normalizeSize(card.item.size)
+  const reqSize = requiredSizes.map((x) => normalizeSize(x)).filter(Boolean)
+  const exSize = excludeSizes.map((x) => normalizeSize(x)).filter(Boolean)
   if (ex.some((x) => set.has(x))) return false
   if (exSize.length > 0 && exSize.includes(sizeNorm)) return false
-  if (reqSize.length > 0 && !reqSize.includes(sizeNorm)) return false
-  if (!req.length) return true
-  return req.some((x) => set.has(x))
+
+  const tagPass = req.length === 0 ? true : req.some((x) => set.has(x))
+  const sizePass = reqSize.length === 0 ? true : reqSize.includes(sizeNorm)
+
+  if (conditionMode === 'or' && req.length > 0 && reqSize.length > 0) {
+    return tagPass || sizePass
+  }
+  return tagPass && sizePass
+}
+
+type AttrCondition = {
+  attribute: string
+  operator: string
+  value: number
+}
+
+function normalizeComparator(op?: string): string {
+  const s = String(op || '').trim().toLowerCase()
+  if (s === 'equal' || s === '==') return 'eq'
+  if (s === 'notequal' || s === '!=' || s === '<>') return 'ne'
+  if (s === 'greaterthan' || s === '>') return 'gt'
+  if (s === 'greaterthanorequal' || s === '>=') return 'ge'
+  if (s === 'lessthan' || s === '<') return 'lt'
+  if (s === 'lessthanorequal' || s === '<=') return 'le'
+  return ''
+}
+
+function compareNumberByOp(left: number, op: string, right: number): boolean {
+  const c = normalizeComparator(op)
+  if (!Number.isFinite(left) || !Number.isFinite(right) || !c) return false
+  if (c === 'eq') return left === right
+  if (c === 'ne') return left !== right
+  if (c === 'gt') return left > right
+  if (c === 'ge') return left >= right
+  if (c === 'lt') return left < right
+  if (c === 'le') return left <= right
+  return false
+}
+
+function resolveCardAttributeForCondition(
+  card: PlacedCard,
+  attrName: string,
+  auraTags?: Map<string, Set<string>>,
+  cards?: PlacedCard[],
+): number {
+  const name = String(attrName || '').trim()
+  const lower = name.toLowerCase()
+  const raw = resolveRawItem(card.item)
+  const tier = getEffectiveTier(card)
+
+  if (lower === 'cooldownmax' || lower === 'cooldown') return getCardCooldownSec(card, cards)
+  if (lower === 'ammomax') return getCardAmmoMaxByTier(card.item, tier)
+
+  if (lower === 'ammo') {
+    const direct = Number((card.item as any)?.ammo)
+    if (Number.isFinite(direct)) return direct
+    return getCardAmmoMaxByTier(card.item, tier)
+  }
+
+  if (lower === 'flying') {
+    const tagSet = getCardTagSet(card, auraTags)
+    return tagSet.has('flying') || tagSet.has('飞行') ? 1 : 0
+  }
+
+  const fromTier = getAttrValueByTier(raw, name, tier)
+  if (Number.isFinite(fromTier)) return fromTier
+
+  const attrs = Array.isArray(raw?.attributes) ? raw.attributes : []
+  const row = attrs.find((a: any) => String(a?.attribute || '').toLowerCase() === lower)
+  if (row) {
+    const byTier = Array.isArray(row.values_by_tier) ? row.values_by_tier : []
+    const exact = byTier.find((x: any) => String(x?.tier || '') === tier)
+    if (exact && Number.isFinite(Number(exact?.value))) return Number(exact.value)
+    const first = byTier.find((x: any) => Number.isFinite(Number(x?.value)))
+    if (first) return Number(first.value)
+    const uniq = Array.isArray(row.unique_values) ? row.unique_values : []
+    const u = uniq.find((x: any) => Number.isFinite(Number(x)))
+    if (u != null) return Number(u)
+  }
+  return NaN
+}
+
+function matchesAttributeConditions(
+  card: PlacedCard,
+  conditions: AttrCondition[] = [],
+  mode: 'and' | 'or' = 'and',
+  auraTags?: Map<string, Set<string>>,
+  cards?: PlacedCard[],
+): boolean {
+  if (!conditions.length) return true
+  const checks = conditions.map((c) => {
+    const left = resolveCardAttributeForCondition(card, c.attribute, auraTags, cards)
+    return compareNumberByOp(left, c.operator, c.value)
+  })
+  if (mode === 'or') return checks.some(Boolean)
+  return checks.every(Boolean)
 }
 
 function getTierIndex(tier: TierToken): number {
@@ -474,13 +629,21 @@ function getTierIndex(tier: TierToken): number {
   return idx >= 0 ? idx : 0
 }
 
-function resolveActionValue(actionValue: any, sourceTier: TierToken): number {
+function resolveActionValue(actionValue: any, sourceTier: TierToken, startTierInput?: string): number {
   if (!actionValue || typeof actionValue !== 'object') return 0
   if (Number.isFinite(Number(actionValue?.Value))) return Number(actionValue.Value)
   const resolved = Array.isArray(actionValue?.resolved_values) ? actionValue.resolved_values : []
   if (resolved.length > 0) {
     const idx = getTierIndex(sourceTier)
-    const val = resolved[Math.min(resolved.length - 1, idx)]
+    let resolvedIdx = Math.min(resolved.length - 1, idx)
+    // Some cards only expose tiers from starting_tier onward (e.g. Silver/Gold/Diamond),
+    // so resolved_values length can be 2-4 instead of full 5 tiers.
+    if (resolved.length < 5) {
+      const startTier = parseTierToken(String(startTierInput || 'Bronze')) as TierToken
+      const startIdx = getTierIndex(startTier)
+      resolvedIdx = Math.max(0, Math.min(resolved.length - 1, idx - startIdx))
+    }
+    const val = resolved[resolvedIdx]
     if (Number.isFinite(Number(val))) return Number(val)
   }
   if (Number.isFinite(Number(actionValue?.default_value))) return Number(actionValue.default_value)
@@ -529,7 +692,7 @@ function collectTagSet(item: LabItem): Set<string> {
   consume(item.tags)
   consume(item.hidden_tags)
 
-  const raw = item.__raw
+  const raw = resolveRawItem(item)
   if (raw) {
     consume(raw.tags)
     consume(raw.hidden_tags)
@@ -542,25 +705,87 @@ function collectTagSet(item: LabItem): Set<string> {
   return out
 }
 
+function collectVisibleTypeTags(item: LabItem): Set<string> {
+  const out = new Set<string>()
+  const consume = (value: any) => {
+    if (!value) return
+    if (Array.isArray(value)) return value.forEach(consume)
+    if (typeof value === 'string') {
+      value
+        .split(/[|,/]/g)
+        .map((x) => normalizeTag(x))
+        .filter(Boolean)
+        .forEach((x) => out.add(x))
+      return
+    }
+    if (typeof value === 'object') {
+      const id = normalizeTag((value as any).id)
+      const en = normalizeTag((value as any).en)
+      const cn = normalizeTag((value as any).cn)
+      if (id) out.add(id)
+      else if (en) out.add(en)
+      else if (cn) out.add(cn)
+    }
+  }
+  consume(item.tags)
+  const raw = resolveRawItem(item)
+  if (raw) {
+    consume(raw.tags)
+    consume(raw.tags_en)
+    consume(raw.tags_cn)
+  }
+  return out
+}
+
+function computeBoardVisibleTypeCount(cards: PlacedCard[]): number {
+  const all = new Set<string>()
+  for (const c of cards) {
+    collectVisibleTypeTags(c.item).forEach((t) => all.add(t))
+  }
+  return all.size
+}
+
+function cardHasUseTrigger(item: LabItem): boolean {
+  const raw = resolveRawItem(item)
+  const rows = Array.isArray(raw?.abilities_detail) ? raw.abilities_detail : []
+  return rows.some((r: any) => {
+    const tt = String(r?.trigger?.type || '').toLowerCase()
+    return tt === 'ttriggeroncardfired' || tt === 'ttriggeronitemused' || tt === 'onuse'
+  })
+}
+
 function extractConditionMeta(node: any): {
   include: string[]
   exclude: string[]
   includeSizes: string[]
   excludeSizes: string[]
+  attrConditions: AttrCondition[]
   requireCooldownOnly: boolean
   notTriggerSource: boolean
+  conditionMode: 'and' | 'or'
 } {
   if (!node || typeof node !== 'object') {
-    return { include: [], exclude: [], includeSizes: [], excludeSizes: [], requireCooldownOnly: false, notTriggerSource: false }
+    return {
+      include: [],
+      exclude: [],
+      includeSizes: [],
+      excludeSizes: [],
+      attrConditions: [],
+      requireCooldownOnly: false,
+      notTriggerSource: false,
+      conditionMode: 'and',
+    }
   }
 
   const include: string[] = []
   const exclude: string[] = []
   const includeSizes: string[] = []
   const excludeSizes: string[] = []
+  const attrConditions: AttrCondition[] = []
   let requireCooldownOnly = false
   let notTriggerSource = false
   const t = String(node.type || '').toLowerCase()
+  let conditionMode: 'and' | 'or' = t.includes('conditionalor') ? 'or' : 'and'
   const operator = String(node.Operator || node.operator || '').toLowerCase()
 
   const localTags = [
@@ -590,10 +815,13 @@ function extractConditionMeta(node: any): {
   }
 
   if (t.includes('attribute')) {
-    const attr = String(node.Attribute || node.attribute || '').toLowerCase()
-    const cmp = String(node.ComparisonOperator || node.comparisonOperator || '').toLowerCase()
+    const attr = String(node.Attribute || node.attribute || '').trim()
+    const cmp = String(node.ComparisonOperator || node.comparisonOperator || '').trim()
     const cv = Number(node?.ComparisonValue?.Value ?? node?.comparisonValue?.value ?? NaN)
-    if (attr.includes('cooldown') && cmp.includes('greater') && Number.isFinite(cv) && cv >= 0) {
+    if (attr && cmp && Number.isFinite(cv)) {
+      attrConditions.push({ attribute: attr, operator: cmp, value: cv })
+    }
+    if (attr.toLowerCase().includes('cooldown') && normalizeComparator(cmp) === 'gt' && Number.isFinite(cv) && cv >= 0) {
       requireCooldownOnly = true
     }
   }
@@ -610,8 +838,10 @@ function extractConditionMeta(node: any): {
       exclude.push(...nested.exclude)
       includeSizes.push(...nested.includeSizes)
       excludeSizes.push(...nested.excludeSizes)
+      attrConditions.push(...nested.attrConditions)
       requireCooldownOnly = requireCooldownOnly || nested.requireCooldownOnly
       notTriggerSource = notTriggerSource || nested.notTriggerSource
+      if (nested.conditionMode === 'or') conditionMode = 'or'
     }
   }
   if (node.conditions) {
@@ -620,8 +850,10 @@ function extractConditionMeta(node: any): {
     exclude.push(...nested.exclude)
     includeSizes.push(...nested.includeSizes)
     excludeSizes.push(...nested.excludeSizes)
+    attrConditions.push(...nested.attrConditions)
     requireCooldownOnly = requireCooldownOnly || nested.requireCooldownOnly
     notTriggerSource = notTriggerSource || nested.notTriggerSource
+    if (nested.conditionMode === 'or') conditionMode = 'or'
   }
 
   return {
@@ -629,8 +861,10 @@ function extractConditionMeta(node: any): {
     exclude: Array.from(new Set(exclude)),
     includeSizes: Array.from(new Set(includeSizes)),
     excludeSizes: Array.from(new Set(excludeSizes)),
+    attrConditions,
     requireCooldownOnly,
     notTriggerSource,
+    conditionMode,
   }
 }
 
@@ -718,7 +952,7 @@ function getAttrValuesByTier(rawItem: any, attrType: string): Partial<Record<'Br
   return out
 }
 
-function getCardCooldownSecByTier(item: LabItem, tier: string, overrideSec?: number): number {
+function getCardCooldownSecByTier(item: LabItem, tier: string, overrideSec?: number, cards?: PlacedCard[]): number {
   if (Number.isFinite(overrideSec) && Number(overrideSec) >= 0) return Number(overrideSec)
 
   const normalizeCd = (v: number): number => {
@@ -726,7 +960,9 @@ function getCardCooldownSecByTier(item: LabItem, tier: string, overrideSec?: num
     return v >= 100 ? v / 1000 : v
   }
 
-  const rawItem: any = (item as any)?.__raw || {}
+  const rawItem: any = resolveRawItem(item)
+  // Passive-only cards should not be treated as active cooldown cards.
+  if (!cardHasUseTrigger(item)) return 0
   const tiersRaw = String(
     (item as any)?.cooldown_tiers ||
       (item as any)?.cooldownTiers ||
@@ -760,10 +996,23 @@ function getCardCooldownSecByTier(item: LabItem, tier: string, overrideSec?: num
         const startIdx = idxMap[startTier]
         if (Number.isInteger(preferredIdx) && Number.isInteger(startIdx)) {
           const rel = Math.max(0, Math.min(vals.length - 1, preferredIdx - startIdx))
-          if (vals[rel] != null) return vals[rel]
+          if (vals[rel] != null) {
+            let base = vals[rel]
+            if (String(item.name_cn || item.name_en || '') === '划艇' && Array.isArray(cards)) {
+              // 划艇：当场上可见类型总数 >=7 时，冷却缩短5秒
+              const typeCount = computeBoardVisibleTypeCount(cards)
+              if (typeCount >= 7) base = Math.max(0, base - 5)
+            }
+            return base
+          }
         }
       }
-      return vals[vals.length - 1]
+      let base = vals[vals.length - 1]
+      if (String(item.name_cn || item.name_en || '') === '划艇' && Array.isArray(cards)) {
+        const typeCount = computeBoardVisibleTypeCount(cards)
+        if (typeCount >= 7) base = Math.max(0, base - 5)
+      }
+      return base
     }
   }
 
@@ -786,18 +1035,33 @@ function getCardCooldownSecByTier(item: LabItem, tier: string, overrideSec?: num
     const exact = byTier.find((r: any) => parseTierToken(String(r?.tier || '')) === preferred)
     if (exact && Number.isFinite(Number(exact?.value))) {
       const v = normalizeCd(Number(exact.value))
-      if (v > 0) return v
+      if (v > 0) {
+        if (String(item.name_cn || item.name_en || '') === '划艇' && Array.isArray(cards) && computeBoardVisibleTypeCount(cards) >= 7) {
+          return Math.max(0, v - 5)
+        }
+        return v
+      }
     }
     const firstTier = byTier.find((r: any) => Number.isFinite(Number(r?.value)))
     if (firstTier) {
       const v = normalizeCd(Number(firstTier.value))
-      if (v > 0) return v
+      if (v > 0) {
+        if (String(item.name_cn || item.name_en || '') === '划艇' && Array.isArray(cards) && computeBoardVisibleTypeCount(cards) >= 7) {
+          return Math.max(0, v - 5)
+        }
+        return v
+      }
     }
     const uniq = Array.isArray(cdAttr?.unique_values) ? cdAttr.unique_values : []
     const firstUniq = uniq.find((x: any) => Number.isFinite(Number(x)))
     if (firstUniq != null) {
       const v = normalizeCd(Number(firstUniq))
-      if (v > 0) return v
+      if (v > 0) {
+        if (String(item.name_cn || item.name_en || '') === '划艇' && Array.isArray(cards) && computeBoardVisibleTypeCount(cards) >= 7) {
+          return Math.max(0, v - 5)
+        }
+        return v
+      }
     }
   }
 
@@ -809,7 +1073,11 @@ function getCardCooldownSecByTier(item: LabItem, tier: string, overrideSec?: num
     Number(rawItem?.attributes?.Cooldown) ||
     Number(rawItem?.attributes?.cooldown)
   if (Number.isFinite(attrCooldown) && attrCooldown > 0) {
-    return normalizeCd(attrCooldown)
+    let base = normalizeCd(attrCooldown)
+    if (String(item.name_cn || item.name_en || '') === '划艇' && Array.isArray(cards) && computeBoardVisibleTypeCount(cards) >= 7) {
+      base = Math.max(0, base - 5)
+    }
+    return base
   }
 
   const raw = Number(
@@ -821,17 +1089,21 @@ function getCardCooldownSecByTier(item: LabItem, tier: string, overrideSec?: num
       rawItem?.cooldownSeconds,
   )
   if (Number.isFinite(raw) && raw > 0) {
-    return normalizeCd(raw)
+    let base = normalizeCd(raw)
+    if (String(item.name_cn || item.name_en || '') === '划艇' && Array.isArray(cards) && computeBoardVisibleTypeCount(cards) >= 7) {
+      base = Math.max(0, base - 5)
+    }
+    return base
   }
   return 0
 }
 
-function getCardCooldownSec(card: PlacedCard): number {
-  return getCardCooldownSecByTier(card.item, getEffectiveTier(card), card.cooldownOverrideSec)
+function getCardCooldownSec(card: PlacedCard, cards?: PlacedCard[]): number {
+  return getCardCooldownSecByTier(card.item, getEffectiveTier(card), card.cooldownOverrideSec, cards)
 }
 
 function getCardAmmoMaxByTier(item: LabItem, tierInput?: string): number {
-  const raw = item.__raw || {}
+  const raw = resolveRawItem(item)
   const tier = parseTierToken(tierInput || item.starting_tier || raw.starting_tier)
 
   const fromDirect = Number((item as any)?.ammo)
@@ -860,8 +1132,7 @@ function getCardAmmoMaxByTier(item: LabItem, tierInput?: string): number {
 }
 
 function readChargeRules(item: LabItem, tierInput?: string): { positionalRules: ChargeRule[]; staticCharge: number } {
-  const raw = item.__raw
-  if (!raw) return { positionalRules: [], staticCharge: 0 }
+  const raw = resolveRawItem(item)
 
   const tier = parseTierToken(tierInput || item.starting_tier || raw.starting_tier)
   const rows = [
@@ -879,9 +1150,25 @@ function readChargeRules(item: LabItem, tierInput?: string): { positionalRules: 
     const amount = getAttrValueByTier(raw, String(action.attribute_type || 'ChargeAmount'), tier)
     const amountByTier = getAttrValuesByTier(raw, String(action.attribute_type || 'ChargeAmount'))
     const target = action.target || {}
+    const rawTargetCount = Number(
+      target?.target_count ??
+      target?.TargetCount ??
+      action?.target_count ??
+      action?.TargetCount ??
+      row?.target_count ??
+      row?.TargetCount,
+    )
+    const targetCount = Number.isFinite(rawTargetCount) && rawTargetCount > 0 ? Math.floor(rawTargetCount) : undefined
     const targetType = String(target.type || '')
     const targetMode = String(target.TargetMode || target.targetMode || '')
     const targetSection = String(target.TargetSection || target.targetSection || '')
+    const sourceTags = collectTagSet(item)
+    const sourceIsCore = sourceTags.has('core') || sourceTags.has('核心')
+    const includeOriginByRule =
+      sourceIsCore &&
+      targetType === 'TTargetCardPositional' &&
+      targetMode === 'AllRightCards' &&
+      String(row?.trigger?.type || '') === 'TTriggerOnCardFired'
     const condMeta = extractConditionMeta(target.conditions || target.Conditions)
     const triggerBranches = expandTriggerBranches(row?.trigger || {})
     const description = String(row.description_cn || row.description_en || '').trim()
@@ -890,6 +1177,7 @@ function readChargeRules(item: LabItem, tierInput?: string): { positionalRules: 
       const triggerMeta = extractConditionMeta(subject.Conditions || subject.conditions)
       const triggerExcludeSelf = Boolean(subject.ExcludeSelf)
       const targetExcludeSelf = Boolean(target.ExcludeSelf)
+      const targetIncludeOrigin = Boolean(target.IncludeOrigin ?? target.includeOrigin)
       const triggerSubjectType = String(subject.type || '')
       const triggerSubjectMode = String(subject.TargetMode || subject.targetMode || '')
 
@@ -901,18 +1189,24 @@ function readChargeRules(item: LabItem, tierInput?: string): { positionalRules: 
         targetType,
         targetMode,
         targetSection,
+        targetCount,
         requiredTags: condMeta.include,
         requiredExcludeTags: condMeta.exclude,
         requiredSizes: condMeta.includeSizes,
         requiredExcludeSizes: condMeta.excludeSizes,
+        requiredConditionMode: condMeta.conditionMode,
+        requiredAttrConditions: condMeta.attrConditions,
         requiredCooldownOnly: condMeta.requireCooldownOnly,
         requiredNotTriggerSource: condMeta.notTriggerSource,
         targetExcludeSelf,
+        targetIncludeOrigin,
         triggerType: String(branch.type || ''),
         triggerRequiredTags: triggerMeta.include,
         triggerRequiredExcludeTags: triggerMeta.exclude,
         triggerRequiredSizes: triggerMeta.includeSizes,
         triggerRequiredExcludeSizes: triggerMeta.excludeSizes,
+        triggerConditionMode: triggerMeta.conditionMode,
+        triggerAttrConditions: triggerMeta.attrConditions,
         triggerRequireCooldownOnly: triggerMeta.requireCooldownOnly,
         triggerExcludeSelf,
         triggerSubjectType,
@@ -938,8 +1232,7 @@ function readChargeRules(item: LabItem, tierInput?: string): { positionalRules: 
 }
 
 function readHasteRules(item: LabItem, tierInput?: string): ChargeRule[] {
-  const raw = item.__raw
-  if (!raw) return []
+  const raw = resolveRawItem(item)
   const tier = parseTierToken(tierInput || item.starting_tier || raw.starting_tier)
   const rows = [
     ...(Array.isArray(raw.abilities_detail) ? raw.abilities_detail : []),
@@ -954,9 +1247,25 @@ function readHasteRules(item: LabItem, tierInput?: string): ChargeRule[] {
     if (!Number.isFinite(amount) || amount <= 0) continue
     const amountByTier = getAttrValuesByTier(raw, String(action.attribute_type || 'HasteAmount'))
     const target = action.target || {}
+    const rawTargetCount = Number(
+      target?.target_count ??
+      target?.TargetCount ??
+      action?.target_count ??
+      action?.TargetCount ??
+      row?.target_count ??
+      row?.TargetCount,
+    )
+    const targetCount = Number.isFinite(rawTargetCount) && rawTargetCount > 0 ? Math.floor(rawTargetCount) : undefined
     const targetType = String(target.type || '')
     const targetMode = String(target.TargetMode || target.targetMode || '')
     const targetSection = String(target.TargetSection || target.targetSection || '')
+    const sourceTags = collectTagSet(item)
+    const sourceIsCore = sourceTags.has('core') || sourceTags.has('核心')
+    const includeOriginByRule =
+      sourceIsCore &&
+      targetType === 'TTargetCardPositional' &&
+      targetMode === 'AllRightCards' &&
+      String(row?.trigger?.type || '') === 'TTriggerOnCardFired'
     const condMeta = extractConditionMeta(target.conditions || target.Conditions)
     const description = String(row.description_cn || row.description_en || '').trim()
     const triggerBranches = expandTriggerBranches(row?.trigger || {})
@@ -966,6 +1275,7 @@ function readHasteRules(item: LabItem, tierInput?: string): ChargeRule[] {
       const triggerMeta = extractConditionMeta(subject.Conditions || subject.conditions)
       const triggerExcludeSelf = Boolean(subject.ExcludeSelf)
       const targetExcludeSelf = Boolean(target.ExcludeSelf)
+      const targetIncludeOrigin = Boolean(target.IncludeOrigin ?? target.includeOrigin)
       const triggerSubjectType = String(subject.type || '')
       const triggerSubjectMode = String(subject.TargetMode || subject.targetMode || '')
       out.push({
@@ -976,18 +1286,24 @@ function readHasteRules(item: LabItem, tierInput?: string): ChargeRule[] {
         targetType,
         targetMode,
         targetSection,
+        targetCount,
         requiredTags: condMeta.include,
         requiredExcludeTags: condMeta.exclude,
         requiredSizes: condMeta.includeSizes,
         requiredExcludeSizes: condMeta.excludeSizes,
+        requiredConditionMode: condMeta.conditionMode,
+        requiredAttrConditions: condMeta.attrConditions,
         requiredCooldownOnly: condMeta.requireCooldownOnly,
         requiredNotTriggerSource: condMeta.notTriggerSource,
         targetExcludeSelf,
+        targetIncludeOrigin,
         triggerType: String(branch.type || ''),
         triggerRequiredTags: triggerMeta.include,
         triggerRequiredExcludeTags: triggerMeta.exclude,
         triggerRequiredSizes: triggerMeta.includeSizes,
         triggerRequiredExcludeSizes: triggerMeta.excludeSizes,
+        triggerConditionMode: triggerMeta.conditionMode,
+        triggerAttrConditions: triggerMeta.attrConditions,
         triggerRequireCooldownOnly: triggerMeta.requireCooldownOnly,
         triggerExcludeSelf,
         triggerSubjectType,
@@ -999,9 +1315,232 @@ function readHasteRules(item: LabItem, tierInput?: string): ChargeRule[] {
   return out
 }
 
+function readSlowRules(item: LabItem, tierInput?: string): ChargeRule[] {
+  const raw = resolveRawItem(item)
+  const tier = parseTierToken(tierInput || item.starting_tier || raw.starting_tier)
+  const rows = [
+    ...(Array.isArray(raw.abilities_detail) ? raw.abilities_detail : []),
+    ...(Array.isArray(raw.auras_detail) ? raw.auras_detail : []),
+  ]
+
+  const out: ChargeRule[] = []
+  for (const row of rows) {
+    const action = row?.action || {}
+    if (String(action.type || '') !== 'TActionCardSlow') continue
+    const amount = getAttrValueByTier(raw, String(action.attribute_type || 'SlowAmount'), tier)
+    if (!Number.isFinite(amount) || amount <= 0) continue
+    const amountByTier = getAttrValuesByTier(raw, String(action.attribute_type || 'SlowAmount'))
+    const target = action.target || {}
+    const rawTargetCount = Number(
+      target?.target_count ??
+      target?.TargetCount ??
+      action?.target_count ??
+      action?.TargetCount ??
+      row?.target_count ??
+      row?.TargetCount,
+    )
+    const targetCount = Number.isFinite(rawTargetCount) && rawTargetCount > 0 ? Math.floor(rawTargetCount) : undefined
+    const targetType = String(target.type || '')
+    const targetMode = String(target.TargetMode || target.targetMode || '')
+    const targetSection = String(target.TargetSection || target.targetSection || '')
+    const sourceTags = collectTagSet(item)
+    const sourceIsCore = sourceTags.has('core') || sourceTags.has('核心')
+    const includeOriginByRule =
+      sourceIsCore &&
+      targetType === 'TTargetCardPositional' &&
+      targetMode === 'AllRightCards' &&
+      String(row?.trigger?.type || '') === 'TTriggerOnCardFired'
+    const condMeta = extractConditionMeta(target.conditions || target.Conditions)
+    const description = String(row.description_cn || row.description_en || '').trim()
+    const triggerBranches = expandTriggerBranches(row?.trigger || {})
+
+    for (const branch of triggerBranches) {
+      const subject = branch.subject || {}
+      const triggerMeta = extractConditionMeta(subject.Conditions || subject.conditions)
+      const triggerExcludeSelf = Boolean(subject.ExcludeSelf)
+      const targetExcludeSelf = Boolean(target.ExcludeSelf)
+      const targetIncludeOrigin = Boolean(target.IncludeOrigin ?? target.includeOrigin)
+      const triggerSubjectType = String(subject.type || '')
+      const triggerSubjectMode = String(subject.TargetMode || subject.targetMode || '')
+      out.push({
+        sourceName: item.name_cn || item.name_en || item.id,
+        sourceId: item.id,
+        amount,
+        amountByTier,
+        targetType,
+        targetMode,
+        targetSection,
+        targetCount,
+        requiredTags: condMeta.include,
+        requiredExcludeTags: condMeta.exclude,
+        requiredSizes: condMeta.includeSizes,
+        requiredExcludeSizes: condMeta.excludeSizes,
+        requiredConditionMode: condMeta.conditionMode,
+        requiredAttrConditions: condMeta.attrConditions,
+        requiredCooldownOnly: condMeta.requireCooldownOnly,
+        requiredNotTriggerSource: condMeta.notTriggerSource,
+        targetExcludeSelf,
+        targetIncludeOrigin,
+        triggerType: String(branch.type || ''),
+        triggerRequiredTags: triggerMeta.include,
+        triggerRequiredExcludeTags: triggerMeta.exclude,
+        triggerRequiredSizes: triggerMeta.includeSizes,
+        triggerRequiredExcludeSizes: triggerMeta.excludeSizes,
+        triggerConditionMode: triggerMeta.conditionMode,
+        triggerAttrConditions: triggerMeta.attrConditions,
+        triggerRequireCooldownOnly: triggerMeta.requireCooldownOnly,
+        triggerExcludeSelf,
+        triggerSubjectType,
+        triggerSubjectMode,
+        description,
+      })
+    }
+  }
+  return out
+}
+
+function readFreezeRules(item: LabItem, tierInput?: string): ChargeRule[] {
+  const raw = resolveRawItem(item)
+  const tier = parseTierToken(tierInput || item.starting_tier || raw.starting_tier)
+  const rows = [
+    ...(Array.isArray(raw.abilities_detail) ? raw.abilities_detail : []),
+    ...(Array.isArray(raw.auras_detail) ? raw.auras_detail : []),
+  ]
+
+  const out: ChargeRule[] = []
+  for (const row of rows) {
+    const action = row?.action || {}
+    if (String(action.type || '') !== 'TActionCardFreeze') continue
+    const amount = getAttrValueByTier(raw, String(action.attribute_type || 'FreezeAmount'), tier)
+    if (!Number.isFinite(amount) || amount <= 0) continue
+    const amountByTier = getAttrValuesByTier(raw, String(action.attribute_type || 'FreezeAmount'))
+    const target = action.target || {}
+    const rawTargetCount = Number(
+      target?.target_count ??
+      target?.TargetCount ??
+      action?.target_count ??
+      action?.TargetCount ??
+      row?.target_count ??
+      row?.TargetCount,
+    )
+    const targetCount = Number.isFinite(rawTargetCount) && rawTargetCount > 0 ? Math.floor(rawTargetCount) : undefined
+    const targetType = String(target.type || '')
+    const targetMode = String(target.TargetMode || target.targetMode || '')
+    const targetSection = String(target.TargetSection || target.targetSection || '')
+    const condMeta = extractConditionMeta(target.conditions || target.Conditions)
+    const description = String(row.description_cn || row.description_en || '').trim()
+    const triggerBranches = expandTriggerBranches(row?.trigger || {})
+
+    for (const branch of triggerBranches) {
+      const subject = branch.subject || {}
+      const triggerMeta = extractConditionMeta(subject.Conditions || subject.conditions)
+      out.push({
+        sourceName: item.name_cn || item.name_en || item.id,
+        sourceId: item.id,
+        amount,
+        amountByTier,
+        targetType,
+        targetMode,
+        targetSection,
+        targetCount,
+        requiredTags: condMeta.include,
+        requiredExcludeTags: condMeta.exclude,
+        requiredSizes: condMeta.includeSizes,
+        requiredExcludeSizes: condMeta.excludeSizes,
+        requiredConditionMode: condMeta.conditionMode,
+        requiredAttrConditions: condMeta.attrConditions,
+        requiredCooldownOnly: condMeta.requireCooldownOnly,
+        requiredNotTriggerSource: condMeta.notTriggerSource,
+        targetExcludeSelf: Boolean(target.ExcludeSelf),
+        targetIncludeOrigin: Boolean(target.IncludeOrigin ?? target.includeOrigin),
+        triggerType: String(branch.type || ''),
+        triggerRequiredTags: triggerMeta.include,
+        triggerRequiredExcludeTags: triggerMeta.exclude,
+        triggerRequiredSizes: triggerMeta.includeSizes,
+        triggerRequiredExcludeSizes: triggerMeta.excludeSizes,
+        triggerConditionMode: triggerMeta.conditionMode,
+        triggerAttrConditions: triggerMeta.attrConditions,
+        triggerRequireCooldownOnly: triggerMeta.requireCooldownOnly,
+        triggerExcludeSelf: Boolean(subject.ExcludeSelf),
+        triggerSubjectType: String(subject.type || ''),
+        triggerSubjectMode: String(subject.TargetMode || subject.targetMode || ''),
+        description,
+      })
+    }
+  }
+  return out
+}
+
+function readDestructionRules(item: LabItem, tierInput?: string): ChargeRule[] {
+  const raw = resolveRawItem(item)
+  const tier = parseTierToken(tierInput || item.starting_tier || raw.starting_tier)
+  const rows = [
+    ...(Array.isArray(raw.abilities_detail) ? raw.abilities_detail : []),
+    ...(Array.isArray(raw.auras_detail) ? raw.auras_detail : []),
+  ]
+  const out: ChargeRule[] = []
+  for (const row of rows) {
+    const action = row?.action || {}
+    const actionType = String(action.type || '')
+    if (actionType !== 'TActionCardDestroy' && actionType !== 'TActionCardTransformDestroyed') continue
+    const target = action.target || {}
+    const rawTargetCount = Number(
+      target?.target_count ??
+      target?.TargetCount ??
+      action?.target_count ??
+      action?.TargetCount ??
+      row?.target_count ??
+      row?.TargetCount,
+    )
+    const targetCount = Number.isFinite(rawTargetCount) && rawTargetCount > 0 ? Math.floor(rawTargetCount) : undefined
+    const targetType = String(target.type || '')
+    const targetMode = String(target.TargetMode || target.targetMode || '')
+    const targetSection = String(target.TargetSection || target.targetSection || '')
+    const condMeta = extractConditionMeta(target.conditions || target.Conditions)
+    const triggerBranches = expandTriggerBranches(row?.trigger || {})
+    const description = String(row.description_cn || row.description_en || '').trim()
+    for (const branch of triggerBranches) {
+      const subject = branch.subject || {}
+      const triggerMeta = extractConditionMeta(subject.Conditions || subject.conditions)
+      out.push({
+        sourceName: item.name_cn || item.name_en || item.id,
+        sourceId: item.id,
+        amount: 1,
+        amountByTier: { Bronze: 1, Silver: 1, Gold: 1, Diamond: 1, Legendary: 1 },
+        targetType,
+        targetMode,
+        targetSection,
+        targetCount,
+        requiredTags: condMeta.include,
+        requiredExcludeTags: condMeta.exclude,
+        requiredSizes: condMeta.includeSizes,
+        requiredExcludeSizes: condMeta.excludeSizes,
+        requiredConditionMode: condMeta.conditionMode,
+        requiredAttrConditions: condMeta.attrConditions,
+        requiredCooldownOnly: condMeta.requireCooldownOnly,
+        requiredNotTriggerSource: condMeta.notTriggerSource,
+        targetExcludeSelf: Boolean(target.ExcludeSelf),
+        targetIncludeOrigin: Boolean(target.IncludeOrigin ?? target.includeOrigin),
+        triggerType: String(branch.type || ''),
+        triggerRequiredTags: triggerMeta.include,
+        triggerRequiredExcludeTags: triggerMeta.exclude,
+        triggerRequiredSizes: triggerMeta.includeSizes,
+        triggerRequiredExcludeSizes: triggerMeta.excludeSizes,
+        triggerConditionMode: triggerMeta.conditionMode,
+        triggerAttrConditions: triggerMeta.attrConditions,
+        triggerRequireCooldownOnly: triggerMeta.requireCooldownOnly,
+        triggerExcludeSelf: Boolean(subject.ExcludeSelf),
+        triggerSubjectType: String(subject.type || ''),
+        triggerSubjectMode: String(subject.TargetMode || subject.targetMode || ''),
+        description,
+      })
+    }
+  }
+  return out
+}
+
 function readForceUseRules(item: LabItem, tierInput?: string): ChargeRule[] {
-  const raw = item.__raw
-  if (!raw) return []
+  const raw = resolveRawItem(item)
   const _tier = parseTierToken(tierInput || item.starting_tier || raw.starting_tier)
   const rows = [
     ...(Array.isArray(raw.abilities_detail) ? raw.abilities_detail : []),
@@ -1015,6 +1554,13 @@ function readForceUseRules(item: LabItem, tierInput?: string): ChargeRule[] {
     const targetType = String(target.type || '')
     const targetMode = String(target.TargetMode || target.targetMode || '')
     const targetSection = String(target.TargetSection || target.targetSection || '')
+    const sourceTags = collectTagSet(item)
+    const sourceIsCore = sourceTags.has('core') || sourceTags.has('核心')
+    const includeOriginByRule =
+      sourceIsCore &&
+      targetType === 'TTargetCardPositional' &&
+      targetMode === 'AllRightCards' &&
+      String(row?.trigger?.type || '') === 'TTriggerOnCardFired'
     const condMeta = extractConditionMeta(target.conditions || target.Conditions)
     const triggerBranches = expandTriggerBranches(row?.trigger || {})
     for (const branch of triggerBranches) {
@@ -1032,14 +1578,19 @@ function readForceUseRules(item: LabItem, tierInput?: string): ChargeRule[] {
         requiredExcludeTags: condMeta.exclude,
         requiredSizes: condMeta.includeSizes,
         requiredExcludeSizes: condMeta.excludeSizes,
+        requiredConditionMode: condMeta.conditionMode,
+        requiredAttrConditions: condMeta.attrConditions,
         requiredCooldownOnly: condMeta.requireCooldownOnly,
         requiredNotTriggerSource: condMeta.notTriggerSource,
         targetExcludeSelf: Boolean(target.ExcludeSelf),
+        targetIncludeOrigin: Boolean(target.IncludeOrigin ?? target.includeOrigin) || includeOriginByRule,
         triggerType: String(branch.type || ''),
         triggerRequiredTags: triggerMeta.include,
         triggerRequiredExcludeTags: triggerMeta.exclude,
         triggerRequiredSizes: triggerMeta.includeSizes,
         triggerRequiredExcludeSizes: triggerMeta.excludeSizes,
+        triggerConditionMode: triggerMeta.conditionMode,
+        triggerAttrConditions: triggerMeta.attrConditions,
         triggerRequireCooldownOnly: triggerMeta.requireCooldownOnly,
         triggerExcludeSelf: Boolean(subject.ExcludeSelf),
         triggerSubjectType: String(subject.type || ''),
@@ -1052,8 +1603,7 @@ function readForceUseRules(item: LabItem, tierInput?: string): ChargeRule[] {
 }
 
 function readReloadRules(item: LabItem, tierInput?: string): ChargeRule[] {
-  const raw = item.__raw
-  if (!raw) return []
+  const raw = resolveRawItem(item)
   const tier = parseTierToken(tierInput || item.starting_tier || raw.starting_tier)
   const rows = [
     ...(Array.isArray(raw.abilities_detail) ? raw.abilities_detail : []),
@@ -1070,6 +1620,13 @@ function readReloadRules(item: LabItem, tierInput?: string): ChargeRule[] {
     const targetType = String(target.type || '')
     const targetMode = String(target.TargetMode || target.targetMode || '')
     const targetSection = String(target.TargetSection || target.targetSection || '')
+    const sourceTags = collectTagSet(item)
+    const sourceIsCore = sourceTags.has('core') || sourceTags.has('核心')
+    const includeOriginByRule =
+      sourceIsCore &&
+      targetType === 'TTargetCardPositional' &&
+      targetMode === 'AllRightCards' &&
+      String(row?.trigger?.type || '') === 'TTriggerOnCardFired'
     const condMeta = extractConditionMeta(target.conditions || target.Conditions)
     const triggerBranches = expandTriggerBranches(row?.trigger || {})
     for (const branch of triggerBranches) {
@@ -1087,14 +1644,19 @@ function readReloadRules(item: LabItem, tierInput?: string): ChargeRule[] {
         requiredExcludeTags: condMeta.exclude,
         requiredSizes: condMeta.includeSizes,
         requiredExcludeSizes: condMeta.excludeSizes,
+        requiredConditionMode: condMeta.conditionMode,
+        requiredAttrConditions: condMeta.attrConditions,
         requiredCooldownOnly: condMeta.requireCooldownOnly,
         requiredNotTriggerSource: condMeta.notTriggerSource,
         targetExcludeSelf: Boolean(target.ExcludeSelf),
+        targetIncludeOrigin: Boolean(target.IncludeOrigin ?? target.includeOrigin) || includeOriginByRule,
         triggerType: String(branch.type || ''),
         triggerRequiredTags: triggerMeta.include,
         triggerRequiredExcludeTags: triggerMeta.exclude,
         triggerRequiredSizes: triggerMeta.includeSizes,
         triggerRequiredExcludeSizes: triggerMeta.excludeSizes,
+        triggerConditionMode: triggerMeta.conditionMode,
+        triggerAttrConditions: triggerMeta.attrConditions,
         triggerRequireCooldownOnly: triggerMeta.requireCooldownOnly,
         triggerExcludeSelf: Boolean(subject.ExcludeSelf),
         triggerSubjectType: String(subject.type || ''),
@@ -1107,8 +1669,7 @@ function readReloadRules(item: LabItem, tierInput?: string): ChargeRule[] {
 }
 
 function readCoreBuffRules(item: LabItem, tierInput?: string): CoreBuffRule[] {
-  const raw = item.__raw
-  if (!raw) return []
+  const raw = resolveRawItem(item)
   const _tier = parseTierToken(tierInput || item.starting_tier || raw.starting_tier)
   const rows = [
     ...(Array.isArray(raw.abilities_detail) ? raw.abilities_detail : []),
@@ -1122,6 +1683,13 @@ function readCoreBuffRules(item: LabItem, tierInput?: string): CoreBuffRule[] {
     const targetType = String(target.type || '')
     const targetMode = String(target.TargetMode || target.targetMode || '')
     const targetSection = String(target.TargetSection || target.targetSection || '')
+    const sourceTags = collectTagSet(item)
+    const sourceIsCore = sourceTags.has('core') || sourceTags.has('核心')
+    const includeOriginByRule =
+      sourceIsCore &&
+      targetType === 'TTargetCardPositional' &&
+      targetMode === 'AllRightCards' &&
+      String(row?.trigger?.type || '') === 'TTriggerOnCardFired'
     const condMeta = extractConditionMeta(target.conditions || target.Conditions)
     // 只关注“给武器加成”的核心类规则
     const isWeaponBuff =
@@ -1142,14 +1710,19 @@ function readCoreBuffRules(item: LabItem, tierInput?: string): CoreBuffRule[] {
         requiredExcludeTags: condMeta.exclude,
         requiredSizes: condMeta.includeSizes,
         requiredExcludeSizes: condMeta.excludeSizes,
+        requiredConditionMode: condMeta.conditionMode,
+        requiredAttrConditions: condMeta.attrConditions,
         requiredCooldownOnly: condMeta.requireCooldownOnly,
         requiredNotTriggerSource: condMeta.notTriggerSource,
         targetExcludeSelf: Boolean(target.ExcludeSelf),
+        targetIncludeOrigin: Boolean(target.IncludeOrigin ?? target.includeOrigin) || includeOriginByRule,
         triggerType: String(branch.type || ''),
         triggerRequiredTags: triggerMeta.include,
         triggerRequiredExcludeTags: triggerMeta.exclude,
         triggerRequiredSizes: triggerMeta.includeSizes,
         triggerRequiredExcludeSizes: triggerMeta.excludeSizes,
+        triggerConditionMode: triggerMeta.conditionMode,
+        triggerAttrConditions: triggerMeta.attrConditions,
         triggerRequireCooldownOnly: triggerMeta.requireCooldownOnly,
         triggerExcludeSelf: Boolean(subject.ExcludeSelf),
         triggerSubjectType: String(subject.type || ''),
@@ -1162,8 +1735,7 @@ function readCoreBuffRules(item: LabItem, tierInput?: string): CoreBuffRule[] {
 }
 
 function readValueGrowthRules(item: LabItem, tierInput?: string): Array<ChargeRule & { valueAmount: number }> {
-  const raw = item.__raw
-  if (!raw) return []
+  const raw = resolveRawItem(item)
   const tier = parseTierToken(tierInput || item.starting_tier || raw.starting_tier) as TierToken
   const rows = [
     ...(Array.isArray(raw.abilities_detail) ? raw.abilities_detail : []),
@@ -1173,7 +1745,7 @@ function readValueGrowthRules(item: LabItem, tierInput?: string): Array<ChargeRu
   for (const row of rows) {
     const action = row?.action || {}
     if (String(action.type || '') !== 'TActionCardModifyAttribute') continue
-    const valueAmount = Math.abs(resolveActionValue(action?.value, tier))
+    const valueAmount = Math.abs(resolveActionValue(action?.value, tier, String(raw?.starting_tier || item.starting_tier || 'Bronze')))
     if (!Number.isFinite(valueAmount) || valueAmount <= 0) continue
     const target = action.target || {}
     const targetType = String(target.type || '')
@@ -1187,6 +1759,7 @@ function readValueGrowthRules(item: LabItem, tierInput?: string): Array<ChargeRu
       const triggerMeta = extractConditionMeta(subject.Conditions || subject.conditions)
       const triggerExcludeSelf = Boolean(subject.ExcludeSelf)
       const targetExcludeSelf = Boolean(target.ExcludeSelf)
+      const targetIncludeOrigin = Boolean(target.IncludeOrigin ?? target.includeOrigin)
       const triggerSubjectType = String(subject.type || '')
       const triggerSubjectMode = String(subject.TargetMode || subject.targetMode || '')
 
@@ -1202,14 +1775,19 @@ function readValueGrowthRules(item: LabItem, tierInput?: string): Array<ChargeRu
         requiredExcludeTags: condMeta.exclude,
         requiredSizes: condMeta.includeSizes,
         requiredExcludeSizes: condMeta.excludeSizes,
+        requiredConditionMode: condMeta.conditionMode,
+        requiredAttrConditions: condMeta.attrConditions,
         requiredCooldownOnly: condMeta.requireCooldownOnly,
         requiredNotTriggerSource: condMeta.notTriggerSource,
         targetExcludeSelf,
+        targetIncludeOrigin,
         triggerType: String(branch.type || ''),
         triggerRequiredTags: triggerMeta.include,
         triggerRequiredExcludeTags: triggerMeta.exclude,
         triggerRequiredSizes: triggerMeta.includeSizes,
         triggerRequiredExcludeSizes: triggerMeta.excludeSizes,
+        triggerConditionMode: triggerMeta.conditionMode,
+        triggerAttrConditions: triggerMeta.attrConditions,
         triggerRequireCooldownOnly: triggerMeta.requireCooldownOnly,
         triggerExcludeSelf,
         triggerSubjectType,
@@ -1226,8 +1804,7 @@ function readOffenseBuffRules(
   item: LabItem,
   tierInput?: string,
 ): Array<ChargeRule & { valueAmount: number; attributeType: string }> {
-  const raw = item.__raw
-  if (!raw) return []
+  const raw = resolveRawItem(item)
   const tier = parseTierToken(tierInput || item.starting_tier || raw.starting_tier) as TierToken
   const rows = [
     ...(Array.isArray(raw.abilities_detail) ? raw.abilities_detail : []),
@@ -1238,13 +1815,20 @@ function readOffenseBuffRules(
     const action = row?.action || {}
     if (String(action.type || '') !== 'TActionCardModifyAttribute') continue
     const attributeType = String(action.attribute_type || '')
-    if (!['DamageAmount', 'BurnAmount', 'PoisonAmount'].includes(attributeType)) continue
-    const valueAmount = Math.abs(resolveActionValue(action?.value, tier))
+    if (!['DamageAmount', 'BurnAmount', 'BurnApplyAmount', 'PoisonAmount', 'PoisonApplyAmount', 'ShieldApplyAmount'].includes(attributeType)) continue
+    const valueAmount = Math.abs(resolveActionValue(action?.value, tier, String(raw?.starting_tier || item.starting_tier || 'Bronze')))
     if (!Number.isFinite(valueAmount) || valueAmount <= 0) continue
     const target = action.target || {}
     const targetType = String(target.type || '')
     const targetMode = String(target.TargetMode || target.targetMode || '')
     const targetSection = String(target.TargetSection || target.targetSection || '')
+    const sourceTags = collectTagSet(item)
+    const sourceIsCore = sourceTags.has('core') || sourceTags.has('核心')
+    const includeOriginByRule =
+      sourceIsCore &&
+      targetType === 'TTargetCardPositional' &&
+      targetMode === 'AllRightCards' &&
+      String(row?.trigger?.type || '') === 'TTriggerOnCardFired'
     const condMeta = extractConditionMeta(target.conditions || target.Conditions)
     const triggerBranches = expandTriggerBranches(row?.trigger || {})
     for (const branch of triggerBranches) {
@@ -1262,14 +1846,19 @@ function readOffenseBuffRules(
         requiredExcludeTags: condMeta.exclude,
         requiredSizes: condMeta.includeSizes,
         requiredExcludeSizes: condMeta.excludeSizes,
+        requiredConditionMode: condMeta.conditionMode,
+        requiredAttrConditions: condMeta.attrConditions,
         requiredCooldownOnly: condMeta.requireCooldownOnly,
         requiredNotTriggerSource: condMeta.notTriggerSource,
         targetExcludeSelf: Boolean(target.ExcludeSelf),
+        targetIncludeOrigin: Boolean(target.IncludeOrigin ?? target.includeOrigin) || includeOriginByRule,
         triggerType: String(branch.type || ''),
         triggerRequiredTags: triggerMeta.include,
         triggerRequiredExcludeTags: triggerMeta.exclude,
         triggerRequiredSizes: triggerMeta.includeSizes,
         triggerRequiredExcludeSizes: triggerMeta.excludeSizes,
+        triggerConditionMode: triggerMeta.conditionMode,
+        triggerAttrConditions: triggerMeta.attrConditions,
         triggerRequireCooldownOnly: triggerMeta.requireCooldownOnly,
         triggerExcludeSelf: Boolean(subject.ExcludeSelf),
         triggerSubjectType: String(subject.type || ''),
@@ -1284,8 +1873,7 @@ function readOffenseBuffRules(
 }
 
 function readShieldGainRules(item: LabItem, tierInput?: string): ChargeRule[] {
-  const raw = item.__raw
-  if (!raw) return []
+  const raw = resolveRawItem(item)
   const tier = parseTierToken(tierInput || item.starting_tier || raw.starting_tier)
   const rows = [
     ...(Array.isArray(raw.abilities_detail) ? raw.abilities_detail : []),
@@ -1316,14 +1904,79 @@ function readShieldGainRules(item: LabItem, tierInput?: string): ChargeRule[] {
         requiredExcludeTags: condMeta.exclude,
         requiredSizes: condMeta.includeSizes,
         requiredExcludeSizes: condMeta.excludeSizes,
+        requiredConditionMode: condMeta.conditionMode,
+        requiredAttrConditions: condMeta.attrConditions,
         requiredCooldownOnly: condMeta.requireCooldownOnly,
         requiredNotTriggerSource: condMeta.notTriggerSource,
         targetExcludeSelf: Boolean(target.ExcludeSelf),
+        targetIncludeOrigin: Boolean(target.IncludeOrigin ?? target.includeOrigin),
         triggerType: String(branch.type || ''),
         triggerRequiredTags: triggerMeta.include,
         triggerRequiredExcludeTags: triggerMeta.exclude,
         triggerRequiredSizes: triggerMeta.includeSizes,
         triggerRequiredExcludeSizes: triggerMeta.excludeSizes,
+        triggerConditionMode: triggerMeta.conditionMode,
+        triggerAttrConditions: triggerMeta.attrConditions,
+        triggerRequireCooldownOnly: triggerMeta.requireCooldownOnly,
+        triggerExcludeSelf: Boolean(subject.ExcludeSelf),
+        triggerSubjectType: String(subject.type || ''),
+        triggerSubjectMode: String(subject.TargetMode || subject.targetMode || ''),
+        description: String(row.description_cn || row.description_en || '').trim(),
+      })
+    }
+  }
+  return out
+}
+
+function readPoisonApplyRules(item: LabItem, tierInput?: string): ChargeRule[] {
+  const raw = resolveRawItem(item)
+  const tier = parseTierToken(tierInput || item.starting_tier || raw.starting_tier)
+  const rows = [
+    ...(Array.isArray(raw.abilities_detail) ? raw.abilities_detail : []),
+    ...(Array.isArray(raw.auras_detail) ? raw.auras_detail : []),
+  ]
+  const out: ChargeRule[] = []
+  for (const row of rows) {
+    const action = row?.action || {}
+    if (String(action.type || '') !== 'TActionPlayerPoisonApply') continue
+    const target = action.target || {}
+    const targetType = String(target.type || '')
+    const targetMode = String(target.TargetMode || target.targetMode || '')
+    // 仅处理“对手施加剧毒”的规则，己方/其他目标暂不纳入伤害模拟
+    if (!(targetType === 'TTargetPlayerRelative' && targetMode === 'Opponent')) continue
+    const amount = getAttrValueByTier(raw, String(action.attribute_type || 'PoisonApplyAmount'), tier)
+    if (!Number.isFinite(amount) || amount <= 0) continue
+    const amountByTier = getAttrValuesByTier(raw, String(action.attribute_type || 'PoisonApplyAmount'))
+    const condMeta = extractConditionMeta(target.conditions || target.Conditions)
+    const triggerBranches = expandTriggerBranches(row?.trigger || {})
+    for (const branch of triggerBranches) {
+      const subject = branch.subject || {}
+      const triggerMeta = extractConditionMeta(subject.Conditions || subject.conditions)
+      out.push({
+        sourceName: item.name_cn || item.name_en || item.id,
+        sourceId: item.id,
+        amount,
+        amountByTier,
+        targetType,
+        targetMode,
+        targetSection: String(target.TargetSection || target.targetSection || ''),
+        requiredTags: condMeta.include,
+        requiredExcludeTags: condMeta.exclude,
+        requiredSizes: condMeta.includeSizes,
+        requiredExcludeSizes: condMeta.excludeSizes,
+        requiredConditionMode: condMeta.conditionMode,
+        requiredAttrConditions: condMeta.attrConditions,
+        requiredCooldownOnly: condMeta.requireCooldownOnly,
+        requiredNotTriggerSource: condMeta.notTriggerSource,
+        targetExcludeSelf: Boolean(target.ExcludeSelf),
+        targetIncludeOrigin: Boolean(target.IncludeOrigin ?? target.includeOrigin),
+        triggerType: String(branch.type || ''),
+        triggerRequiredTags: triggerMeta.include,
+        triggerRequiredExcludeTags: triggerMeta.exclude,
+        triggerRequiredSizes: triggerMeta.includeSizes,
+        triggerRequiredExcludeSizes: triggerMeta.excludeSizes,
+        triggerConditionMode: triggerMeta.conditionMode,
+        triggerAttrConditions: triggerMeta.attrConditions,
         triggerRequireCooldownOnly: triggerMeta.requireCooldownOnly,
         triggerExcludeSelf: Boolean(subject.ExcludeSelf),
         triggerSubjectType: String(subject.type || ''),
@@ -1336,8 +1989,24 @@ function readShieldGainRules(item: LabItem, tierInput?: string): ChargeRule[] {
 }
 
 function readDamageOnUse(item: LabItem, tierInput?: string): number {
-  const raw = item.__raw
-  if (!raw) return 0
+  return readAttributeOnUse(item, tierInput, 'TActionPlayerDamage')
+}
+
+function readBurnOnUse(item: LabItem, tierInput?: string): number {
+  return readAttributeOnUse(item, tierInput, 'TActionPlayerBurnApply', true)
+}
+
+function readPoisonOnUse(item: LabItem, tierInput?: string): number {
+  return readAttributeOnUse(item, tierInput, 'TActionPlayerPoisonApply', true)
+}
+
+function readAttributeOnUse(
+  item: LabItem,
+  tierInput: string | undefined,
+  actionType: string,
+  opponentOnly = false,
+): number {
+  const raw = resolveRawItem(item)
   const tier = parseTierToken(tierInput || item.starting_tier || raw.starting_tier) as TierToken
   const rows = [
     ...(Array.isArray(raw.abilities_detail) ? raw.abilities_detail : []),
@@ -1346,13 +2015,19 @@ function readDamageOnUse(item: LabItem, tierInput?: string): number {
   let sum = 0
   for (const row of rows) {
     const action = row?.action || {}
-    if (String(action.type || '') !== 'TActionPlayerDamage') continue
+    if (String(action.type || '') !== actionType) continue
+    if (opponentOnly) {
+      const target = action?.target || {}
+      const targetType = String(target.type || '')
+      const targetMode = String(target.TargetMode || target.targetMode || '')
+      if (!(targetType === 'TTargetPlayerRelative' && targetMode === 'Opponent')) continue
+    }
     const triggerType = String(row?.trigger?.type || '')
     if (triggerType && triggerType !== 'TTriggerOnCardFired') continue
     const attrType = String(action.attribute_type || '')
     let value = 0
     if (attrType) value = getAttrValueByTier(raw, attrType, tier)
-    else value = resolveActionValue(action?.value, tier)
+    else value = resolveActionValue(action?.value, tier, String(raw?.starting_tier || item.starting_tier || 'Bronze'))
     if (Number.isFinite(value) && value > 0) sum += value
   }
   return sum
@@ -1435,6 +2110,7 @@ function canTriggerSelfRule(
       rule.triggerRequiredSizes,
       rule.triggerRequiredExcludeSizes,
       auraTags,
+      rule.triggerConditionMode || 'and',
     )
   })
 
@@ -1585,8 +2261,10 @@ function resolveAuraTargets(
   const excludeSelf = Boolean(target?.ExcludeSelf)
   const match = (c: PlacedCard) => {
     if (excludeSelf && c.placementId === source.placementId) return false
-    if (condMeta.requireCooldownOnly && getCardCooldownSec(c) <= 0) return false
-    return matchesCardTags(c, condMeta.include, condMeta.exclude, condMeta.includeSizes, condMeta.excludeSizes, auraTags)
+    if (condMeta.requireCooldownOnly && getCardCooldownSec(c, cards) <= 0) return false
+    const tagOk = matchesCardTags(c, condMeta.include, condMeta.exclude, condMeta.includeSizes, condMeta.excludeSizes, auraTags, condMeta.conditionMode)
+    if (!tagOk) return false
+    return matchesAttributeConditions(c, condMeta.attrConditions, condMeta.conditionMode, auraTags, cards)
   }
 
   if (targetType === 'TTargetCardSelf') return match(source) ? [source] : []
@@ -1634,8 +2312,10 @@ function resolvePrerequisiteSubjectCards(
   const match = (c: PlacedCard): boolean => {
     if (!includeOrigin && c.placementId === source.placementId) return false
     if (excludeSelf && c.placementId === source.placementId) return false
-    if (condMeta.requireCooldownOnly && getCardCooldownSec(c) <= 0) return false
-    return matchesCardTags(c, condMeta.include, condMeta.exclude, condMeta.includeSizes, condMeta.excludeSizes, auraTags)
+    if (condMeta.requireCooldownOnly && getCardCooldownSec(c, cards) <= 0) return false
+    const tagOk = matchesCardTags(c, condMeta.include, condMeta.exclude, condMeta.includeSizes, condMeta.excludeSizes, auraTags, condMeta.conditionMode)
+    if (!tagOk) return false
+    return matchesAttributeConditions(c, condMeta.attrConditions, condMeta.conditionMode, auraTags, cards)
   }
 
   if (subjectType === 'TTargetCardSection') {
@@ -1743,7 +2423,8 @@ function computeMulticastMap(cards: PlacedCard[], auraTags: Map<string, Set<stri
       if (!evaluatePrerequisites(row?.prerequisites, cards, source, auraTags)) continue
       const condMeta = extractConditionMeta(action?.target?.conditions || action?.target?.Conditions)
       const targets = resolveAuraTargets(cards, source, action?.target || {}, condMeta, auraTags)
-      const bonus = resolveActionValue(action?.value, getEffectiveTier(source))
+      const srcRaw = resolveRawItem(source.item)
+      const bonus = resolveActionValue(action?.value, getEffectiveTier(source), String(srcRaw?.starting_tier || source.item.starting_tier || 'Bronze'))
       if (!Number.isFinite(bonus) || bonus === 0) continue
       for (const t of targets) out.set(t.placementId, (out.get(t.placementId) || 1) + bonus)
     }
@@ -1847,15 +2528,18 @@ function resolveTriggerCandidates(
   const filtered = pool.filter((c) => {
     if (rule.triggerExcludeSelf && c.placementId === source.placementId) return false
     const needsCd = rule.triggerRequireCooldownOnly || String(rule.triggerType || '').includes('TTriggerOnItemUsed')
-    if (needsCd && getCardCooldownSec(c) <= 0) return false
-    return matchesCardTags(
+    if (needsCd && getCardCooldownSec(c, cards) <= 0) return false
+    const tagOk = matchesCardTags(
       c,
       rule.triggerRequiredTags,
       rule.triggerRequiredExcludeTags,
       rule.triggerRequiredSizes,
       rule.triggerRequiredExcludeSizes,
       auraTags,
+      rule.triggerConditionMode || 'and',
     )
+    if (!tagOk) return false
+    return matchesAttributeConditions(c, rule.triggerAttrConditions || [], rule.triggerConditionMode || 'and', auraTags, cards)
   })
 
   if (mode === 'LeftMostCard' || mode === 'RightMostCard') {
@@ -1871,27 +2555,50 @@ function resolveTargetsForTrigger(
   triggerCard: PlacedCard,
   rule: ChargeRule,
   auraTags?: Map<string, Set<string>>,
+  rng?: (() => number) | null,
 ): PlacedCard[] {
+  const includeOrigin = Boolean((rule as any).targetIncludeOrigin)
   const matchTarget = (c: PlacedCard): boolean => {
     if (rule.targetExcludeSelf && c.placementId === source.placementId) return false
     if (rule.requiredNotTriggerSource && c.placementId === triggerCard.placementId) return false
-    if (rule.requiredCooldownOnly && getCardCooldownSec(c) <= 0) return false
-    return matchesCardTags(
+    if (rule.requiredCooldownOnly && getCardCooldownSec(c, cards) <= 0) return false
+    const tagOk = matchesCardTags(
       c,
       rule.requiredTags,
       rule.requiredExcludeTags,
       rule.requiredSizes,
       rule.requiredExcludeSizes,
       auraTags,
+      rule.requiredConditionMode || 'and',
     )
+    if (!tagOk) return false
+    return matchesAttributeConditions(c, rule.requiredAttrConditions || [], rule.requiredConditionMode || 'and', auraTags, cards)
   }
 
   if (rule.targetType === 'TTargetCardSelf') return matchTarget(source) ? [source] : []
-  if (rule.targetType === 'TTargetCardSection') return cards.filter((c) => getCardCooldownSec(c) > 0).filter(matchTarget)
+  if (rule.targetType === 'TTargetCardSection') return cards.filter((c) => getCardCooldownSec(c, cards) > 0).filter(matchTarget)
   if (rule.targetType === 'TTargetCardXMost') {
-    const pool = cards.filter((c) => getCardCooldownSec(c) > 0).filter(matchTarget)
+    const pool = cards.filter((c) => getCardCooldownSec(c, cards) > 0).filter(matchTarget)
     const chosen = pickXMost(pool, rule.targetMode || 'RightMostCard')
     return chosen ? [chosen] : []
+  }
+  if (rule.targetType === 'TTargetCardRandom') {
+    const pool = cards
+      .filter((c) => getCardCooldownSec(c, cards) > 0)
+      .filter(matchTarget)
+      .sort((a, b) => a.start - b.start)
+    if (!pool.length) return []
+    const requested = Number(rule.targetCount)
+    const k = Number.isFinite(requested) && requested > 0 ? Math.min(pool.length, Math.max(1, Math.floor(requested))) : 1
+    if (!rng) return pool.slice(0, k)
+    const pick = pool.slice()
+    const out: PlacedCard[] = []
+    for (let i = 0; i < k && pick.length > 0; i += 1) {
+      const idx = Math.max(0, Math.min(pick.length - 1, Math.floor(rng() * pick.length)))
+      out.push(pick[idx])
+      pick.splice(idx, 1)
+    }
+    return out
   }
 
   const left = cards.find((c) => c.start + c.width === source.start) || null
@@ -1900,15 +2607,37 @@ function resolveTargetsForTrigger(
     .filter((c) => c.start >= source.start + source.width)
     .sort((a, b) => a.start - b.start)
 
-  if (rule.targetMode === 'LeftCard') return left && getCardCooldownSec(left) > 0 && matchTarget(left) ? [left] : []
-  if (rule.targetMode === 'RightCard') return right && getCardCooldownSec(right) > 0 && matchTarget(right) ? [right] : []
+  if (rule.targetMode === 'LeftCard') return left && getCardCooldownSec(left, cards) > 0 && matchTarget(left) ? [left] : []
+  if (rule.targetMode === 'RightCard') return right && getCardCooldownSec(right, cards) > 0 && matchTarget(right) ? [right] : []
   if (rule.targetMode === 'Neighbor') {
     return [left, right].filter(Boolean).filter((x) => getCardCooldownSec(x as PlacedCard) > 0).filter((x) => matchTarget(x as PlacedCard)) as PlacedCard[]
   }
   if (rule.targetMode === 'AllRightCards') {
-    return allRight.filter((x) => getCardCooldownSec(x) > 0).filter(matchTarget)
+    const picked = allRight.filter((x) => getCardCooldownSec(x) > 0).filter(matchTarget)
+    if (includeOrigin && getCardCooldownSec(source, cards) > 0 && matchTarget(source)) {
+      return [source, ...picked]
+    }
+    return picked
+  }
+  if (includeOrigin && getCardCooldownSec(source, cards) > 0 && matchTarget(source)) {
+    return [source]
   }
   return []
+}
+
+function isOpponentTargetRule(rule: ChargeRule): boolean {
+  const section = String(rule.targetSection || '').toLowerCase()
+  const mode = String(rule.targetMode || '').toLowerCase()
+  return section.includes('opponent') || mode.includes('opponent')
+}
+
+function estimateOpponentTargetCount(rule: ChargeRule, opponentActiveCount: number): number {
+  if (!isOpponentTargetRule(rule)) return 0
+  const pool = Math.max(0, Math.min(10, Math.floor(Number(opponentActiveCount) || 0)))
+  if (pool <= 0) return 0
+  const requested = Number(rule.targetCount)
+  if (Number.isFinite(requested) && requested > 0) return Math.max(0, Math.min(pool, Math.floor(requested)))
+  return pool
 }
 
 function analyze(cards: PlacedCard[]): Analysis {
@@ -2047,7 +2776,7 @@ function analyzeCycles(cards: PlacedCard[], links: LinkHit[]): CycleHit[] {
 }
 
 function computeNetworkMetrics(cards: PlacedCard[], analysis: Analysis): NetworkMetrics {
-  const active = cards.filter((c) => getCardCooldownSec(c) > 0)
+  const active = cards.filter((c) => getCardCooldownSec(c, cards) > 0)
   if (active.length === 0) {
     return {
       activeCards: 0,
@@ -2163,31 +2892,80 @@ function computeValueSynergy(cards: PlacedCard[]): number {
   return score
 }
 
-function simulateCombatStats(cards: PlacedCard[], durationSec = 20): CombatSummary {
+function simulateCombatStats(
+  cards: PlacedCard[],
+  durationSec = 20,
+  options?: CombatSimOptions,
+): CombatSummary {
+  const randomSelfTarget = hasSelfRandomTargetRule(cards)
+  const trialCount = Math.max(1, Math.floor(Number(options?.randomTrials ?? 10)))
+  if (randomSelfTarget && trialCount > 1 && !options?._singleTrial) {
+    const runs: CombatSummary[] = []
+    for (let i = 0; i < trialCount; i += 1) {
+      runs.push(
+        simulateCombatStats(cards, durationSec, {
+          ...options,
+          randomTrials: 1,
+          _singleTrial: true,
+          rng: () => Math.random(),
+        }),
+      )
+    }
+    return aggregateCombatSummaries(runs, durationSec)
+  }
+
   const epsilon = 1e-6
-  const activeCards = cards.filter((c) => getCardCooldownSec(c) > 0)
+  const activeCards = cards.filter((c) => getCardCooldownSec(c, cards) > 0)
   if (!activeCards.length) {
-    return { durationSec, totalUses: 0, byCard: {}, totalDamage: 0, totalShield: 0, byCardDamage: {}, byCardShield: {}, cumulativeDamageBySecond: buildCumulativeDamageCurve([], durationSec) }
+    return {
+      durationSec,
+      totalUses: 0,
+      byCard: {},
+      totalDamage: 0,
+      totalBurnApplied: 0,
+      totalPoisonApplied: 0,
+      totalBurnTickDamage: 0,
+      totalPoisonTickDamage: 0,
+      totalShield: 0,
+      byCardDamage: {},
+      byCardBurn: {},
+      byCardPoison: {},
+      byCardShield: {},
+      cumulativeDamageBySecond: buildCumulativeDamageCurve([], durationSec),
+      debugTimeline: [],
+    }
   }
 
   const auraTags = computeAuraTagMap(cards)
   const multicastMap = computeMulticastMap(cards, auraTags)
   const chargeRulesBySource = new Map<string, ChargeRule[]>()
   const hasteRulesBySource = new Map<string, ChargeRule[]>()
+  const slowRulesBySource = new Map<string, ChargeRule[]>()
   const forceUseRulesBySource = new Map<string, ChargeRule[]>()
   const reloadRulesBySource = new Map<string, ChargeRule[]>()
+  const freezeRulesBySource = new Map<string, ChargeRule[]>()
+  const destructionRulesBySource = new Map<string, ChargeRule[]>()
   const shieldRulesBySource = new Map<string, ChargeRule[]>()
+  const poisonRulesBySource = new Map<string, ChargeRule[]>()
   const offenseRulesBySource = new Map<string, Array<ChargeRule & { valueAmount: number; attributeType: string }>>()
   const baseDamageByCard = new Map<string, number>()
+  const baseBurnByCard = new Map<string, number>()
+  const basePoisonByCard = new Map<string, number>()
   const ammoState = new Map<string, { max: number; current: number; readyWhenEmpty: boolean }>()
   for (const c of cards) {
     chargeRulesBySource.set(c.placementId, readChargeRules(c.item, getEffectiveTier(c)).positionalRules)
     hasteRulesBySource.set(c.placementId, readHasteRules(c.item, getEffectiveTier(c)))
+    slowRulesBySource.set(c.placementId, readSlowRules(c.item, getEffectiveTier(c)))
     forceUseRulesBySource.set(c.placementId, readForceUseRules(c.item, getEffectiveTier(c)))
     reloadRulesBySource.set(c.placementId, readReloadRules(c.item, getEffectiveTier(c)))
+    freezeRulesBySource.set(c.placementId, readFreezeRules(c.item, getEffectiveTier(c)))
+    destructionRulesBySource.set(c.placementId, readDestructionRules(c.item, getEffectiveTier(c)))
     shieldRulesBySource.set(c.placementId, readShieldGainRules(c.item, getEffectiveTier(c)))
+    poisonRulesBySource.set(c.placementId, readPoisonApplyRules(c.item, getEffectiveTier(c)))
     offenseRulesBySource.set(c.placementId, readOffenseBuffRules(c.item, getEffectiveTier(c)))
     baseDamageByCard.set(c.placementId, readDamageOnUse(c.item, getEffectiveTier(c)))
+    baseBurnByCard.set(c.placementId, readBurnOnUse(c.item, getEffectiveTier(c)))
+    basePoisonByCard.set(c.placementId, readPoisonOnUse(c.item, getEffectiveTier(c)))
     const maxAmmo = getCardAmmoMaxByTier(c.item, getEffectiveTier(c))
     if (maxAmmo > 0) ammoState.set(c.placementId, { max: maxAmmo, current: maxAmmo, readyWhenEmpty: false })
   }
@@ -2196,15 +2974,37 @@ function simulateCombatStats(cards: PlacedCard[], durationSec = 20): CombatSumma
   for (const c of activeCards) state.set(c.placementId, { remaining: getCardCooldownSec(c), speedUntil: 0 })
   const uses = new Map<string, number>()
   const byCardDamage = new Map<string, number>()
+  const byCardBurn = new Map<string, number>()
+  const byCardPoison = new Map<string, number>()
   const byCardShield = new Map<string, number>()
   const bonusDamage = new Map<string, number>()
+  const bonusBurn = new Map<string, number>()
+  const bonusPoison = new Map<string, number>()
+  const bonusShield = new Map<string, number>()
   let totalDamage = 0
+  let totalBurnApplied = 0
+  let totalPoisonApplied = 0
+  let totalBurnTickDamage = 0
+  let totalPoisonTickDamage = 0
+  const stopAtDamage = Number(options?.stopAtDamage || 0)
+  const opponentActiveCount = Math.max(0, Math.min(10, Math.floor(Number(options?.opponentActiveCount ?? 7))))
+  const rng = options?.rng || null
+  const shouldStopEarly = () => stopAtDamage > 0 && totalDamage >= stopAtDamage
+  let stopLoop = false
   const damageEvents: Array<{ time: number; amount: number }> = []
+  const burnApplyEvents: Array<{ time: number; amount: number; source: string }> = []
+  const poisonApplyEvents: Array<{ time: number; amount: number; source: string }> = []
+  const debugTimeline: CombatSummary['debugTimeline'] = []
   for (const c of activeCards) uses.set(c.placementId, 0)
   for (const c of activeCards) {
     byCardDamage.set(c.placementId, 0)
+    byCardBurn.set(c.placementId, 0)
+    byCardPoison.set(c.placementId, 0)
     byCardShield.set(c.placementId, 0)
     bonusDamage.set(c.placementId, 0)
+    bonusBurn.set(c.placementId, 0)
+    bonusPoison.set(c.placementId, 0)
+    bonusShield.set(c.placementId, 0)
   }
 
   const resolveEventTriggerMatch = (
@@ -2212,7 +3012,28 @@ function simulateCombatStats(cards: PlacedCard[], durationSec = 20): CombatSumma
     rule: ChargeRule,
     fired: PlacedCard,
     shieldPerformedSet?: Set<string>,
+    performedCtx?: {
+      slowHits?: number
+      burnHits?: number
+      poisonHits?: number
+      damageHits?: number
+      hasteHits?: number
+      freezeHits?: number
+      reloadHits?: number
+      destructionHits?: number
+      shieldHits?: number
+    },
   ): boolean => {
+    const lowerTrigger = String(rule.triggerType || '').toLowerCase()
+    if (lowerTrigger.includes('performedslow') && Number(performedCtx?.slowHits || 0) <= 0) return false
+    if (lowerTrigger.includes('performedburn') && Number(performedCtx?.burnHits || 0) <= 0) return false
+    if (lowerTrigger.includes('performedpoison') && Number(performedCtx?.poisonHits || 0) <= 0) return false
+    if (lowerTrigger.includes('performeddamage') && Number(performedCtx?.damageHits || 0) <= 0) return false
+    if (lowerTrigger.includes('performedhaste') && Number(performedCtx?.hasteHits || 0) <= 0) return false
+    if (lowerTrigger.includes('performedfreeze') && Number(performedCtx?.freezeHits || 0) <= 0) return false
+    if (lowerTrigger.includes('performedreload') && Number(performedCtx?.reloadHits || 0) <= 0) return false
+    if (lowerTrigger.includes('performeddestruction') && Number(performedCtx?.destructionHits || 0) <= 0) return false
+    if (lowerTrigger.includes('performedshield') && Number(performedCtx?.shieldHits || 0) <= 0) return false
     if (String(rule.triggerType || '') === 'TTriggerOnCardPerformedShield') {
       const cands = resolveTriggerCandidates(cards, source, rule, auraTags)
       return cands.some((x) => (shieldPerformedSet || new Set()).has(x.placementId))
@@ -2299,44 +3120,217 @@ function simulateCombatStats(cards: PlacedCard[], durationSec = 20): CombatSumma
       uses.set(fired.placementId, (uses.get(fired.placementId) || 0) + casts)
 
       const perCastDamage = Math.max(0, (baseDamageByCard.get(fired.placementId) || 0) + (bonusDamage.get(fired.placementId) || 0))
-      const dealt = perCastDamage * casts
+      let dealt = perCastDamage * casts
+      // C.O.R.A.: core damage scales with current poison stack via Custom_0 multiplier.
+      const coraName = String(fired.item.name_en || fired.item.name_cn || '')
+      const isCora = coraName.toLowerCase() === 'c.o.r.a.' || coraName.toLowerCase() === 'cora'
+      if (isCora) {
+        const raw = resolveRawItem(fired.item)
+        const tier = getEffectiveTier(fired)
+        const poisonMultiplier = Math.max(0, getAttrValueByTier(raw, 'Custom_0', tier))
+        if (poisonMultiplier > 0 && totalPoisonApplied > 0) {
+          dealt += totalPoisonApplied * poisonMultiplier * casts
+        }
+      }
       if (dealt > 0) {
         totalDamage += dealt
         damageEvents.push({ time: now, amount: dealt })
         byCardDamage.set(fired.placementId, (byCardDamage.get(fired.placementId) || 0) + dealt)
       }
+      const perCastBurn = Math.max(0, (baseBurnByCard.get(fired.placementId) || 0) + (bonusBurn.get(fired.placementId) || 0))
+      const burnApplied = perCastBurn * casts
+      if (burnApplied > 0) {
+        totalBurnApplied += burnApplied
+        byCardBurn.set(fired.placementId, (byCardBurn.get(fired.placementId) || 0) + burnApplied)
+        burnApplyEvents.push({
+          time: now,
+          amount: burnApplied,
+          source: fired.item.name_cn || fired.item.name_en || fired.item.id,
+        })
+        debugTimeline.push({
+          time: now,
+          kind: 'burn-apply',
+          source: fired.item.name_cn || fired.item.name_en || fired.item.id,
+          value: burnApplied,
+          note: `施加灼烧 ${burnApplied.toFixed(1)}`,
+        })
+      }
+      const perCastPoison = Math.max(0, (basePoisonByCard.get(fired.placementId) || 0) + (bonusPoison.get(fired.placementId) || 0))
+      const poisonApplied = perCastPoison * casts
+      let performedPoisonHits = 0
+      if (poisonApplied > 0) {
+        totalPoisonApplied += poisonApplied
+        byCardPoison.set(fired.placementId, (byCardPoison.get(fired.placementId) || 0) + poisonApplied)
+        performedPoisonHits += casts
+        poisonApplyEvents.push({
+          time: now,
+          amount: poisonApplied,
+          source: fired.item.name_cn || fired.item.name_en || fired.item.id,
+        })
+        debugTimeline.push({
+          time: now,
+          kind: 'poison-apply',
+          source: fired.item.name_cn || fired.item.name_en || fired.item.id,
+          value: poisonApplied,
+          note: `施加剧毒 ${poisonApplied.toFixed(1)}`,
+        })
+      }
+      let performedSlowHits = 0
+      let performedHasteHits = 0
+      let performedFreezeHits = 0
+      let performedReloadHits = 0
+      let performedDestructionHits = 0
+      const firedSlowRules = slowRulesBySource.get(fired.placementId) || []
+      for (const rule of firedSlowRules) {
+        const cands = resolveTriggerCandidates(cards, fired, rule, auraTags)
+        const firedMatched = cands.some((x) => x.placementId === fired.placementId)
+        if (!firedMatched) continue
+        const targets = resolveTargetsForTrigger(cards, fired, fired, rule, auraTags, rng)
+        let hits = targets.length
+        if (hits <= 0 && isOpponentTargetRule(rule)) {
+          hits = estimateOpponentTargetCount(rule, opponentActiveCount)
+        }
+        if (hits > 0) performedSlowHits += hits * casts
+      }
+      const firedHasteRules = hasteRulesBySource.get(fired.placementId) || []
+      for (const rule of firedHasteRules) {
+        const cands = resolveTriggerCandidates(cards, fired, rule, auraTags)
+        const firedMatched = cands.some((x) => x.placementId === fired.placementId)
+        if (!firedMatched) continue
+        const targets = resolveTargetsForTrigger(cards, fired, fired, rule, auraTags, rng)
+        const hits = targets.length
+        if (hits > 0) performedHasteHits += hits * casts
+      }
+      const firedFreezeRules = freezeRulesBySource.get(fired.placementId) || []
+      for (const rule of firedFreezeRules) {
+        const cands = resolveTriggerCandidates(cards, fired, rule, auraTags)
+        const firedMatched = cands.some((x) => x.placementId === fired.placementId)
+        if (!firedMatched) continue
+        const targets = resolveTargetsForTrigger(cards, fired, fired, rule, auraTags, rng)
+        let hits = targets.length
+        if (hits <= 0 && isOpponentTargetRule(rule)) {
+          hits = estimateOpponentTargetCount(rule, opponentActiveCount)
+        }
+        if (hits > 0) performedFreezeHits += hits * casts
+      }
+      const firedReloadRules = reloadRulesBySource.get(fired.placementId) || []
+      for (const rule of firedReloadRules) {
+        const cands = resolveTriggerCandidates(cards, fired, rule, auraTags)
+        const firedMatched = cands.some((x) => x.placementId === fired.placementId)
+        if (!firedMatched) continue
+        const targets = resolveTargetsForTrigger(cards, fired, fired, rule, auraTags, rng)
+        const hits = targets.length
+        if (hits > 0) performedReloadHits += hits * casts
+      }
+      const firedDestructionRules = destructionRulesBySource.get(fired.placementId) || []
+      for (const rule of firedDestructionRules) {
+        const cands = resolveTriggerCandidates(cards, fired, rule, auraTags)
+        const firedMatched = cands.some((x) => x.placementId === fired.placementId)
+        if (!firedMatched) continue
+        const targets = resolveTargetsForTrigger(cards, fired, fired, rule, auraTags, rng)
+        let hits = targets.length
+        if (hits <= 0 && isOpponentTargetRule(rule)) {
+          hits = estimateOpponentTargetCount(rule, opponentActiveCount)
+        }
+        if (hits > 0) performedDestructionHits += hits * casts
+      }
+      const performedCtx = {
+        slowHits: performedSlowHits,
+        burnHits: burnApplied > 0 ? casts : 0,
+        poisonHits: performedPoisonHits,
+        damageHits: dealt > 0 ? casts : 0,
+        hasteHits: performedHasteHits,
+        freezeHits: performedFreezeHits,
+        reloadHits: performedReloadHits,
+        destructionHits: performedDestructionHits,
+        shieldHits: 0,
+      }
+      debugTimeline.push({
+        time: now,
+        kind: 'use',
+        source: fired.item.name_cn || fired.item.name_en || fired.item.id,
+        value: dealt,
+        note: `出手x${casts}${dealt > 0 ? `，伤害 ${dealt.toFixed(1)}` : ''}`,
+      })
+      if (shouldStopEarly()) {
+        stopLoop = true
+        break
+      }
 
       // 先结算“获得护盾”事件，再让“触发护盾后充能”在同一轮生效
       const shieldPerformedBy = new Set<string>()
+      let performedShieldHits = 0
       for (const source of cards) {
         const casts = Math.max(1, Number(multicastMap.get(fired.placementId) || 1))
         const shieldRules = shieldRulesBySource.get(source.placementId) || []
         for (const rule of shieldRules) {
-          if (!resolveEventTriggerMatch(source, rule, fired)) continue
-          const amount = Math.max(0, Number(rule.amount || 0)) * casts
+          if (!resolveEventTriggerMatch(source, rule, fired, undefined, performedCtx)) continue
+          const shieldBonus = Math.max(0, Number(bonusShield.get(source.placementId) || 0))
+          const perCastShield = Math.max(0, Number(rule.amount || 0) + shieldBonus)
+          const amount = perCastShield * casts
           if (amount <= 0) continue
           byCardShield.set(source.placementId, (byCardShield.get(source.placementId) || 0) + amount)
+          performedShieldHits += casts
           shieldPerformedBy.add(source.placementId)
         }
       }
+      performedCtx.shieldHits = performedShieldHits
 
       for (const source of cards) {
+        const sourceCastsFromFired = Math.max(1, Number(multicastMap.get(fired.placementId) || 1))
+        const poisonRules = poisonRulesBySource.get(source.placementId) || []
+        for (const rule of poisonRules) {
+          if (!resolveEventTriggerMatch(source, rule, fired, undefined, performedCtx)) continue
+          const triggerCards = resolveTriggerCandidates(cards, source, rule, auraTags)
+            .filter((x) => x.placementId === fired.placementId)
+          if (!triggerCards.length) continue
+          for (const triggerCard of triggerCards) {
+            const triggerCasts = Math.max(1, Number(multicastMap.get(triggerCard.placementId) || sourceCastsFromFired))
+            const amount = Math.max(0, Number(rule.amount || 0)) * triggerCasts
+            if (amount <= 0) continue
+            totalPoisonApplied += amount
+            byCardPoison.set(source.placementId, (byCardPoison.get(source.placementId) || 0) + amount)
+            poisonApplyEvents.push({
+              time: now,
+              amount,
+              source: source.item.name_cn || source.item.name_en || source.item.id,
+            })
+            debugTimeline.push({
+              time: now,
+              kind: 'poison-apply',
+              source: source.item.name_cn || source.item.name_en || source.item.id,
+              value: amount,
+              note: `施加剧毒 ${amount.toFixed(1)}`,
+            })
+            performedPoisonHits += triggerCasts
+          }
+        }
+        performedCtx.poisonHits = performedPoisonHits
+
         const chargeRules = chargeRulesBySource.get(source.placementId) || []
         for (const rule of chargeRules) {
           const isShieldTrigger = String(rule.triggerType || '') === 'TTriggerOnCardPerformedShield'
-          if (!resolveEventTriggerMatch(source, rule, fired, shieldPerformedBy)) continue
+          if (!resolveEventTriggerMatch(source, rule, fired, shieldPerformedBy, performedCtx)) continue
           const triggerCards = isShieldTrigger
             ? resolveTriggerCandidates(cards, source, rule, auraTags).filter((x) => shieldPerformedBy.has(x.placementId))
             : [fired]
           for (const triggerCard of triggerCards) {
             const casts = Math.max(1, Number(multicastMap.get(triggerCard.placementId) || 1))
-            const targets = resolveTargetsForTrigger(cards, source, triggerCard, rule, auraTags)
+          const targets = resolveTargetsForTrigger(cards, source, triggerCard, rule, auraTags, rng)
             const amount = Number(rule.amount || 0) * casts
             if (amount <= 0) continue
             for (const t of targets) {
               const ts = state.get(t.placementId)
               if (!ts) continue
               ts.remaining -= amount
+              debugTimeline.push({
+                time: now,
+                kind: 'charge',
+                source: source.item.name_cn || source.item.name_en || source.item.id,
+                target: t.item.name_cn || t.item.name_en || t.item.id,
+                value: amount,
+                note: `充能 ${amount.toFixed(1)}s`,
+              })
               if (ts.remaining <= epsilon && !queuedNormal.has(t.placementId)) {
                 queue.push({ card: t, forced: false })
                 queuedNormal.add(t.placementId)
@@ -2347,8 +3341,8 @@ function simulateCombatStats(cards: PlacedCard[], durationSec = 20): CombatSumma
 
         const hasteRules = hasteRulesBySource.get(source.placementId) || []
         for (const rule of hasteRules) {
-          if (!resolveEventTriggerMatch(source, rule, fired)) continue
-          const targets = resolveTargetsForTrigger(cards, source, fired, rule, auraTags)
+          if (!resolveEventTriggerMatch(source, rule, fired, undefined, performedCtx)) continue
+          const targets = resolveTargetsForTrigger(cards, source, fired, rule, auraTags, rng)
           const hasteSec = Number(rule.amount || 0) * casts
           if (hasteSec <= 0) continue
           for (const t of targets) {
@@ -2358,10 +3352,36 @@ function simulateCombatStats(cards: PlacedCard[], durationSec = 20): CombatSumma
           }
         }
 
+        const slowRules = slowRulesBySource.get(source.placementId) || []
+        for (const rule of slowRules) {
+          if (!resolveEventTriggerMatch(source, rule, fired, undefined, performedCtx)) continue
+          const targets = resolveTargetsForTrigger(cards, source, fired, rule, auraTags, rng)
+          const slowSec = Number(rule.amount || 0) * casts
+          if (slowSec <= 0) continue
+          if (!targets.length && isOpponentTargetRule(rule)) {
+            const affected = estimateOpponentTargetCount(rule, opponentActiveCount)
+            if (affected > 0) {
+              debugTimeline.push({
+                time: now,
+                kind: 'use',
+                source: source.item.name_cn || source.item.name_en || source.item.id,
+                value: affected,
+                note: `对手减速生效 ${affected} 次（按对手可读条物品数上限）`,
+              })
+            }
+          }
+          for (const t of targets) {
+            const ts = state.get(t.placementId)
+            if (!ts) continue
+            // 减速等价于“额外增加剩余读条时间”
+            ts.remaining += slowSec
+          }
+        }
+
         const forceRules = forceUseRulesBySource.get(source.placementId) || []
         for (const rule of forceRules) {
-          if (!resolveEventTriggerMatch(source, rule, fired)) continue
-          const targets = resolveTargetsForTrigger(cards, source, fired, rule, auraTags)
+          if (!resolveEventTriggerMatch(source, rule, fired, undefined, performedCtx)) continue
+          const targets = resolveTargetsForTrigger(cards, source, fired, rule, auraTags, rng)
           for (let c = 0; c < casts; c += 1) {
             for (const t of targets) queue.push({ card: t, forced: true })
           }
@@ -2369,8 +3389,8 @@ function simulateCombatStats(cards: PlacedCard[], durationSec = 20): CombatSumma
 
         const reloadRules = reloadRulesBySource.get(source.placementId) || []
         for (const rule of reloadRules) {
-          if (!resolveEventTriggerMatch(source, rule, fired)) continue
-          const targets = resolveTargetsForTrigger(cards, source, fired, rule, auraTags)
+          if (!resolveEventTriggerMatch(source, rule, fired, undefined, performedCtx)) continue
+          const targets = resolveTargetsForTrigger(cards, source, fired, rule, auraTags, rng)
           const amount = Math.max(0, Number(rule.amount || 0)) * casts
           if (amount <= 0) continue
           for (const t of targets) {
@@ -2389,23 +3409,99 @@ function simulateCombatStats(cards: PlacedCard[], durationSec = 20): CombatSumma
 
         const offenseRules = offenseRulesBySource.get(source.placementId) || []
         for (const rule of offenseRules) {
-          if (rule.attributeType !== 'DamageAmount') continue
-          if (!resolveEventTriggerMatch(source, rule, fired)) continue
-          const targets = resolveTargetsForTrigger(cards, source, fired, rule, auraTags)
+          if (!resolveEventTriggerMatch(source, rule, fired, undefined, performedCtx)) continue
+          const targets = resolveTargetsForTrigger(cards, source, fired, rule, auraTags, rng)
           const inc = Math.max(0, Number(rule.valueAmount || 0)) * casts
           if (inc <= 0) continue
           for (const t of targets) {
-            if (!bonusDamage.has(t.placementId)) continue
-            bonusDamage.set(t.placementId, (bonusDamage.get(t.placementId) || 0) + inc)
+            if (rule.attributeType === 'DamageAmount') {
+              if (!bonusDamage.has(t.placementId)) continue
+              bonusDamage.set(t.placementId, (bonusDamage.get(t.placementId) || 0) + inc)
+            } else if (rule.attributeType === 'BurnAmount' || rule.attributeType === 'BurnApplyAmount') {
+              if (!bonusBurn.has(t.placementId)) continue
+              bonusBurn.set(t.placementId, (bonusBurn.get(t.placementId) || 0) + inc)
+            } else if (rule.attributeType === 'PoisonAmount' || rule.attributeType === 'PoisonApplyAmount') {
+              if (!bonusPoison.has(t.placementId)) continue
+              bonusPoison.set(t.placementId, (bonusPoison.get(t.placementId) || 0) + inc)
+            } else if (rule.attributeType === 'ShieldApplyAmount') {
+              if (!bonusShield.has(t.placementId)) continue
+              bonusShield.set(t.placementId, (bonusShield.get(t.placementId) || 0) + inc)
+            }
           }
         }
 
+      }
+      if (stopLoop) break
+    }
+    if (stopLoop) break
+  }
+
+  // 剧毒按 1s 结算：
+  // - 每 1s 造成当前剧毒层数伤害
+  // - 剧毒层数不随时间衰减
+  if (poisonApplyEvents.length > 0) {
+    const sortedPoison = poisonApplyEvents.slice().sort((a, b) => a.time - b.time)
+    let idx = 0
+    let stack = 0
+    const tickCount = Math.max(1, Math.floor(durationSec))
+    for (let t = 1; t <= tickCount + 1e-6; t += 1) {
+      while (idx < sortedPoison.length && sortedPoison[idx].time <= t + 1e-6) {
+        stack += sortedPoison[idx].amount
+        idx += 1
+      }
+      if (stack > 0) {
+        totalPoisonTickDamage += stack
+        totalDamage += stack
+        damageEvents.push({ time: t, amount: stack })
+        debugTimeline.push({
+          time: t,
+          kind: 'poison-tick',
+          source: '剧毒',
+          value: stack,
+          note: `剧毒结算 ${stack.toFixed(1)}`,
+        })
+      }
+    }
+  }
+
+  // 灼烧按 0.5s 结算：
+  // - 每 0.5s 造成当前灼烧层数伤害
+  // - 每 0.5s 后衰减 3%，且单次至少衰减 1
+  // - 衰减后向上取整（如 462 -> 449）
+  if (burnApplyEvents.length > 0) {
+    const sortedBurn = burnApplyEvents.slice().sort((a, b) => a.time - b.time)
+    let idx = 0
+    let stack = 0
+    const tickCount = Math.max(1, Math.floor(durationSec / 0.5))
+    for (let t = 0.5; t <= tickCount * 0.5 + 1e-6; t += 0.5) {
+      while (idx < sortedBurn.length && sortedBurn[idx].time <= t + 1e-6) {
+        stack += sortedBurn[idx].amount
+        idx += 1
+      }
+      if (stack > 0) {
+        totalBurnTickDamage += stack
+        totalDamage += stack
+        damageEvents.push({ time: t, amount: stack })
+        const decayByRate = Math.ceil(stack * 0.03)
+        const decay = Math.max(1, decayByRate)
+        const nextStack = Math.max(0, Math.ceil(stack - decay))
+        debugTimeline.push({
+          time: t,
+          kind: 'burn-tick',
+          source: '灼烧',
+          value: stack,
+          note: `灼烧结算 ${stack.toFixed(1)}，衰减后 ${nextStack.toFixed(1)}`,
+        })
+        stack = nextStack
+        if (shouldStopEarly()) break
       }
     }
   }
 
   const byCard: Record<string, number> = {}
   const byCardDamageObj: Record<string, number> = {}
+  const byCardBurnObj: Record<string, number> = {}
+  const byCardPoisonObj: Record<string, number> = {}
   const byCardShieldObj: Record<string, number> = {}
   let totalUses = 0
   let totalShield = 0
@@ -2416,6 +3512,12 @@ function simulateCombatStats(cards: PlacedCard[], durationSec = 20): CombatSumma
   byCardDamage.forEach((v, k) => {
     byCardDamageObj[k] = v
   })
+  byCardBurn.forEach((v, k) => {
+    byCardBurnObj[k] = v
+  })
+  byCardPoison.forEach((v, k) => {
+    byCardPoisonObj[k] = v
+  })
   byCardShield.forEach((v, k) => {
     byCardShieldObj[k] = v
     totalShield += v
@@ -2425,19 +3527,26 @@ function simulateCombatStats(cards: PlacedCard[], durationSec = 20): CombatSumma
     totalUses,
     byCard,
     totalDamage,
+    totalBurnApplied,
+    totalPoisonApplied,
+    totalBurnTickDamage,
+    totalPoisonTickDamage,
     totalShield,
     byCardDamage: byCardDamageObj,
+    byCardBurn: byCardBurnObj,
+    byCardPoison: byCardPoisonObj,
     byCardShield: byCardShieldObj,
     cumulativeDamageBySecond: buildCumulativeDamageCurve(damageEvents, durationSec),
+    debugTimeline: debugTimeline.sort((a, b) => a.time - b.time),
   }
 }
 
 function simulateUseCounts(cards: PlacedCard[], durationSec = 20): UseCountSummary {
-  const combat = simulateCombatStats(cards, durationSec)
+  const combat = simulateCombatStats(cards, durationSec, { opponentActiveCount: 7 })
   return { durationSec: combat.durationSec, totalUses: combat.totalUses, byCard: combat.byCard }
 }
 
-function scoreLayout(cards: PlacedCard[], windowSec = 20): {
+function scoreLayout(cards: PlacedCard[], windowSec = 20, options?: { opponentActiveCount?: number }): {
   analysis: Analysis
   metrics: NetworkMetrics
   valueSynergy: number
@@ -2448,11 +3557,78 @@ function scoreLayout(cards: PlacedCard[], windowSec = 20): {
   const analysis = analyze(cards)
   const metrics = computeNetworkMetrics(cards, analysis)
   const valueSynergy = computeValueSynergy(cards)
-  const combat = simulateCombatStats(cards, windowSec)
+  const combat = simulateCombatStats(cards, windowSec, { opponentActiveCount: options?.opponentActiveCount ?? 7 })
   const usage: UseCountSummary = { durationSec: combat.durationSec, totalUses: combat.totalUses, byCard: combat.byCard }
   // 方案优先级改为“总伤害优先”
   const score = combat.totalDamage
   return { analysis, metrics, valueSynergy, usage, combat, score }
+}
+
+function isOpponentSectionLike(v: string): boolean {
+  return /opponent/i.test(String(v || ''))
+}
+
+function hasSelfRandomTargetRule(cards: PlacedCard[]): boolean {
+  for (const c of cards) {
+    const raw = resolveRawItem(c.item)
+    const rows = [
+      ...(Array.isArray(raw?.abilities_detail) ? raw.abilities_detail : []),
+      ...(Array.isArray(raw?.auras_detail) ? raw.auras_detail : []),
+    ]
+    for (const row of rows) {
+      const target = row?.action?.target || {}
+      const targetType = String(target?.type || '')
+      const section = String(target?.TargetSection || target?.targetSection || '')
+      if (targetType === 'TTargetCardRandom' && !isOpponentSectionLike(section)) return true
+    }
+  }
+  return false
+}
+
+function aggregateCombatSummaries(summaries: CombatSummary[], durationSec: number): CombatSummary {
+  const n = Math.max(1, summaries.length)
+  const sumMap = (getter: (s: CombatSummary) => Record<string, number>) => {
+    const out = new Map<string, number>()
+    for (const s of summaries) {
+      const rec = getter(s) || {}
+      for (const [k, v] of Object.entries(rec)) out.set(k, (out.get(k) || 0) + Number(v || 0))
+    }
+    const obj: Record<string, number> = {}
+    out.forEach((v, k) => { obj[k] = v / n })
+    return obj
+  }
+  const maxCurveLen = summaries.reduce((m, s) => Math.max(m, s.cumulativeDamageBySecond.length), 0)
+  const avgCurve: number[] = Array.from({ length: maxCurveLen }, (_, i) => {
+    let acc = 0
+    for (const s of summaries) acc += Number(s.cumulativeDamageBySecond[i] || 0)
+    return acc / n
+  })
+  const totalDamageList = summaries.map((s) => Number(s.totalDamage || 0))
+  const totalDamageMin = Math.min(...totalDamageList)
+  const totalDamageMax = Math.max(...totalDamageList)
+  const totalDamageAvg = totalDamageList.reduce((a, b) => a + b, 0) / n
+
+  return {
+    durationSec,
+    totalUses: summaries.reduce((a, s) => a + Number(s.totalUses || 0), 0) / n,
+    byCard: sumMap((s) => s.byCard),
+    totalDamage: totalDamageAvg,
+    totalBurnApplied: summaries.reduce((a, s) => a + Number(s.totalBurnApplied || 0), 0) / n,
+    totalPoisonApplied: summaries.reduce((a, s) => a + Number(s.totalPoisonApplied || 0), 0) / n,
+    totalBurnTickDamage: summaries.reduce((a, s) => a + Number(s.totalBurnTickDamage || 0), 0) / n,
+    totalPoisonTickDamage: summaries.reduce((a, s) => a + Number(s.totalPoisonTickDamage || 0), 0) / n,
+    randomTrials: n,
+    totalDamageMin,
+    totalDamageMax,
+    totalDamageAvg,
+    totalShield: summaries.reduce((a, s) => a + Number(s.totalShield || 0), 0) / n,
+    byCardDamage: sumMap((s) => s.byCardDamage),
+    byCardBurn: sumMap((s) => s.byCardBurn),
+    byCardPoison: sumMap((s) => s.byCardPoison),
+    byCardShield: sumMap((s) => s.byCardShield),
+    cumulativeDamageBySecond: avgCurve,
+    debugTimeline: summaries[0]?.debugTimeline || [],
+  }
 }
 
 function normalizeSequentialLayout(cards: PlacedCard[], capacityUnits = MAX_UNITS): PlacedCard[] {
@@ -2465,6 +3641,77 @@ function normalizeSequentialLayout(cards: PlacedCard[], capacityUnits = MAX_UNIT
     cursor += c.width
   }
   return out
+}
+
+function enumeratePermutations<T>(arr: T[], onVisit: (perm: T[]) => void) {
+  const a = arr.slice()
+  const used = new Array(a.length).fill(false)
+  const path: T[] = []
+  const dfs = () => {
+    if (path.length === a.length) {
+      onVisit(path.slice())
+      return
+    }
+    for (let i = 0; i < a.length; i += 1) {
+      if (used[i]) continue
+      used[i] = true
+      path.push(a[i])
+      dfs()
+      path.pop()
+      used[i] = false
+    }
+  }
+  dfs()
+}
+
+function buildGlobalMainCandidates(
+  mainCards: PlacedCard[],
+  reserveCards: PlacedCard[],
+  windowSec: number,
+  capacityUnits = MAX_UNITS,
+): PlacedCard[][] {
+  const allMap = new Map<string, PlacedCard>()
+  for (const c of [...mainCards, ...reserveCards]) {
+    if (!allMap.has(c.placementId)) allMap.set(c.placementId, c)
+  }
+  const all = Array.from(allMap.values())
+  if (!all.length) return []
+
+  const totalWidth = all.reduce((s, c) => s + c.width, 0)
+  const exactCandidateLimit = 8
+
+  // 小规模可精确搜索：结果不受初始摆法影响，可视作全局最优。
+  if (all.length <= exactCandidateLimit && totalWidth <= capacityUnits) {
+    const scored: Array<{ cards: PlacedCard[]; dmg: number }> = []
+    enumeratePermutations(all, (perm) => {
+      const packed = normalizeSequentialLayout(perm, capacityUnits)
+      const dmg = scoreLayout(packed, windowSec).combat.totalDamage
+      scored.push({ cards: packed, dmg })
+    })
+    scored.sort((a, b) => b.dmg - a.dmg)
+    const uniq = new Map<string, PlacedCard[]>()
+    for (const s of scored) {
+      const sig = layoutSignature(s.cards)
+      if (!uniq.has(sig)) uniq.set(sig, s.cards)
+      if (uniq.size >= 64) break
+    }
+    return Array.from(uniq.values())
+  }
+
+  const pools = buildOptimizationPools(mainCards, reserveCards, windowSec, capacityUnits)
+  const candidateMap = new Map<string, PlacedCard[]>()
+  for (const p of pools) {
+    const packed = compactOrderLayout(p, capacityUnits)
+    if (!packed || !packed.length) continue
+    candidateMap.set(layoutSignature(packed), packed)
+    const local = suggestTop(p, 8, windowSec, capacityUnits, { opponentActiveCount: 7 })
+    for (const s of local) {
+      const pp = compactOrderLayout(s.next, capacityUnits)
+      if (!pp || !pp.length) continue
+      candidateMap.set(layoutSignature(pp), pp)
+    }
+  }
+  return Array.from(candidateMap.values()).slice(0, 96)
 }
 
 function buildOptimizationPools(mainCards: PlacedCard[], reserveCards: PlacedCard[], windowSec: number, capacityUnits = MAX_UNITS): PlacedCard[][] {
@@ -2537,11 +3784,17 @@ function buildOptimizationPools(mainCards: PlacedCard[], reserveCards: PlacedCar
   return Array.from(pools.values()).slice(0, 8)
 }
 
-function suggestTop(cards: PlacedCard[], limit = 5, windowSec = 20, capacityUnits = MAX_UNITS): SuggestionCandidate[] {
+function suggestTop(
+  cards: PlacedCard[],
+  limit = 5,
+  windowSec = 20,
+  capacityUnits = MAX_UNITS,
+  options?: { opponentActiveCount?: number },
+): SuggestionCandidate[] {
   const normalizedBase = compactOrderLayout(cards, capacityUnits)
   if (!normalizedBase || normalizedBase.length <= 1) return []
 
-  const base = scoreLayout(normalizedBase, windowSec)
+  const base = scoreLayout(normalizedBase, windowSec, options)
   const candidateMap = new Map<string, { next: PlacedCard[]; score: number; analysis: Analysis; metrics: NetworkMetrics; usage: UseCountSummary; combat: CombatSummary }>()
   const orderBase = normalizedBase.slice().sort((a, b) => a.start - b.start)
 
@@ -2549,7 +3802,7 @@ function suggestTop(cards: PlacedCard[], limit = 5, windowSec = 20, capacityUnit
     const compact = compactOrderLayout(order, capacityUnits)
     if (!compact || compact.length !== normalizedBase.length) return
     const sig = layoutSignature(compact)
-    const scored = scoreLayout(compact, windowSec)
+    const scored = scoreLayout(compact, windowSec, options)
     const prev = candidateMap.get(sig)
     if (!prev || scored.score > prev.score) {
       candidateMap.set(sig, { next: compact, score: scored.score, analysis: scored.analysis, metrics: scored.metrics, usage: scored.usage, combat: scored.combat })
@@ -2680,7 +3933,7 @@ function suggestTop(cards: PlacedCard[], limit = 5, windowSec = 20, capacityUnit
 function simulateCoreTimeline(cards: PlacedCard[]): CoreTimelineSummary {
   const durationSec = 30
   const epsilon = 1e-6
-  const activeCards = cards.filter((c) => getCardCooldownSec(c) > 0)
+  const activeCards = cards.filter((c) => getCardCooldownSec(c, cards) > 0)
   if (activeCards.length === 0) {
     return {
       durationSec,
@@ -2945,7 +4198,7 @@ function simulateCoreContributions(
 ): LayoutCoreContribution {
   const durationSec = 30
   const epsilon = 1e-6
-  const activeCards = cards.filter((c) => getCardCooldownSec(c) > 0)
+  const activeCards = cards.filter((c) => getCardCooldownSec(c, cards) > 0)
   const coreCards = cards.filter((c) => matchesCardTags(c, ['Core'], []))
   const targetUses = Math.max(1, Math.min(20, Math.floor(maxUses || 3)))
   if (activeCards.length === 0 || coreCards.length === 0) {
@@ -3182,9 +4435,11 @@ function simulateCoreContributions(
 export default function JibaoWorkbench({
   onSelectItem,
   itemsPool = [],
+  supportSummary = null,
 }: {
   onSelectItem: (item: any) => void
   itemsPool?: LabItem[]
+  supportSummary?: RuleSupportSummary | null
 }) {
   const [cards, setCards] = useState<PlacedCard[]>([])
   const [reserveCards, setReserveCards] = useState<PlacedCard[]>([])
@@ -3196,10 +4451,33 @@ export default function JibaoWorkbench({
   const [suggestCollapsed, setSuggestCollapsed] = useState(false)
   const [simSeconds, setSimSeconds] = useState(20)
   const [simSecondsDraft, setSimSecondsDraft] = useState(20)
+  const [calcMode, setCalcMode] = useState<CalcMode>('seconds')
+  const [targetDamageDraft, setTargetDamageDraft] = useState(1000)
+  const [targetDamageInput, setTargetDamageInput] = useState('1000')
   const [boardScale, setBoardScale] = useState(1.6)
   const [slotMode, setSlotMode] = useState<SlotMode>(10)
   const [isCalculating, setIsCalculating] = useState(false)
+  const [calcProgress, setCalcProgress] = useState(0)
+  const [calcProgressLabel, setCalcProgressLabel] = useState('')
   const [autoOptimizeNote, setAutoOptimizeNote] = useState('')
+  const [showSupportPanel, setShowSupportPanel] = useState(false)
+  const [opponentCooldownItems, setOpponentCooldownItems] = useState(7)
+  useEffect(() => {
+    if (calcMode === 'target-damage' && !targetDamageInput) {
+      setTargetDamageInput(String(targetDamageDraft || 1000))
+    }
+  }, [calcMode, targetDamageDraft, targetDamageInput])
+  const waitFrame = useCallback(
+    () =>
+      new Promise<void>((resolve) => {
+        if (typeof window === 'undefined' || typeof window.requestAnimationFrame !== 'function') {
+          window.setTimeout(() => resolve(), 0)
+          return
+        }
+        window.requestAnimationFrame(() => resolve())
+      }),
+    [],
+  )
   const boardRef = useRef<HTMLDivElement | null>(null)
   const reserveBoardRef = useRef<HTMLDivElement | null>(null)
   const nativeMainCleanupRef = useRef<(() => void) | null>(null)
@@ -3220,17 +4498,44 @@ export default function JibaoWorkbench({
   useEffect(() => { reserveCardsRef.current = reserveCards }, [reserveCards])
   useEffect(() => { previewRef.current = preview }, [preview])
   useEffect(() => { reservePreviewRef.current = reservePreview }, [reservePreview])
-  const buildCalcResult = (mainCards: PlacedCard[], reserve: PlacedCard[], sec: number): WorkbenchCalcResult => {
+  const buildCalcResult = (
+    mainCards: PlacedCard[],
+    reserve: PlacedCard[],
+    sec: number,
+    options?: { skipSuggestions?: boolean; stopAtDamage?: number },
+  ): WorkbenchCalcResult => {
     const analysis = analyze(mainCards)
-    const combatCurrent = simulateCombatStats(mainCards, sec)
+    const combatCurrent = simulateCombatStats(mainCards, sec, {
+      stopAtDamage: options?.stopAtDamage,
+      opponentActiveCount: opponentCooldownItems,
+    })
     const cycles = analyzeCycles(mainCards, analysis.links)
+    if (options?.skipSuggestions) {
+      return {
+        simSeconds: sec,
+        analysis,
+        combatCurrent,
+        cycles,
+        suggestions: [],
+        chartLayouts: [
+          {
+            id: 'current',
+            label: '当前摆法',
+            color: '#ffd447',
+            curve: combatCurrent.cumulativeDamageBySecond,
+            totalDamage: combatCurrent.totalDamage,
+          },
+        ],
+        optimizationBaseLen: mainCards.length,
+      }
+    }
     const optimizationPools = buildOptimizationPools(mainCards, reserve, sec, enabledUnits)
     const optimizationBase =
       optimizationPools.length > 0 ? optimizationPools[0] : (mainCards.length > 0 ? mainCards : [])
     const merged = new Map<string, SuggestionCandidate>()
     const localPools = optimizationPools.length > 0 ? optimizationPools : (mainCards.length > 0 ? [mainCards] : [])
     for (const pool of localPools) {
-      const local = suggestTop(pool, 5, sec, enabledUnits)
+      const local = suggestTop(pool, 5, sec, enabledUnits, { opponentActiveCount: opponentCooldownItems })
       for (const s of local) {
         const prev = merged.get(s.id)
         if (
@@ -3296,6 +4601,18 @@ export default function JibaoWorkbench({
   const renderCards = preview || suggestionPreview || cards
   const renderReserveCards = reservePreview || reserveCards
   const combatDisplay = calc.combatCurrent
+  const useTimelineHalfSec = useMemo(() => {
+    const useEvents = combatDisplay.debugTimeline.filter((x) => x.kind === 'use')
+    const bucket = new Map<number, string[]>()
+    for (const e of useEvents) {
+      const key = Math.round((e.time + 1e-6) * 2) / 2
+      if (!bucket.has(key)) bucket.set(key, [])
+      bucket.get(key)!.push(e.source)
+    }
+    return Array.from(bucket.entries())
+      .sort((a, b) => a[0] - b[0])
+      .map(([time, list]) => ({ time, list }))
+  }, [combatDisplay.debugTimeline])
 
   const commit = (next: PlacedCard[]) => {
     const sorted = compactByOrder(next, slotMask)
@@ -3315,21 +4632,23 @@ export default function JibaoWorkbench({
   }
 
   const applyExample1 = () => {
-    const { cards: demoCards, missing } = buildExample1Cards(itemsPool)
+    const { cards: demoCards, missing } = buildExampleCards(itemsPool, EXAMPLE_1_ORDER, 10, 'example1-main')
+    const { cards: reserveDemoCards, missing: reserveMissing } = buildExampleCards(itemsPool, EXAMPLE_1_RESERVE_ORDER, 10, 'example1-reserve')
     if (!demoCards.length) {
       window.alert('全能核示例摆放失败：当前物品库中未找到示例卡牌。')
       return
     }
-    setSlotMode(8)
+    setSlotMode(10)
     commit(demoCards)
-    setReserveCards([])
+    setReserveCards(reserveDemoCards)
     setPreview(null)
     setReservePreview(null)
     setSuggestPreviewId(null)
     setSelectedId(demoCards[0]?.placementId || null)
     if (demoCards[0]) onSelectItem(demoCards[0].item)
-    if (missing.length > 0) {
-      window.alert(`全能核示例已摆放，但缺少以下卡牌：${missing.join('、')}`)
+    const allMissing = [...missing, ...reserveMissing]
+    if (allMissing.length > 0) {
+      window.alert(`全能核示例已摆放，但缺少以下卡牌：${allMissing.join('、')}`)
     }
   }
 
@@ -3348,40 +4667,307 @@ export default function JibaoWorkbench({
   }
 
   const requestCalculate = () => {
-    const nextSeconds = Math.max(1, Math.min(90, Math.floor(Number(simSecondsDraft) || 1)))
-    setSimSecondsDraft(nextSeconds)
-    setSimSeconds(nextSeconds)
+    const baseSeconds = Math.max(1, Math.min(90, Math.floor(Number(simSecondsDraft) || 1)))
+    const parsedTargetDamage = Math.max(1, Math.floor(Number(targetDamageInput) || 0))
+    setSimSecondsDraft(baseSeconds)
+    if (calcMode === 'target-damage') {
+      setTargetDamageDraft(parsedTargetDamage)
+      setTargetDamageInput(String(parsedTargetDamage))
+    }
     setAutoOptimizeNote('')
     const snapshotMain = cards.map((c) => ({ ...c }))
     const snapshotReserve = reserveCards.map((c) => ({ ...c }))
     setIsCalculating(true)
-    window.setTimeout(() => {
+    setCalcProgress(6)
+    setCalcProgressLabel(calcMode === 'target-damage' ? '正在定伤求时…' : '正在计算伤害…')
+    const t0 = (typeof performance !== 'undefined' ? performance.now() : Date.now())
+    const progressTimer = window.setInterval(() => {
+      setCalcProgress((prev) => (prev >= 88 ? prev : prev + 4))
+    }, 90)
+    window.setTimeout(async () => {
       try {
-        const next = buildCalcResult(snapshotMain, snapshotReserve, nextSeconds)
+        let nextSeconds = baseSeconds
+        if (calcMode === 'target-damage') {
+          setCalcProgress(18)
+          setCalcProgressLabel('正在定伤求时：准备模拟…')
+          await waitFrame()
+          const targetDamage = parsedTargetDamage
+          // 单次前推模拟：一次跑到 90 秒（支持提前停止），再从累计伤害曲线找首次达标秒数。
+          setCalcProgress(42)
+          setCalcProgressLabel('正在定伤求时：运行模拟…')
+          await waitFrame()
+          const full = buildCalcResult(snapshotMain, snapshotReserve, 90, {
+            skipSuggestions: true,
+            stopAtDamage: targetDamage,
+          })
+          setCalcProgress(74)
+          setCalcProgressLabel('正在定伤求时：解析结果…')
+          await waitFrame()
+          const curve = Array.isArray(full.combatCurrent.cumulativeDamageBySecond)
+            ? full.combatCurrent.cumulativeDamageBySecond
+            : []
+          const firstHit = curve.findIndex((v) => Number(v || 0) >= targetDamage)
+
+          if (firstHit >= 0) {
+            nextSeconds = Math.max(1, Math.min(90, firstHit))
+            setSimSeconds(nextSeconds)
+            setSimSecondsDraft(nextSeconds)
+            // 定伤模式展示“命中秒数”的实际结果，而不是 90 秒全量结果。
+            const hit = buildCalcResult(snapshotMain, snapshotReserve, nextSeconds, { skipSuggestions: true })
+            setCalc(hit)
+            setCalcProgress(96)
+            const elapsed = (typeof performance !== 'undefined' ? performance.now() : Date.now()) - t0
+            setAutoOptimizeNote(`达到 ${targetDamage.toFixed(1)} 伤害约需 ${nextSeconds} 秒（计算耗时 ${(elapsed / 1000).toFixed(2)}s）`)
+            return
+          }
+
+          setSimSeconds(90)
+          setSimSecondsDraft(90)
+          setCalc(full)
+          setCalcProgress(96)
+          const elapsed = (typeof performance !== 'undefined' ? performance.now() : Date.now()) - t0
+          setAutoOptimizeNote(`90 秒内未达到 ${targetDamage.toFixed(1)} 伤害（当前 ${full.combatCurrent.totalDamage.toFixed(1)}，耗时 ${(elapsed / 1000).toFixed(2)}s）`)
+          return
+        }
+        setCalcProgress(24)
+        setCalcProgressLabel('正在计算伤害：准备模拟…')
+        await waitFrame()
+        setSimSeconds(nextSeconds)
+        setCalcProgress(52)
+        setCalcProgressLabel('正在计算伤害：运行模拟…')
+        await waitFrame()
+        const next = buildCalcResult(snapshotMain, snapshotReserve, nextSeconds, { skipSuggestions: true })
+        setCalcProgress(86)
+        setCalcProgressLabel('正在计算伤害：整理结果…')
+        await waitFrame()
         setCalc(next)
+        setCalcProgress(96)
+        const elapsed = (typeof performance !== 'undefined' ? performance.now() : Date.now()) - t0
+        setAutoOptimizeNote(`伤害计算完成（当前摆法，耗时 ${(elapsed / 1000).toFixed(2)}s）`)
       } finally {
+        window.clearInterval(progressTimer)
+        setCalcProgress(100)
         setIsCalculating(false)
+        window.setTimeout(() => {
+          setCalcProgress(0)
+          setCalcProgressLabel('')
+        }, 180)
+      }
+    }, 16)
+  }
+
+  const requestSuggestLayouts = () => {
+    const nextSeconds = Math.max(1, Math.min(90, Math.floor(Number(simSecondsDraft) || simSeconds || 1)))
+    const snapshotMain = cards.map((c) => ({ ...c }))
+    const snapshotReserve = reserveCards.map((c) => ({ ...c }))
+    setIsCalculating(true)
+    setCalcProgress(10)
+    setCalcProgressLabel('正在生成推荐摆法…')
+    const t0 = (typeof performance !== 'undefined' ? performance.now() : Date.now())
+    window.setTimeout(async () => {
+      try {
+        setSimSeconds(nextSeconds)
+        await waitFrame()
+        const base = buildCalcResult(snapshotMain, snapshotReserve, nextSeconds, { skipSuggestions: true })
+        setCalc(base)
+
+        const optimizationPools = buildOptimizationPools(snapshotMain, snapshotReserve, nextSeconds, enabledUnits)
+        const optimizationBase =
+          optimizationPools.length > 0 ? optimizationPools[0] : (snapshotMain.length > 0 ? snapshotMain : [])
+        const merged = new Map<string, SuggestionCandidate>()
+        const localPools = optimizationPools.length > 0 ? optimizationPools : (snapshotMain.length > 0 ? [snapshotMain] : [])
+        const totalPools = Math.max(1, localPools.length)
+        setCalcProgress(22)
+        await waitFrame()
+
+        for (let i = 0; i < localPools.length; i += 1) {
+          const local = suggestTop(localPools[i], 5, nextSeconds, enabledUnits, { opponentActiveCount: opponentCooldownItems })
+          for (const s of local) {
+            const prev = merged.get(s.id)
+            if (
+              !prev ||
+              s.totalDamage > prev.totalDamage ||
+              (Math.abs(s.totalDamage - prev.totalDamage) <= 1e-6 && s.totalShield > prev.totalShield)
+            ) {
+              merged.set(s.id, s)
+            } else if (prev && s.totalDamage === prev.totalDamage && s.totalShield === prev.totalShield) {
+              merged.set(s.id, {
+                ...prev,
+                championSeconds: Array.from(new Set([...(prev.championSeconds || []), ...(s.championSeconds || [])])).sort((a, b) => a - b),
+              })
+            }
+          }
+          const done = i + 1
+          setCalcProgress(22 + Math.floor((done / totalPools) * 70))
+          setCalcProgressLabel(`正在评估候选摆法（${done}/${totalPools}）…`)
+          await waitFrame()
+        }
+
+        const suggestions = Array.from(merged.values())
+          .sort((a, b) => b.totalDamage - a.totalDamage || b.totalShield - a.totalShield || b.totalUses - a.totalUses)
+          .slice(0, 5)
+          .map((x, idx) => ({
+            ...x,
+            rank: idx + 1,
+            damageGain: x.totalDamage - base.combatCurrent.totalDamage,
+          }))
+        const palette = ['#ff6b6b', '#4fc3f7', '#81c784', '#ba68c8', '#ffb74d', '#64ffda']
+        const chartLayouts: Array<{ id: string; label: string; color: string; curve: number[]; totalDamage: number }> = [
+          {
+            id: 'current',
+            label: '当前摆法',
+            color: '#ffd447',
+            curve: base.combatCurrent.cumulativeDamageBySecond,
+            totalDamage: base.combatCurrent.totalDamage,
+          },
+          ...suggestions.map((s, idx) => ({
+            id: s.id,
+            label: `方案${s.rank}`,
+            color: palette[idx % palette.length],
+            curve: s.curve,
+            totalDamage: s.totalDamage,
+          })),
+        ]
+        setCalc({
+          ...base,
+          suggestions,
+          chartLayouts,
+          optimizationBaseLen: optimizationBase.length,
+        })
+        setCalcProgress(96)
+        const elapsed = (typeof performance !== 'undefined' ? performance.now() : Date.now()) - t0
+        setAutoOptimizeNote(`推荐摆法已生成（耗时 ${(elapsed / 1000).toFixed(2)}s）`)
+      } finally {
+        setCalcProgress(100)
+        setIsCalculating(false)
+        window.setTimeout(() => {
+          setCalcProgress(0)
+          setCalcProgressLabel('')
+        }, 180)
       }
     }, 16)
   }
 
   const requestAutoOptimize = () => {
-    const nextSeconds = Math.max(1, Math.min(90, Math.floor(Number(simSecondsDraft) || 1)))
+    const nextSeconds =
+      calcMode === 'target-damage'
+        ? Math.max(1, Math.min(90, Math.floor(Number(simSeconds) || 1)))
+        : Math.max(1, Math.min(90, Math.floor(Number(simSecondsDraft) || 1)))
     setSimSecondsDraft(nextSeconds)
     setSimSeconds(nextSeconds)
     const initialMain = cards.map((c) => ({ ...c }))
     const initialReserve = reserveCards.map((c) => ({ ...c }))
     setIsCalculating(true)
-    window.setTimeout(() => {
+    setCalcProgress(8)
+    setCalcProgressLabel(calcMode === 'target-damage' ? '正在搜索最快达标摆法…' : '正在搜索最优摆法…')
+    const t0 = (typeof performance !== 'undefined' ? performance.now() : Date.now())
+    const progressTimer = window.setInterval(() => {
+      setCalcProgress((prev) => (prev >= 92 ? prev : prev + 2))
+    }, 120)
+    window.setTimeout(async () => {
       try {
+        if (calcMode === 'target-damage') {
+          const targetDamage = Math.max(1, Number(targetDamageDraft) || 1)
+          setCalcProgress(18)
+          setCalcProgressLabel('正在生成候选摆法…')
+          await waitFrame()
+
+          const baseMainPacked = compactByOrder(initialMain, slotMask)
+          const candidates = buildGlobalMainCandidates(initialMain, initialReserve, Math.max(10, nextSeconds), enabledUnits)
+          if (!candidates.some((x) => layoutSignature(x) === layoutSignature(baseMainPacked))) {
+            candidates.unshift(baseMainPacked)
+          }
+          if (!candidates.length) {
+            const fallback = buildCalcResult(initialMain, initialReserve, nextSeconds)
+            setCalc(fallback)
+            setAutoOptimizeNote('未生成候选方案，保持当前摆法')
+            return
+          }
+
+          setCalcProgress(32)
+          setCalcProgressLabel(`正在评估 ${candidates.length} 个候选方案…`)
+          await waitFrame()
+
+          let bestMain = baseMainPacked
+          let bestReserve = compactByOrder(initialReserve, slotMask)
+          let bestHitSec = Number.POSITIVE_INFINITY
+          let bestDamageAtHit = -1
+          let bestFull: WorkbenchCalcResult | null = null
+
+          for (let i = 0; i < candidates.length; i += 1) {
+            const mainPacked = candidates[i]
+            const allMap = new Map<string, PlacedCard>()
+            for (const c of [...initialMain, ...initialReserve]) allMap.set(c.placementId, c)
+            const used = new Set(mainPacked.map((x) => x.placementId))
+            const reservePacked = compactByOrder(
+              Array.from(allMap.values()).filter((x) => !used.has(x.placementId)),
+              slotMask,
+            )
+
+            const quick = buildCalcResult(mainPacked, reservePacked, 90, {
+              skipSuggestions: true,
+              stopAtDamage: targetDamage,
+            })
+            const curve = quick.combatCurrent.cumulativeDamageBySecond || []
+            const hitIdx = curve.findIndex((v) => Number(v || 0) >= targetDamage)
+            const hitSec = hitIdx >= 0 ? Math.max(1, hitIdx) : Number.POSITIVE_INFINITY
+            const damageAtHit = hitIdx >= 0 ? Number(curve[hitIdx] || 0) : Number(quick.combatCurrent.totalDamage || 0)
+
+            if (
+              hitSec < bestHitSec ||
+              (hitSec === bestHitSec && damageAtHit > bestDamageAtHit)
+            ) {
+              bestHitSec = hitSec
+              bestDamageAtHit = damageAtHit
+              bestMain = mainPacked
+              bestReserve = reservePacked
+              bestFull = quick
+            }
+
+            const p = 32 + Math.floor(((i + 1) / candidates.length) * 58)
+            setCalcProgress(Math.max(32, Math.min(90, p)))
+            if ((i + 1) % 2 === 0) await waitFrame()
+          }
+
+          setCards(bestMain)
+          setReserveCards(bestReserve)
+          setPreview(null)
+          setReservePreview(null)
+          setSuggestPreviewId(null)
+
+          if (Number.isFinite(bestHitSec)) {
+            const finalSec = Math.max(1, Math.min(90, bestHitSec))
+            setSimSeconds(finalSec)
+            setSimSecondsDraft(finalSec)
+            // 使用目标秒数生成完整结果（含建议与图表），便于继续比较。
+            const finalResult = buildCalcResult(bestMain, bestReserve, finalSec)
+            setCalc(finalResult)
+            const elapsed = (typeof performance !== 'undefined' ? performance.now() : Date.now()) - t0
+            setAutoOptimizeNote(`最优方案已应用：达到 ${targetDamage.toFixed(1)} 伤害约需 ${finalSec} 秒（耗时 ${(elapsed / 1000).toFixed(2)}s）`)
+          } else {
+            const fallback = bestFull || buildCalcResult(bestMain, bestReserve, 90, { skipSuggestions: true })
+            setSimSeconds(90)
+            setSimSecondsDraft(90)
+            setCalc(buildCalcResult(bestMain, bestReserve, 90))
+            const elapsed = (typeof performance !== 'undefined' ? performance.now() : Date.now()) - t0
+            setAutoOptimizeNote(
+              `90 秒内无方案达到 ${targetDamage.toFixed(1)}（最优总伤害 ${fallback.combatCurrent.totalDamage.toFixed(1)}，耗时 ${(elapsed / 1000).toFixed(2)}s）`,
+            )
+          }
+          return
+        }
+
         const seen = new Set<string>()
-        const maxRounds = 16
+        const maxRounds = 8
         let rounds = 0
         let currentMain = initialMain
         let currentReserve = initialReserve
         let result = buildCalcResult(currentMain, currentReserve, nextSeconds)
         const initialDamage = result.combatCurrent.totalDamage
         const initialShield = result.combatCurrent.totalShield
+        setCalcProgress(22)
+        setCalcProgressLabel('正在迭代寻优…')
+        await waitFrame()
 
         while (rounds < maxRounds) {
           const sig = `${layoutSignature(compactByOrder(currentMain, slotMask))}||${layoutSignature(compactByOrder(currentReserve, slotMask))}`
@@ -3415,6 +5001,8 @@ export default function JibaoWorkbench({
           currentReserve = compactByOrder(leftOver, slotMask)
           result = buildCalcResult(currentMain, currentReserve, nextSeconds)
           rounds += 1
+          setCalcProgress(22 + Math.floor((rounds / maxRounds) * 66))
+          await waitFrame()
         }
 
         setCards(currentMain)
@@ -3429,13 +5017,20 @@ export default function JibaoWorkbench({
 
         const gain = result.combatCurrent.totalDamage - initialDamage
         const shieldGain = result.combatCurrent.totalShield - initialShield
+        const elapsed = (typeof performance !== 'undefined' ? performance.now() : Date.now()) - t0
         if (rounds > 0 && (gain > 1e-6 || shieldGain > 1e-6)) {
-          setAutoOptimizeNote(`自动寻优完成：迭代${rounds}轮，伤害 +${gain.toFixed(1)}，护盾 +${shieldGain.toFixed(1)}`)
+          setAutoOptimizeNote(`自动寻优完成：迭代${rounds}轮，伤害 +${gain.toFixed(1)}，护盾 +${shieldGain.toFixed(1)}（耗时 ${(elapsed / 1000).toFixed(2)}s）`)
         } else {
-          setAutoOptimizeNote('自动寻优完成：当前已接近最优，无更优方案')
+          setAutoOptimizeNote(`自动寻优完成：当前已接近最优，无更优方案（耗时 ${(elapsed / 1000).toFixed(2)}s）`)
         }
       } finally {
+        window.clearInterval(progressTimer)
+        setCalcProgress(100)
         setIsCalculating(false)
+        window.setTimeout(() => {
+          setCalcProgress(0)
+          setCalcProgressLabel('')
+        }, 180)
       }
     }, 16)
   }
@@ -3938,9 +5533,45 @@ export default function JibaoWorkbench({
             ))}
           </div>
           <button className={styles.applyBtn} onClick={applyExample1}>全能核示例</button>
+          <button className={styles.applyBtn} onClick={() => setShowSupportPanel((v) => !v)}>
+            已经支持的卡牌词条
+          </button>
           <button className={styles.clearBtn} onClick={() => { setCards([]); setReserveCards([]); setPreview(null); setReservePreview(null); setSelectedId(null) }}>清空</button>
         </div>
       </div>
+
+      {showSupportPanel ? (
+        <div className={styles.supportPanel}>
+          <div className={styles.supportStats}>
+            <span>总卡牌：<strong>{supportSummary?.totalCards ?? 0}</strong></span>
+            <span>完全支持：<strong className={styles.supportOk}>{supportSummary?.fullySupportedCards ?? 0}</strong></span>
+            <span>待支持：<strong className={styles.supportPending}>{supportSummary?.unsupportedCards ?? 0}</strong></span>
+          </div>
+          <div className={styles.supportBlock}>
+            <div className={styles.supportTitle}>已支持词条</div>
+            <div className={styles.supportTags}>
+              {(supportSummary?.supportedTokens || []).map((token) => (
+                <span key={token} className={styles.supportTag}>{token}</span>
+              ))}
+            </div>
+          </div>
+          <div className={styles.supportBlock}>
+            <div className={styles.supportTitle}>未支持词条（按出现次数）</div>
+            <div className={styles.unsupportedList}>
+              {(supportSummary?.unsupportedTokenCounts || []).length ? (
+                (supportSummary?.unsupportedTokenCounts || []).map((x) => (
+                  <div key={x.token} className={styles.unsupportedRow}>
+                    <span>{x.token}</span>
+                    <strong>{x.count}</strong>
+                  </div>
+                ))
+              ) : (
+                <div className={styles.supportEmpty}>暂无</div>
+              )}
+            </div>
+          </div>
+        </div>
+      ) : null}
 
       <LineupEditBoard
         title={`主阵容（最多${enabledUnits}格）`}
@@ -3957,6 +5588,8 @@ export default function JibaoWorkbench({
         useCountMap={combatDisplay.byCard}
         damageMap={combatDisplay.byCardDamage}
         shieldMap={combatDisplay.byCardShield}
+        burnMap={combatDisplay.byCardBurn}
+        poisonMap={combatDisplay.byCardPoison}
         enabledMask={slotMask}
         boardScale={boardScale}
       />
@@ -3978,24 +5611,121 @@ export default function JibaoWorkbench({
       />
 
       <div className={styles.statsRow}>
-        <div className={styles.statItem}>{simSeconds}秒总伤害：<strong>{calc.combatCurrent.totalDamage.toFixed(1)}</strong></div>
-        <div className={styles.statItem}>联合优化池：<strong>{calc.optimizationBaseLen}</strong> 张</div>
+        <div className={styles.modeTabs}>
+          <button
+            className={`${styles.modeTab} ${calcMode === 'seconds' ? styles.modeTabActive : ''}`}
+            onClick={() => setCalcMode('seconds')}
+          >
+            定时看伤害
+          </button>
+          <button
+            className={`${styles.modeTab} ${calcMode === 'target-damage' ? styles.modeTabActive : ''}`}
+            onClick={() => setCalcMode('target-damage')}
+          >
+            定伤看用时
+          </button>
+        </div>
         <div className={styles.useCtrl}>
-          <button className={styles.spinBtn} onClick={() => setSimSecondsDraft((v) => Math.max(1, v - 1))}>-</button>
+          <span className={styles.axisLabel}>对手冷却物品</span>
+          <button
+            className={styles.spinBtn}
+            onClick={() => setOpponentCooldownItems((v) => Math.max(0, v - 1))}
+          >
+            -
+          </button>
           <input
             className={styles.useInput}
             type="number"
-            min={1}
-            max={90}
-            value={simSecondsDraft}
+            min={0}
+            max={10}
+            value={opponentCooldownItems}
             onChange={(e) => {
-              const n = Number(e.target.value || 1)
-              setSimSecondsDraft(Math.max(1, Math.min(90, Number.isFinite(n) ? Math.floor(n) : 1)))
+              const raw = e.target.value
+              if (raw === '') return
+              const n = Math.floor(Number(raw))
+              if (!Number.isFinite(n)) return
+              setOpponentCooldownItems(Math.max(0, Math.min(10, n)))
             }}
           />
-          <button className={styles.spinBtn} onClick={() => setSimSecondsDraft((v) => Math.min(90, v + 1))}>+</button>
+          <button
+            className={styles.spinBtn}
+            onClick={() => setOpponentCooldownItems((v) => Math.min(10, v + 1))}
+          >
+            +
+          </button>
+        </div>
+        <div className={styles.statItem}>{simSeconds}秒总伤害：<strong>{calc.combatCurrent.totalDamage.toFixed(1)}</strong></div>
+        {Number(calc.combatCurrent.randomTrials || 0) > 1 ? (
+          <div className={styles.statItem}>
+            随机模拟（{calc.combatCurrent.randomTrials}次）：
+            <strong>
+              最低 {Number(calc.combatCurrent.totalDamageMin || 0).toFixed(1)}
+              {' / '}平均 {Number(calc.combatCurrent.totalDamageAvg || calc.combatCurrent.totalDamage || 0).toFixed(1)}
+              {' / '}最高 {Number(calc.combatCurrent.totalDamageMax || 0).toFixed(1)}
+            </strong>
+          </div>
+        ) : null}
+        <div className={styles.statItem}>{simSeconds}秒灼烧累计：<strong>{calc.combatCurrent.totalBurnApplied.toFixed(1)}</strong></div>
+        <div className={styles.statItem}>{simSeconds}秒剧毒累计：<strong>{calc.combatCurrent.totalPoisonApplied.toFixed(1)}</strong></div>
+        <div className={styles.statItem}>{simSeconds}秒剧毒伤害：<strong>{calc.combatCurrent.totalPoisonTickDamage.toFixed(1)}</strong></div>
+        <div className={styles.statItem}>联合优化池：<strong>{calc.optimizationBaseLen}</strong> 张</div>
+        <div className={styles.useCtrl}>
+          {calcMode === 'seconds' ? (
+            <>
+              <button className={styles.spinBtn} onClick={() => setSimSecondsDraft((v) => Math.max(1, v - 1))}>-</button>
+              <input
+                className={styles.useInput}
+                type="number"
+                min={1}
+                max={90}
+                value={simSecondsDraft}
+                onChange={(e) => {
+                  const n = Number(e.target.value || 1)
+                  setSimSecondsDraft(Math.max(1, Math.min(90, Number.isFinite(n) ? Math.floor(n) : 1)))
+                }}
+              />
+              <button className={styles.spinBtn} onClick={() => setSimSecondsDraft((v) => Math.min(90, v + 1))}>+</button>
+            </>
+          ) : null}
+          {calcMode === 'target-damage' ? (
+            <>
+              <button
+                className={styles.spinBtn}
+                onClick={() => {
+                  const cur = Math.max(1, Math.floor(Number(targetDamageInput) || targetDamageDraft || 1))
+                  const next = Math.max(1, cur - 100)
+                  setTargetDamageDraft(next)
+                  setTargetDamageInput(String(next))
+                }}
+              >
+                -
+              </button>
+              <input
+                className={styles.useInput}
+                type="text"
+                inputMode="numeric"
+                value={targetDamageInput}
+                onChange={(e) => {
+                  const v = String(e.target.value || '')
+                  if (v === '' || /^\d+$/.test(v)) setTargetDamageInput(v)
+                }}
+                placeholder="目标伤害"
+              />
+              <button
+                className={styles.spinBtn}
+                onClick={() => {
+                  const cur = Math.max(1, Math.floor(Number(targetDamageInput) || targetDamageDraft || 1))
+                  const next = cur + 100
+                  setTargetDamageDraft(next)
+                  setTargetDamageInput(String(next))
+                }}
+              >
+                +
+              </button>
+            </>
+          ) : null}
           <button className={styles.applyBtn} onClick={requestCalculate}>计算伤害</button>
-          <button className={styles.applyBtn} onClick={requestAutoOptimize}>计算并应用最优方案</button>
+          <button className={styles.applyBtn} onClick={requestSuggestLayouts}>推荐摆法</button>
         </div>
       </div>
       {autoOptimizeNote ? <div className={styles.statItem}>{autoOptimizeNote}</div> : null}
@@ -4247,9 +5977,41 @@ export default function JibaoWorkbench({
         </div>
       </div>
 
+      <div className={styles.listBox}>
+        <div className={styles.listTitle}>出手时间轴（每0.5秒）</div>
+        {useTimelineHalfSec.length === 0 ? (
+          <div className={styles.empty}>暂无事件</div>
+        ) : (
+          useTimelineHalfSec.slice(0, 240).map((e, idx) => (
+            <div key={`use-half-${idx}`} className={styles.lineItem}>
+              [{e.time.toFixed(1)}s] {e.list.join('，')}
+            </div>
+          ))
+        )}
+      </div>
+
+      <div className={styles.listBox}>
+        <div className={styles.listTitle}>调试明细（触发/充能/灼烧）</div>
+        {calc.combatCurrent.debugTimeline.length === 0 ? (
+          <div className={styles.empty}>暂无事件</div>
+        ) : (
+          calc.combatCurrent.debugTimeline.slice(0, 240).map((e, idx) => (
+            <div key={`dbg-${idx}`} className={styles.lineItem}>
+              [{e.time.toFixed(1)}s] {e.source}{e.target ? ` -> ${e.target}` : ''} · {e.note || e.kind}
+            </div>
+          ))
+        )}
+      </div>
+
       {isCalculating ? (
         <div className={styles.calculatingOverlay}>
-          <div className={styles.calculatingCard}>正在计算备选方案与伤害曲线，请稍候…</div>
+          <div className={styles.calculatingCard}>
+            <div className={styles.calculatingTitle}>{calcProgressLabel || '正在计算…'}</div>
+            <div className={styles.calculatingBar}>
+              <div className={styles.calculatingBarFill} style={{ width: `${Math.max(0, Math.min(100, calcProgress))}%` }} />
+            </div>
+            <div className={styles.calculatingHint}>{Math.round(calcProgress)}%</div>
+          </div>
         </div>
       ) : null}
     </div>

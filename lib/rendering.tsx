@@ -29,6 +29,7 @@ export const ENCHANT_COLORS: Record<string, string> = {
   "沉重": "var(--c-slow)",
   "寒冰": "var(--c-freeze)",
   "疾速": "var(--c-haste)",
+  "长青": "var(--c-heal)",
   "护盾": "var(--c-shield)",
   "回复": "var(--c-heal)",
   "毒素": "var(--c-poison)",
@@ -88,13 +89,24 @@ function interpolatePlaceholders(content: string, context?: any): string {
 
 function normalizeDurationInText(content: string): string {
   if (!content) return content
-  // Some sources use millisecond-scale numbers in Chinese "秒" phrases (e.g. 1000秒 -> 1秒).
-  return content.replace(/(\d+(?:\.\d+)?)\s*秒/g, (_, rawNum: string) => {
-    const n = Number(rawNum)
-    if (!Number.isFinite(n)) return `${rawNum}秒`
-    const sec = Math.abs(n) >= 100 ? n / 1000 : n
-    const s = Number(sec.toFixed(3)).toString()
-    return `${s}秒`
+  // Some sources store time-like numbers in milliseconds.
+  // Normalize both single values and slash sequences:
+  // - "1000秒" -> "1秒"
+  // - "1000/2000秒" -> "1/2秒"
+  // - "[1000/2000/3000]秒" -> "[1/2/3]秒"
+  return content.replace(/(\[?\d+(?:\.\d+)?(?:\/\d+(?:\.\d+)?)+\]?|\d+(?:\.\d+)?)\s*秒/g, (_, rawSeq: string) => {
+    const seq = String(rawSeq || '')
+    const leftBracket = seq.startsWith('[') ? '[' : ''
+    const rightBracket = seq.endsWith(']') ? ']' : ''
+    const body = seq.replace(/^\[/, '').replace(/\]$/, '')
+    const parts = body.split('/')
+    const normalized = parts.map((p) => {
+      const n = Number(p)
+      if (!Number.isFinite(n)) return p
+      const sec = Math.abs(n) >= 100 ? n / 1000 : n
+      return Number(sec.toFixed(3)).toString()
+    })
+    return `${leftBracket}${normalized.join('/')}${rightBracket}秒`
   })
 }
 

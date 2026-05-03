@@ -35,6 +35,7 @@ interface ItemsListProps {
   items: Item[]
   skills: any[]
   onSelectItem: (item: Item) => void
+  supportByItemId?: Record<string, boolean>
   enableBuildLookup?: boolean
   onLookupBuilds?: (item: Item) => void
   lookupFilterItem?: Item | null
@@ -54,6 +55,58 @@ const HERO_COLORS: Record<string, string> = {
   'Karnok': '#ffcd73',
 }
 
+function normalizeHeroPair(heroValue: any): { en: string; cn: string } {
+  if (typeof heroValue === 'string') {
+    const parts = heroValue.split(' / ').map((x) => x.trim()).filter(Boolean)
+    const en = parts[0] || 'Common'
+    const cn = parts[1] || en
+    return { en, cn }
+  }
+  if (Array.isArray(heroValue) && heroValue.length > 0) {
+    const first = heroValue[0]
+    if (typeof first === 'string') {
+      const parts = first.split(' / ').map((x) => x.trim()).filter(Boolean)
+      const en = parts[0] || first
+      const cn = parts[1] || en
+      return { en, cn }
+    }
+    if (first && typeof first === 'object') {
+      const en = String((first as any).en || (first as any).id || 'Common').trim() || 'Common'
+      const cn = String((first as any).cn || en).trim() || en
+      return { en, cn }
+    }
+  }
+  if (heroValue && typeof heroValue === 'object') {
+    const en = String((heroValue as any).en || (heroValue as any).id || 'Common').trim() || 'Common'
+    const cn = String((heroValue as any).cn || en).trim() || en
+    return { en, cn }
+  }
+  return { en: 'Common', cn: '通用' }
+}
+
+function extractHeroKeys(heroValue: any): string[] {
+  const out: string[] = []
+  const pushHero = (v: any) => {
+    if (typeof v === 'string') {
+      const parts = v.split(' / ').map((x) => x.trim()).filter(Boolean)
+      const en = parts[0] || v.trim()
+      if (en) out.push(en)
+      return
+    }
+    if (v && typeof v === 'object') {
+      const en = String((v as any).en || (v as any).id || '').trim()
+      if (en) out.push(en)
+    }
+  }
+  if (Array.isArray(heroValue)) {
+    heroValue.forEach(pushHero)
+  } else {
+    pushHero(heroValue)
+  }
+  const uniq = Array.from(new Set(out.map((x) => x.trim()).filter(Boolean)))
+  return uniq
+}
+
 const HERO_FILTER_OPTIONS = [
   { val: 'Pygmalien', label: '皮格马利翁', avatar: heroAvatarUrl('pygmalien') },
   { val: 'Jules', label: '朱尔斯', avatar: heroAvatarUrl('jules') },
@@ -69,11 +122,13 @@ export function ItemCard({
   onClick,
   isExpanded,
   sourceType,
+  isFullySupported,
 }: {
   item: Item
   onClick: () => void
   isExpanded: boolean
   sourceType: 'items' | 'skills'
+  isFullySupported?: boolean
 }) {
   const isLocalDebug = (() => {
     if (typeof window === 'undefined') return false
@@ -145,14 +200,11 @@ export function ItemCard({
   const tierLabel = tierNameZh[tierClass] || tierClass
   const sizeClass = (item.size || 'Medium').split(' / ')[0].toLowerCase()
   
-  // 处理 heroes 字段（可能是字符串或数组）
-  const heroesStr = typeof item.heroes === 'string' ? item.heroes : (Array.isArray(item.heroes) ? item.heroes[0] : '')
-  const heroKey = heroesStr ? heroesStr.split(' / ')[0].trim() : 'Common'
+  // 处理 heroes 字段（兼容字符串/数组/对象）
+  const heroPair = normalizeHeroPair(item.heroes)
+  const heroKey = heroPair.en
   const heroSlug = heroKey.toLowerCase()
-  // 技能英雄显示只要中文名（斜杠后的部分），没有就退回英文
-  const heroZh = heroesStr
-    ? (heroesStr.split(' / ')[1]?.trim() || heroesStr.split(' / ')[0].trim())
-    : '通用'
+  const heroZh = heroPair.cn || heroPair.en || '通用'
   const heroColor = HERO_COLORS[heroKey]
   const isCommon = !heroKey || heroSlug === 'common'
 
@@ -201,6 +253,7 @@ export function ItemCard({
 
         <div className={styles.cardRight}>
           <div className={styles.topRightGroup}>
+            {isFullySupported ? <span className={styles.supportedBadge} title="该卡牌当前词条已全部支持模拟">✅</span> : null}
             {isCommon ? (
               <span className={styles.heroBadge} style={{ color: heroColor }}>{heroZh}</span>
             ) : (
@@ -232,6 +285,7 @@ export default function ItemsList({
   items,
   skills,
   onSelectItem,
+  supportByItemId,
   enableBuildLookup = false,
   onLookupBuilds,
   lookupFilterItem = null,
@@ -380,15 +434,13 @@ export default function ItemsList({
 
     if (hero && hero !== 'Common') {
       result = result.filter((item: any) => {
-        const heroes = item.heroes || ''
-        const heroStr = typeof heroes === 'string' ? heroes : (Array.isArray(heroes) ? heroes.join(' ') : '')
-        return heroStr.includes(hero)
+        const heroKeys = extractHeroKeys(item.heroes)
+        return heroKeys.includes(hero)
       })
     } else if (hero === 'Common') {
       result = result.filter((item: any) => {
-        const heroes = item.heroes || ''
-        const heroStr = typeof heroes === 'string' ? heroes : (Array.isArray(heroes) ? heroes.join(' ') : '')
-        return !heroStr || heroStr === '' || heroStr.includes('Common') || heroStr.includes('通用')
+        const heroKeys = extractHeroKeys(item.heroes)
+        return heroKeys.length === 0 || heroKeys.includes('Common')
       })
     }
 
@@ -780,6 +832,7 @@ export default function ItemsList({
             key={item.id}
             item={item}
             sourceType={activeTab}
+            isFullySupported={activeTab === 'items' ? Boolean(supportByItemId?.[String(item?.id || '')]) : false}
             onClick={() => {
               toggleExpand(item.id)
               onSelectItem(item)

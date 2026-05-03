@@ -9,12 +9,14 @@ import ToolDetailPanel from '@/components/tools/ToolDetailPanel'
 import { itemsDbUrl, skillsDbUrl } from '@/lib/cdn'
 import { enrichItemsWithResolvedText, loadResolvedTextMap } from '@/lib/itemDataEnhancer'
 import JibaoWorkbench from '@/components/lab/JibaoWorkbench'
+import { buildRuleSupportSummary, type RuleSupportSummary } from '@/lib/ruleSupport'
 import styles from './page.module.css'
 
 export default function JibaoLabPage() {
   const [items, setItems] = useState<any[]>([])
   const [skills, setSkills] = useState<any[]>([])
   const [selectedItem, setSelectedItem] = useState<any>(null)
+  const [supportSummary, setSupportSummary] = useState<RuleSupportSummary | null>(null)
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
@@ -24,7 +26,7 @@ export default function JibaoLabPage() {
         const [itemsRes, skillsRes, rawRes, resolvedTextMap] = await Promise.all([
           fetch(itemsDbUrl()),
           fetch(skillsDbUrl()),
-          fetch('/resources/raw_exports/items_export_20260319_092219.json').catch(() => null),
+          fetch('/resources/raw_exports/items_export_latest.json').catch(() => null),
           loadResolvedTextMap(),
         ])
         const [itemsData, skillsData, rawData] = await Promise.all([
@@ -45,7 +47,10 @@ export default function JibaoLabPage() {
             .trim()
         const byNameCn = new Map<string, any>()
         const byNameEn = new Map<string, any>()
+        const byRawId = new Map<string, any>()
         for (const r of rawList) {
+          const rid = String(r?.id || '').trim().toLowerCase()
+          if (rid && !byRawId.has(rid)) byRawId.set(rid, r)
           const cn = normalizeName(r?.name_cn)
           const en = normalizeName(r?.name_en)
           if (cn && !byNameCn.has(cn)) byNameCn.set(cn, r)
@@ -55,7 +60,9 @@ export default function JibaoLabPage() {
         const mergedItems = normalizedItems.map((it: any) => {
           const cn = normalizeName(it?.name_cn)
           const en = normalizeName(it?.name_en)
-          let raw = byNameCn.get(cn) || byNameEn.get(en) || null
+          const id = String(it?.id || '').trim().toLowerCase()
+          const sourceKey = String(it?.source_key || '').trim().toLowerCase()
+          let raw = byRawId.get(id) || byRawId.get(sourceKey) || byNameCn.get(cn) || byNameEn.get(en) || null
           if (!raw) {
             raw =
               rawList.find((r: any) => {
@@ -69,10 +76,12 @@ export default function JibaoLabPage() {
 
         setItems(mergedItems)
         setSkills(normalizedSkills)
+        setSupportSummary(buildRuleSupportSummary(mergedItems))
       } catch {
         if (!mounted) return
         setItems([])
         setSkills([])
+        setSupportSummary(null)
       } finally {
         if (mounted) setLoading(false)
       }
@@ -98,10 +107,15 @@ export default function JibaoLabPage() {
         ) : (
           <div className={styles.layout}>
             <div className={styles.left}>
-              <ToolWikiPanel items={items} skills={skills} onSelectItem={setSelectedItem} />
+              <ToolWikiPanel
+                items={items}
+                skills={skills}
+                onSelectItem={setSelectedItem}
+                supportByItemId={supportSummary?.byCardId}
+              />
             </div>
             <div className={styles.middle}>
-              <JibaoWorkbench onSelectItem={setSelectedItem} itemsPool={items} />
+              <JibaoWorkbench onSelectItem={setSelectedItem} itemsPool={items} supportSummary={supportSummary} />
             </div>
             <div className={styles.right}>
               <ToolDetailPanel item={selectedItem} />

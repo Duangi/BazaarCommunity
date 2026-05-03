@@ -1,0 +1,122 @@
+# Dooley 未支持规则清单
+
+- 总未完全支持卡牌：77
+
+## 未支持 token 统计
+- TTargetCardRandom: 26
+- TCardConditionalAttribute: 23
+- TActionCardFlyingStart: 9
+- TTriggerOnCardPerformedBurn: 8
+- TTriggerOnCardPerformedSlow: 8
+- TActionCardDisable: 7
+- TTargetPlayerAbsolute: 7
+- TTriggerOnCardAttributeChanged: 6
+- TActionGameSpawnCards: 5
+- TCardConditionalCanCrit: 5
+- TTriggerOnBeforeItemUsed: 5
+- TTriggerOnCardPerformedFreeze: 5
+- TTriggerOnCardPerformedHaste: 5
+- TTriggerOnCardPerformedPoison: 4
+- TTriggerOnPlayerAttributeChanged: 4
+- TActionCardTransform: 3
+- TActionPlayerModifyAttribute: 3
+- TTriggerOnBeforeCardDestroyed: 3
+- TTriggerOnCardCritted: 3
+- TTriggerOnCardPerformedDestruction: 3
+- TTriggerOnCardSold: 3
+- TActionPlayerBurnRemove: 2
+- TTargetCardTriggerSource: 2
+- TTriggerOnCardPurchased: 2
+- TTriggerOnDayStarted: 2
+- TTriggerOnFightStarted: 2
+- TActionCardAddTagsBySource: 1
+- TActionCardFlyingStop: 1
+- TActionCardFlyingToggle: 1
+- TActionCardUpgrade: 1
+- TCardConditionalId: 1
+- TCardConditionalTier: 1
+- TCardConditionalTriggerSource: 1
+- TTargetPlayer: 1
+- TTriggerOnCardPerformedDamage: 1
+- TTriggerOnCardStoppedFlying: 1
+- TTriggerOnFightEnded: 1
+- TTriggerOnHourStarted: 1
+
+## 卡牌明细
+- 3D 打印机 (723880db-8a97-4833-a9a1-80c75cde4c17) => TActionCardTransform
+- 暴击核心 (a5fda359-ceb0-4b00-bcac-810c9cecef8e) => TCardConditionalCanCrit, TTriggerOnCardCritted
+- 贝拉机弩 (628cd703-f0c6-4c76-b5bd-72c8aebf5314) => TTriggerOnCardAttributeChanged, TTriggerOnCardPerformedHaste
+- 贝塔射线 (e7cc828b-4a2b-4207-9a6a-c955553c632d) => TTargetCardRandom
+- 冰霜9000 (1fbbefea-2da0-46a5-b60d-dad9478ade86) => TTargetCardRandom, TTriggerOnCardPerformedFreeze
+- 不稳定重力井 (5a1bad84-4b20-44b2-a218-dbe0e15b557a) => TActionCardDisable, TActionCardFlyingStart, TCardConditionalAttribute, TTargetCardRandom
+- 粗陋工具 (eb8e7853-6827-4577-b6d8-648d82d19864) => TTargetCardRandom
+- 大红按钮 (8eb91c44-0e07-4e89-8cad-dfe99b8ef443) => TCardConditionalAttribute
+- 氮气罐 (ae039b3e-ef98-4dc7-a97c-1e06d2627e57) => TTargetPlayer
+- 灯泡 (2e4c2528-f3e8-4743-a1c9-637012d9eb76) => TActionGameSpawnCards, TTargetPlayerAbsolute, TTriggerOnCardPurchased
+- 等离子步枪 (98f9fc74-145f-4d13-85bf-3229b9257aa0) => TTriggerOnCardPerformedBurn
+- 等容冷冻枪 (a5f3616b-ad8c-434a-89d0-311698061bd4) => TCardConditionalAttribute, TTargetCardRandom
+- 电钻 (63f124c0-f94c-4850-8522-215d2e72a815) => TTriggerOnCardPerformedBurn, TTriggerOnCardPerformedFreeze, TTriggerOnCardPerformedHaste, TTriggerOnCardPerformedPoison, TTriggerOnCardPerformedSlow
+- 动能加农炮 (c39f3c39-77d9-49ee-9850-400e7d5fe484) => TTargetCardRandom
+- 断路器 DJ (49f2d11c-6c2b-465f-a7f4-90315dee7670) => TActionGameSpawnCards, TCardConditionalAttribute, TTargetPlayerAbsolute, TTriggerOnCardPurchased
+- 多尔王 (41bc6bab-d7a6-42e4-9815-546de8640d4e) => TTriggerOnCardPerformedBurn, TTriggerOnCardPerformedFreeze, TTriggerOnCardPerformedHaste, TTriggerOnCardPerformedPoison, TTriggerOnCardPerformedSlow
+- 多尔王主机 (85fc3511-fd04-45ed-b273-e3dece9cd77f) => TCardConditionalAttribute, TCardConditionalId, TTargetCardRandom
+- 发射核心 (9fafc0a5-6675-4e17-9457-590f13354a39) => TActionCardFlyingStart, TCardConditionalAttribute, TTargetCardRandom, TTriggerOnBeforeItemUsed
+- 发射台 (36786fc4-eec6-420c-aa35-99087575ab97) => TActionCardFlyingStart, TCardConditionalAttribute, TTargetCardRandom, TTriggerOnBeforeItemUsed
+- 反物质舱 (405245d8-b81d-4015-8ed9-70e80f5eb980) => TActionCardDisable, TTargetCardRandom, TTriggerOnBeforeCardDestroyed
+- 防爆门 (26cd871b-5fc4-4b8a-a4cf-6d33d5462c22) => TCardConditionalAttribute, TTriggerOnPlayerAttributeChanged
+- 愤怒气球机器人 (84650135-9f2d-4ee6-b1e5-a011a256ce0d) => TTriggerOnPlayerAttributeChanged
+- 干扰箔 (a5e0c248-624f-41dc-a33d-df8761f65642) => TTriggerOnCardPerformedBurn
+- 光纤 (7d270d9f-9201-4e1a-9d66-467e11d4b5c1) => TCardConditionalAttribute, TCardConditionalTriggerSource
+- 哈姆锤特 (ab8a9c5e-3d2a-45e6-9d65-ddd0fdfdac01) => TTriggerOnCardPerformedSlow
+- 化学蜗牛 (0e02eed0-3d9b-4651-8ce8-a48ee1c59fdf) => TTriggerOnCardPerformedSlow
+- 机甲暴龙 (e1c287a8-4d9b-4ab4-899a-eb54d1446d6f) => TActionCardDisable, TTargetCardRandom
+- 机甲鼹鼠 (a99be8d9-006d-4c3d-8f79-cf3a8ea65bbd) => TTriggerOnCardAttributeChanged
+- 机能棒 (8bbfd341-660f-4b9f-9c95-2e40c7d05c1f) => TActionPlayerModifyAttribute, TTargetCardTriggerSource, TTargetPlayerAbsolute, TTriggerOnCardSold
+- 机器人工厂 (11a5306d-f114-4f8d-abcc-442c3a979317) => TCardConditionalAttribute
+- 机械黑蜘蛛 (f2bb81c1-926e-447b-89aa-8c981604570c) => TTriggerOnCardPerformedBurn, TTriggerOnCardPerformedPoison
+- 机械红焰萤 (d4c0cf1e-7856-4e40-877f-c77b34f596ed) => TTriggerOnCardPerformedHaste, TTriggerOnCardPerformedSlow
+- 机械黄螳螂 (55e65c01-8279-485d-9d63-79ec0c2129cb) => TTriggerOnCardPerformedBurn
+- 机械蓝甲虫 (5795875a-9917-46a6-9334-ee835e4caefc) => TTargetCardRandom, TTriggerOnCardPerformedPoison
+- 机械绿马蜂 (c7c21196-e41e-4569-a579-25826648cdc6) => TTriggerOnCardPerformedFreeze, TTriggerOnCardPerformedSlow
+- 加密货币 (2434460c-af35-4dde-a69f-1f8781c807d2) => TTriggerOnHourStarted
+- 监控摄像头 (acfdf9cc-6a8c-43ef-8b30-14f4843b2f28) => TCardConditionalCanCrit, TTriggerOnCardCritted
+- 结构蓝图 (f4827638-60ff-4101-a52f-037c04791ee5) => TActionGameSpawnCards, TTargetPlayerAbsolute, TTriggerOnPlayerAttributeChanged
+- 金属废料 (a167bf66-e29e-43d2-b30e-a480600c992d) => TActionCardUpgrade, TCardConditionalTier, TTriggerOnCardSold
+- 竞速卡尔 (3de8a2de-9ae9-4e68-ac2a-0987a7fa8717) => TTriggerOnCardPerformedHaste
+- 巨魔龙 (d89ab2c6-bd85-4e7e-b32e-95c242fa5358) => TActionCardDisable, TCardConditionalAttribute, TTargetCardRandom, TTriggerOnCardPerformedDestruction, TTriggerOnPlayerAttributeChanged
+- 空调皮埃尔 (ac596c59-295e-491f-8503-172b094e9773) => TTargetCardRandom
+- 恐龙鞍 (7fea16a0-0c57-40b5-8a5d-9daf96ef4c75) => TCardConditionalAttribute
+- 雷达模块 (25df28b6-1044-45a2-8b92-d89aeef40691) => TCardConditionalCanCrit
+- 冷却风扇 (a541c31d-7b4b-45f6-bceb-c9971f8b06b5) => TActionPlayerBurnRemove
+- 冷却剂 (d576f5e8-abfb-44cb-a777-be7cf714e02d) => TActionPlayerBurnRemove, TTargetCardRandom
+- 螺旋帽 (0e3d2e2c-0f2d-4150-b6d6-d1c688d7427c) => TActionCardFlyingStart, TTriggerOnBeforeItemUsed
+- 妈妈暴龙 (d06e3d7d-24a9-4fec-a9a4-55a710484382) => TActionCardDisable, TCardConditionalAttribute, TTargetCardRandom, TTriggerOnBeforeCardDestroyed
+- 内存卡 (566b5c63-4201-41d3-b6d5-0eb527db396a) => TCardConditionalCanCrit, TTriggerOnCardSold
+- 派对浮艇 (4b94516a-bdf7-4c9a-8317-17ac52ff2870) => TActionCardFlyingStart, TCardConditionalAttribute, TTargetCardRandom, TTriggerOnBeforeItemUsed
+- 气球机器人 (c9dd4c7b-d2c0-491a-95b6-d1a163e9d755) => TActionCardFlyingStart, TCardConditionalAttribute, TTargetCardRandom
+- 全息投影仪 (1d354dcf-8736-4bab-9dc1-7d9054d6c4d4) => TActionCardTransform, TTargetCardRandom, TTriggerOnFightStarted
+- 热能长枪 (2fd61ab1-d256-4d43-8691-c6f730b41c67) => TTriggerOnCardAttributeChanged
+- 弱点探测器 (fc2f0122-129b-41e8-942e-a6a10a1c5962) => TTriggerOnCardPerformedSlow
+- 时空穿梭机 (8659e6da-45a8-433b-8d91-35c0d2ccb912) => TActionGameSpawnCards, TTargetPlayerAbsolute, TTriggerOnDayStarted
+- 手锯 (d50bb808-14f8-4554-950d-d0630899ba85) => TActionCardTransform, TTargetCardRandom
+- 塔架 (0e66c016-9a8b-4aa0-8f01-b5a5fb739da4) => TTriggerOnCardPerformedSlow
+- 太阳能农场 (552247e1-74f8-4414-88bb-1b868f3f296d) => TTriggerOnCardPerformedBurn
+- 坦奇甲龙 (2aaf673d-b44d-4e50-95c2-939bedb07184) => TTriggerOnCardPerformedDamage
+- 特里翼龙 (c6cddb71-fa3a-43eb-8946-e71e139df8fa) => TActionCardFlyingToggle, TCardConditionalAttribute, TTriggerOnBeforeItemUsed, TTriggerOnCardStoppedFlying
+- 通讯卫星 (b3ab39e0-c40c-44e7-bda7-09cf9ad63ec9) => TActionGameSpawnCards, TCardConditionalAttribute, TTargetPlayerAbsolute, TTriggerOnDayStarted
+- 透镜 (71231a4d-4ba5-48ee-8d6d-4a533d08bebf) => TCardConditionalAttribute, TTriggerOnCardAttributeChanged
+- 推进器 (55ef5f5c-0ffc-4598-a6bd-66d8235da56a) => TActionCardFlyingStart, TCardConditionalAttribute, TTriggerOnFightStarted
+- 显示屏蜥蜴 (b263ef6f-02a9-449b-b9c5-74ec0e6cbfc9) => TTriggerOnCardAttributeChanged
+- 小黛暴龙 (59a494e4-66b2-4412-8934-dcf7d19585bf) => TActionCardDisable, TCardConditionalAttribute, TTargetCardRandom, TTriggerOnCardPerformedDestruction
+- 悬浮垫 (c2b6e584-b0b0-417d-92c6-e916ca55e3ae) => TActionCardFlyingStart
+- 悬浮科技 (f80077ce-aeaf-44ae-9d41-644774682081) => TActionCardFlyingStart, TActionCardFlyingStop, TCardConditionalAttribute, TCardConditionalCanCrit, TTargetCardRandom, TTargetCardTriggerSource, TTriggerOnCardCritted
+- 湮灭核心 (4b99310e-ea89-4324-89fe-d2649dfd8ff6) => TActionCardDisable, TTargetCardRandom, TTriggerOnCardPerformedDestruction
+- 掩体 (e923019b-fd40-487c-85af-edaa930095b8) => TCardConditionalAttribute
+- 焰碳体 (23960499-a306-44f3-bab4-8c901ff37dc3) => TTriggerOnCardPerformedBurn
+- 液氮锤 (bfb765fc-764c-4e16-aa17-0e10efda4b5b) => TTargetCardRandom, TTriggerOnCardPerformedFreeze
+- 液压机 (ad80a892-eddc-4856-9a62-9e8f305dd922) => TActionCardAddTagsBySource, TActionPlayerModifyAttribute, TTargetPlayerAbsolute, TTriggerOnBeforeCardDestroyed, TTriggerOnFightEnded
+- 饮水沃特 (1b518cd8-57d3-4747-8afa-3b99aae88e62) => TActionPlayerModifyAttribute
+- 原子钟 (86769097-271e-46ee-8d42-317c6d8a7a09) => TTargetCardRandom
+- 炸弹小队 (894df8d8-e6a5-4310-919e-7a6d85fc7e49) => TCardConditionalAttribute
+- 爪臂 (fec7b75b-980f-4744-b1c1-19ce00b117e8) => TTriggerOnCardAttributeChanged
+- Z-护盾 (e0420e4b-b53b-4b05-8074-1622200ca9ce) => TTargetCardRandom

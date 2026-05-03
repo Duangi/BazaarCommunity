@@ -577,6 +577,20 @@
   align-items: center;
 }
 
+.supportedBadge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  background: rgba(55, 180, 95, 0.18);
+  border: 1px solid rgba(76, 255, 132, 0.45);
+  box-shadow: 0 0 8px rgba(76, 255, 132, 0.22);
+  font-size: 12px;
+  line-height: 1;
+}
+
 .heroBadge {
   font-size: 12px;
   font-weight: 600;

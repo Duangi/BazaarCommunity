@@ -262,9 +262,12 @@ class ItemExtractor:
         
         if not candidates:
             raise FileNotFoundError("无法找到卡牌数据文件 (cards.json 或 v2_Cards.json)")
-        
-        # 选择最新的文件
-        best = max(candidates, key=lambda x: x[1].stat().st_mtime)
+
+        # 优先级：游戏(v2) > 游戏(cards) > 缓存(cards)
+        # 说明：缓存 cards.json 可能落后于游戏目录中的 v2_Cards.json，
+        # 为避免出现弱点探测器等数值回退，默认优先读取游戏文件。
+        priority = {'游戏(v2)': 3, '游戏': 2, '缓存': 1}
+        best = max(candidates, key=lambda x: (priority.get(x[0], 0), x[1].stat().st_mtime))
         print(f"[卡牌数据] 使用 {best[0]} 版本: {best[1]}")
         return best[1]
     
