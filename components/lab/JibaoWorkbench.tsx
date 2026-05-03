@@ -5119,6 +5119,25 @@ export default function JibaoWorkbench({
     }
   }
 
+  const buildDropDedupeKey = (board: BoardKey, payload: DragPayload | null | undefined, target: number) => {
+    const sourceType = String(payload?.sourceType || '')
+    const pid = String(payload?.placementId || '')
+    const iid = String(payload?.item?.id || '')
+    const width = Number(payload?.width || 0)
+    return `${board}|${sourceType}|${pid}|${iid}|${target}|${width}`
+  }
+
+  const shouldSkipDuplicateDrop = (key: string): boolean => {
+    if (typeof window === 'undefined') return false
+    const now = Date.now()
+    const prev = (window as any).__JIBAO_DROP_DEDUPE || null
+    if (prev && prev.key === key && Number.isFinite(prev.ts) && now - prev.ts < 200) {
+      return true
+    }
+    ;(window as any).__JIBAO_DROP_DEDUPE = { key, ts: now }
+    return false
+  }
+
   const attachNativeDropFallback = (node: HTMLDivElement, targetBoard: BoardKey): (() => void) => {
     const onDragOver = (e: DragEvent) => {
       const payload = readNativeDragPayload()
@@ -5146,6 +5165,11 @@ export default function JibaoWorkbench({
       }
       const width = payload.width || getCardWidth(payload.item?.size)
       const target = Math.max(0, Math.min(MAX_UNITS - width, Math.round((clientX - rect.left) / unit - width / 2)))
+      const dedupeKey = buildDropDedupeKey(targetBoard, payload, target)
+      if (shouldSkipDuplicateDrop(dedupeKey)) {
+        logDndLocal(`native-drop-${targetBoard}:deduped`, { dedupeKey })
+        return
+      }
       writeLastDragTarget(targetBoard, target)
       const res = buildDropPreview(targetBoard, payload, target)
       logDndLocal(`native-drop-${targetBoard}`, {
@@ -5264,6 +5288,11 @@ export default function JibaoWorkbench({
       }
       const width = dragged.width || getCardWidth(dragged.item?.size)
       const target = Math.max(0, Math.min(MAX_UNITS - width, Math.round((pt.x - rect.left) / unit - width / 2)))
+      const dedupeKey = buildDropDedupeKey('main', dragged, target)
+      if (shouldSkipDuplicateDrop(dedupeKey)) {
+        logDndLocal('drop-main:deduped', { dedupeKey })
+        return
+      }
       logDndLocal('drop-main', { x: pt.x, left: rect.left, unit, width, target, sourceType: dragged.sourceType })
       writeLastDragTarget('main', target)
 
@@ -5374,6 +5403,11 @@ export default function JibaoWorkbench({
       }
       const width = dragged.width || getCardWidth(dragged.item?.size)
       const target = Math.max(0, Math.min(MAX_UNITS - width, Math.round((pt.x - rect.left) / unit - width / 2)))
+      const dedupeKey = buildDropDedupeKey('reserve', dragged, target)
+      if (shouldSkipDuplicateDrop(dedupeKey)) {
+        logDndLocal('drop-reserve:deduped', { dedupeKey })
+        return
+      }
       logDndLocal('drop-reserve', { x: pt.x, left: rect.left, unit, width, target, sourceType: dragged.sourceType })
       writeLastDragTarget('reserve', target)
       const res = buildDropPreview('reserve', dragged, target)
