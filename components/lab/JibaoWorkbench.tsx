@@ -3326,10 +3326,10 @@ function simulateCombatStats(
               debugTimeline.push({
                 time: now,
                 kind: 'charge',
-                source: source.item.name_cn || source.item.name_en || source.item.id,
+                source: triggerCard.item.name_cn || triggerCard.item.name_en || triggerCard.item.id,
                 target: t.item.name_cn || t.item.name_en || t.item.id,
                 value: amount,
-                note: `充能 ${amount.toFixed(1)}s`,
+                note: `充能 ${amount.toFixed(1)}s 充能端口【${source.item.name_cn || source.item.name_en || source.item.id}】`,
               })
               if (ts.remaining <= epsilon && !queuedNormal.has(t.placementId)) {
                 queue.push({ card: t, forced: false })
