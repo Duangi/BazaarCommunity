@@ -3316,24 +3316,31 @@ function simulateCombatStats(
             : [fired]
           for (const triggerCard of triggerCards) {
             const casts = Math.max(1, Number(multicastMap.get(triggerCard.placementId) || 1))
-          const targets = resolveTargetsForTrigger(cards, source, triggerCard, rule, auraTags, rng)
-            const amount = Number(rule.amount || 0) * casts
-            if (amount <= 0) continue
-            for (const t of targets) {
-              const ts = state.get(t.placementId)
-              if (!ts) continue
-              ts.remaining -= amount
-              debugTimeline.push({
-                time: now,
-                kind: 'charge',
-                source: triggerCard.item.name_cn || triggerCard.item.name_en || triggerCard.item.id,
-                target: t.item.name_cn || t.item.name_en || t.item.id,
-                value: amount,
-                note: `充能 ${amount.toFixed(1)}s 充能端口【${source.item.name_cn || source.item.name_en || source.item.id}】`,
-              })
-              if (ts.remaining <= epsilon && !queuedNormal.has(t.placementId)) {
-                queue.push({ card: t, forced: false })
-                queuedNormal.add(t.placementId)
+            const targets = resolveTargetsForTrigger(cards, source, triggerCard, rule, auraTags, rng)
+            const amountPerCast = Number(rule.amount || 0)
+            if (amountPerCast <= 0) continue
+            for (let castIdx = 0; castIdx < casts; castIdx += 1) {
+              for (const t of targets) {
+                const ts = state.get(t.placementId)
+                if (!ts) continue
+                ts.remaining -= amountPerCast
+                debugTimeline.push({
+                  time: now,
+                  kind: 'charge',
+                  source: triggerCard.item.name_cn || triggerCard.item.name_en || triggerCard.item.id,
+                  target: t.item.name_cn || t.item.name_en || t.item.id,
+                  value: amountPerCast,
+                  note: `充能 ${amountPerCast.toFixed(1)}s 充能端口【${source.item.name_cn || source.item.name_en || source.item.id}】`,
+                })
+
+                // 逐次脉冲结算：每次充能命中就判断是否触发“立刻出手”，
+                // 避免把多重释放合并成一次大额充能。
+                while (ts.remaining <= epsilon) {
+                  const cd = getCardCooldownSec(t, cards)
+                  if (cd <= epsilon) break
+                  queue.push({ card: t, forced: true })
+                  ts.remaining += cd
+                }
               }
             }
           }
