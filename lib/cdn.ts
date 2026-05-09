@@ -28,11 +28,12 @@ export function iconUrl(iconName: string): string {
 }
 
 export function itemsDbUrl(): string {
-  // Use the bundled latest dump-derived data in this app build.
-  return '/resources/bazaardb/items_db.json?v=20260429a'
+  // Prefer locally parsed game exports (item.py) so balance updates
+  // are reflected immediately without waiting for dump pipeline sync.
+  return '/resources/raw_exports/items_export_latest.json?v=local_raw_20260507_dbfix1'
 }
 
 export function skillsDbUrl(): string {
-  // Use the bundled latest dump-derived data in this app build.
-  return '/resources/bazaardb/skills_db.json?v=20260429a'
+  // Prefer locally parsed game exports (skill.py).
+  return '/resources/raw_exports/skills_export_latest.json?v=local_raw_20260507_dbfix1'
 }

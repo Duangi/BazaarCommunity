@@ -148,7 +148,21 @@ function isSupportedCardConditionalAttributeNode(cond: any): boolean {
   if (t === 'TCardConditionalAnd' || t === 'TCardConditionalOr') {
     const children = Array.isArray(cond.Conditions) ? cond.Conditions : Array.isArray(cond.conditions) ? cond.conditions : []
     if (!children.length) return false
-    return children.every((x: any) => isSupportedCardConditionalAttributeNode(x))
+    // 对于 TCardConditionalAttribute 的支持判断，我们只约束“属性条件节点本身”；
+    // 同层的 Tag/Size 等条件不应导致该 token 判未支持。
+    let seenAttr = false
+    for (const child of children) {
+      const ct = String(child?.type || '').trim()
+      if (ct === 'TCardConditionalAttribute') {
+        seenAttr = true
+        if (!isSupportedCardConditionalAttributeNode(child)) return false
+      } else if (ct === 'TCardConditionalAnd' || ct === 'TCardConditionalOr') {
+        if (!isSupportedCardConditionalAttributeNode(child)) return false
+        const nestedChildren = Array.isArray(child?.Conditions) ? child.Conditions : Array.isArray(child?.conditions) ? child.conditions : []
+        if (nestedChildren.some((x: any) => String(x?.type || '').trim() === 'TCardConditionalAttribute')) seenAttr = true
+      }
+    }
+    return seenAttr
   }
   // Any other wrapper doesn't affect this token's support decision.
   if (cond.conditions) return isSupportedCardConditionalAttributeNode(cond.conditions)
@@ -211,12 +225,23 @@ function isContextuallySupported(row: any, token: string): boolean {
     (!targetMode || /any|self/i.test(targetMode)) &&
     isCooldownGreaterThanZeroCondition(cond)
 
+  const trigger = row?.trigger || {}
+  const triggerType = String(trigger?.type || '')
+  const attributeChanged = String(trigger?.AttributeChanged || trigger?.attributeChanged || '').trim().toLowerCase()
+  const changeType = String(trigger?.ChangeType || trigger?.changeType || '').trim().toLowerCase()
+  const supportsHasteAttributeChangedCharge =
+    triggerType === 'TTriggerOnCardAttributeChanged' &&
+    (!attributeChanged || attributeChanged === 'haste') &&
+    (!changeType || changeType === 'gain') &&
+    actionType === 'TActionCardCharge'
+
   if (token === 'TTargetCardRandom') return supportsOpponentRandomSlow || supportsSelfRandomAction
   if (token === 'TCardConditionalAttribute') {
     // Allow only vetted subset globally: CooldownMax > 0.
     if (rowHasOnlySupportedCardConditionalAttribute(row)) return true
     return supportsOpponentRandomSlow || supportsSelfRandomAction
   }
+  if (token === 'TTriggerOnCardAttributeChanged') return supportsHasteAttributeChangedCharge
   return false
 }
 
@@ -267,6 +292,10 @@ export function buildRuleSupportSummary(items: any[]): RuleSupportSummary {
     if (!res.cardId) continue
     totalCards += 1
     byCardId[res.cardId] = res.supported
+    const sourceKey = String((item as any)?.source_key || '').trim()
+    if (sourceKey) byCardId[sourceKey] = res.supported
+    const rawId = String((item as any)?.__raw?.id || '').trim()
+    if (rawId) byCardId[rawId] = res.supported
     for (const tk of res.usedTokens) {
       if (isSupportedToken(tk)) supportedTokenSet.add(tk)
     }

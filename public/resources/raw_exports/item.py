@@ -140,8 +140,17 @@ ACTION_TO_ATTR_TARGETS = {
     'TActionCardDamage': 'DamageTargets',
 }
 
-# 需要毫秒转秒的属性 (由用户后续指定)
-MS_TO_SEC_ATTRS = set()
+# 需要毫秒转秒的属性（GameData.db 原始值为 ms）
+MS_TO_SEC_ATTRS = {
+    'CooldownMax',
+    'ChargeAmount',
+    'ChargeMax',
+    'SlowAmount',
+    'FreezeAmount',
+    'HasteAmount',
+    'FlyingDuration',
+    'DisableDuration',
+}
 
 # 附魔顺序
 ENCHANT_ORDER = ['Golden', 'Heavy', 'Icy', 'Turbo', 'Shielded', 'Restorative', 
@@ -241,7 +250,10 @@ class ItemExtractor:
         
         # 优先从缓存目录查找
         if self.cache_dir:
+            cache_db = self.cache_dir / 'GameData.db'
             cache_cards = self.cache_dir / 'cards.json'
+            if cache_db.exists():
+                candidates.append(('缓存(db)', cache_db))
             if cache_cards.exists():
                 candidates.append(('缓存', cache_cards))
         
@@ -249,24 +261,27 @@ class ItemExtractor:
         if self.game_dir:
             streaming_assets = self.resolve_streaming_assets_dir()
             if streaming_assets:
+                game_db = streaming_assets / 'GameData.db'
                 v2_cards = streaming_assets / 'v2_Cards.json'
                 cards = streaming_assets / 'cards.json'
             else:
+                game_db = None
                 v2_cards = None
                 cards = None
             
+            if game_db and game_db.exists():
+                candidates.append(('游戏(db)', game_db))
             if v2_cards and v2_cards.exists():
                 candidates.append(('游戏(v2)', v2_cards))
             if cards and cards.exists():
                 candidates.append(('游戏', cards))
         
         if not candidates:
-            raise FileNotFoundError("无法找到卡牌数据文件 (cards.json 或 v2_Cards.json)")
+            raise FileNotFoundError("无法找到卡牌数据文件 (GameData.db / cards.json / v2_Cards.json)")
 
-        # 优先级：游戏(v2) > 游戏(cards) > 缓存(cards)
-        # 说明：缓存 cards.json 可能落后于游戏目录中的 v2_Cards.json，
-        # 为避免出现弱点探测器等数值回退，默认优先读取游戏文件。
-        priority = {'游戏(v2)': 3, '游戏': 2, '缓存': 1}
+        # 优先级：缓存/游戏 db > 游戏(v2) > 游戏(cards) > 缓存(cards)
+        # 说明：当前项目以 GameData.db 为唯一真源；json 仅作为兜底回退。
+        priority = {'缓存(db)': 5, '游戏(db)': 4, '游戏(v2)': 3, '游戏': 2, '缓存': 1}
         best = max(candidates, key=lambda x: (priority.get(x[0], 0), x[1].stat().st_mtime))
         print(f"[卡牌数据] 使用 {best[0]} 版本: {best[1]}")
         return best[1]
@@ -351,20 +366,41 @@ class ItemExtractor:
 
     def load_cards(self, cards_file: Path):
         """加载卡牌数据"""
-        with open(cards_file, 'r', encoding='utf-8') as f:
-            data = json.load(f)
-        
-        # 处理不同的数据格式
-        if isinstance(data, list):
-            # v2_Cards.json 格式
-            self.cards_data = data
-        elif isinstance(data, dict):
-            # cards.json 缓存格式
-            for v in data.values():
-                if isinstance(v, list):
-                    self.cards_data.extend(v)
+        if cards_file.suffix.lower() == '.db':
+            conn = sqlite3.connect(str(cards_file))
+            cursor = conn.cursor()
+            cursor.execute("SELECT Data FROM cards")
+            rows = cursor.fetchall()
+            conn.close()
+            self.cards_data = []
+            for (data_raw,) in rows:
+                if not data_raw:
+                    continue
+                if isinstance(data_raw, (bytes, bytearray)):
+                    data_text = data_raw.decode('utf-8', errors='ignore')
                 else:
-                    self.cards_data.append(v)
+                    data_text = str(data_raw)
+                try:
+                    card = json.loads(data_text)
+                except Exception:
+                    continue
+                if isinstance(card, dict):
+                    self.cards_data.append(card)
+        else:
+            with open(cards_file, 'r', encoding='utf-8') as f:
+                data = json.load(f)
+            # 处理不同的数据格式
+            if isinstance(data, list):
+                # v2_Cards.json 格式
+                self.cards_data = data
+            elif isinstance(data, dict):
+                # cards.json 缓存格式
+                self.cards_data = []
+                for v in data.values():
+                    if isinstance(v, list):
+                        self.cards_data.extend(v)
+                    else:
+                        self.cards_data.append(v)
         
         # 过滤出物品
         self.items = [c for c in self.cards_data if c.get('Type') == 'Item']

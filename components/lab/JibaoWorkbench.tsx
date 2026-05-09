@@ -67,6 +67,8 @@ type ChargeRule = {
   triggerExcludeSelf: boolean
   triggerSubjectType: string
   triggerSubjectMode: string
+  triggerAttributeChanged?: string
+  triggerChangeType?: string
   description: string
 }
 
@@ -360,6 +362,16 @@ const EXAMPLE_1_ORDER: Array<{ name: string; tier: PlacedCard['tier'] }> = [
 const EXAMPLE_1_RESERVE_ORDER: Array<{ name: string; tier: PlacedCard['tier'] }> = [
   { name: '哈姆锤特', tier: 'Bronze' },
   { name: '等离子手雷', tier: 'Silver' },
+]
+
+const EXAMPLE_POISON_ORDER: Array<{ name: string; tier: PlacedCard['tier'] }> = [
+  { name: '机械黑蜘蛛', tier: 'Gold' },
+  { name: 'C.O.R.A.', tier: 'Gold' },
+  { name: '伽马射线', tier: 'Silver' },
+  { name: '獠牙', tier: 'Bronze' },
+  { name: '炫光 LED', tier: 'Silver' },
+  { name: '全能核心', tier: 'Gold' },
+  { name: 'GPU', tier: 'Silver' },
 ]
 
 function normalizeName(s?: string): string {
@@ -871,6 +883,7 @@ function extractConditionMeta(node: any): {
 type TriggerBranch = {
   type: string
   subject: any
+  raw?: any
 }
 
 function expandTriggerBranches(trigger: any): TriggerBranch[] {
@@ -885,7 +898,7 @@ function expandTriggerBranches(trigger: any): TriggerBranch[] {
     return out.length > 0 ? out : [{ type: '', subject: {} }]
   }
   const subject = trigger.Subject || trigger.subject || {}
-  return [{ type: triggerType, subject }]
+  return [{ type: triggerType, subject, raw: trigger }]
 }
 
 function getAttrValueByTier(rawItem: any, attrType: string, preferredTier: string): number {
@@ -1180,6 +1193,7 @@ function readChargeRules(item: LabItem, tierInput?: string): { positionalRules: 
       const targetIncludeOrigin = Boolean(target.IncludeOrigin ?? target.includeOrigin)
       const triggerSubjectType = String(subject.type || '')
       const triggerSubjectMode = String(subject.TargetMode || subject.targetMode || '')
+      const triggerRaw = (branch as any)?.raw || row?.trigger || {}
 
       const r: ChargeRule = {
         sourceName: item.name_cn || item.name_en || item.id,
@@ -1211,6 +1225,8 @@ function readChargeRules(item: LabItem, tierInput?: string): { positionalRules: 
         triggerExcludeSelf,
         triggerSubjectType,
         triggerSubjectMode,
+        triggerAttributeChanged: String(triggerRaw.AttributeChanged || triggerRaw.attributeChanged || ''),
+        triggerChangeType: String(triggerRaw.ChangeType || triggerRaw.changeType || ''),
         description,
       }
 
@@ -2640,6 +2656,15 @@ function estimateOpponentTargetCount(rule: ChargeRule, opponentActiveCount: numb
   return pool
 }
 
+function isHasteAttributeChangedChargeRule(rule: ChargeRule): boolean {
+  if (String(rule.triggerType || '') !== 'TTriggerOnCardAttributeChanged') return false
+  const changed = String(rule.triggerAttributeChanged || '').trim().toLowerCase()
+  const changeType = String(rule.triggerChangeType || '').trim().toLowerCase()
+  if (changed && changed !== 'haste') return false
+  if (changeType && changeType !== 'gain') return false
+  return true
+}
+
 function analyze(cards: PlacedCard[]): Analysis {
   let potential = 0
   let effective = 0
@@ -3158,10 +3183,12 @@ function simulateCombatStats(
       const perCastPoison = Math.max(0, (basePoisonByCard.get(fired.placementId) || 0) + (bonusPoison.get(fired.placementId) || 0))
       const poisonApplied = perCastPoison * casts
       let performedPoisonHits = 0
+      const performedPoisonBy = new Set<string>()
       if (poisonApplied > 0) {
         totalPoisonApplied += poisonApplied
         byCardPoison.set(fired.placementId, (byCardPoison.get(fired.placementId) || 0) + poisonApplied)
         performedPoisonHits += casts
+        performedPoisonBy.add(fired.placementId)
         poisonApplyEvents.push({
           time: now,
           amount: poisonApplied,
@@ -3303,6 +3330,7 @@ function simulateCombatStats(
               note: `施加剧毒 ${amount.toFixed(1)}`,
             })
             performedPoisonHits += triggerCasts
+            performedPoisonBy.add(source.placementId)
           }
         }
         performedCtx.poisonHits = performedPoisonHits
@@ -3310,16 +3338,36 @@ function simulateCombatStats(
         const chargeRules = chargeRulesBySource.get(source.placementId) || []
         for (const rule of chargeRules) {
           const isShieldTrigger = String(rule.triggerType || '') === 'TTriggerOnCardPerformedShield'
-          if (!resolveEventTriggerMatch(source, rule, fired, shieldPerformedBy, performedCtx)) continue
+          const isPoisonTrigger = String(rule.triggerType || '').toLowerCase().includes('performedpoison')
+          const lowerTriggerType = String(rule.triggerType || '').toLowerCase()
           const triggerCards = isShieldTrigger
             ? resolveTriggerCandidates(cards, source, rule, auraTags).filter((x) => shieldPerformedBy.has(x.placementId))
-            : [fired]
+            : isPoisonTrigger
+              ? Array.from(performedPoisonBy).map((id) => cards.find((c) => c.placementId === id)).filter(Boolean) as PlacedCard[]
+              : [fired]
           for (const triggerCard of triggerCards) {
+            if (!resolveEventTriggerMatch(source, rule, triggerCard, shieldPerformedBy, performedCtx)) continue
             const casts = Math.max(1, Number(multicastMap.get(triggerCard.placementId) || 1))
+            let pulseCount = casts
+            // 对于“PerformedXxx”触发，触发次数应按本次事件的命中次数结算，
+            // 不能只按触发源卡牌 multicast 次数结算（例如 LED/手雷多目标减速）。
+            if (lowerTriggerType.includes('performedslow')) {
+              pulseCount = Math.max(1, Number(performedCtx?.slowHits || 0))
+            } else if (lowerTriggerType.includes('performedfreeze')) {
+              pulseCount = Math.max(1, Number(performedCtx?.freezeHits || 0))
+            } else if (lowerTriggerType.includes('performedhaste')) {
+              pulseCount = Math.max(1, Number(performedCtx?.hasteHits || 0))
+            } else if (lowerTriggerType.includes('performedreload')) {
+              pulseCount = Math.max(1, Number(performedCtx?.reloadHits || 0))
+            } else if (lowerTriggerType.includes('performeddestruction')) {
+              pulseCount = Math.max(1, Number(performedCtx?.destructionHits || 0))
+            } else if (lowerTriggerType.includes('performedpoison')) {
+              pulseCount = Math.max(1, Number(performedCtx?.poisonHits || 0))
+            }
             const targets = resolveTargetsForTrigger(cards, source, triggerCard, rule, auraTags, rng)
             const amountPerCast = Number(rule.amount || 0)
             if (amountPerCast <= 0) continue
-            for (let castIdx = 0; castIdx < casts; castIdx += 1) {
+            for (let castIdx = 0; castIdx < pulseCount; castIdx += 1) {
               for (const t of targets) {
                 const ts = state.get(t.placementId)
                 if (!ts) continue
@@ -3356,6 +3404,36 @@ function simulateCombatStats(
             const ts = state.get(t.placementId)
             if (!ts) continue
             ts.speedUntil = Math.max(ts.speedUntil, now + hasteSec)
+
+            // 处理 TTriggerOnCardAttributeChanged(Haste, Gain)：
+            // 例如透镜“被加速时，为自己充能X秒”。
+            const selfChargeRules = (chargeRulesBySource.get(t.placementId) || []).filter((r) =>
+              isHasteAttributeChangedChargeRule(r),
+            )
+            for (const sr of selfChargeRules) {
+              const selfTargets = resolveTargetsForTrigger(cards, t, t, sr, auraTags, rng)
+              const selfAmount = Math.max(0, Number(sr.amount || 0))
+              if (selfAmount <= 0) continue
+              for (const stCard of selfTargets) {
+                const st = state.get(stCard.placementId)
+                if (!st) continue
+                st.remaining -= selfAmount
+                debugTimeline.push({
+                  time: now,
+                  kind: 'charge',
+                  source: t.item.name_cn || t.item.name_en || t.item.id,
+                  target: stCard.item.name_cn || stCard.item.name_en || stCard.item.id,
+                  value: selfAmount,
+                  note: `充能 ${selfAmount.toFixed(1)}s 充能端口【${t.item.name_cn || t.item.name_en || t.item.id}】(被加速触发)`,
+                })
+                while (st.remaining <= epsilon) {
+                  const cd = getCardCooldownSec(stCard, cards)
+                  if (cd <= epsilon) break
+                  queue.push({ card: stCard, forced: true })
+                  st.remaining += cd
+                }
+              }
+            }
           }
         }
 
@@ -4659,6 +4737,25 @@ export default function JibaoWorkbench({
     }
   }
 
+  const applyPoisonExample = () => {
+    const { cards: demoCards, missing } = buildExampleCards(itemsPool, EXAMPLE_POISON_ORDER, 10, 'example-poison-main')
+    if (!demoCards.length) {
+      window.alert('毒核示例摆放失败：当前物品库中未找到示例卡牌。')
+      return
+    }
+    setSlotMode(10)
+    commit(demoCards)
+    setReserveCards([])
+    setPreview(null)
+    setReservePreview(null)
+    setSuggestPreviewId(null)
+    setSelectedId(demoCards[0]?.placementId || null)
+    if (demoCards[0]) onSelectItem(demoCards[0].item)
+    if (missing.length > 0) {
+      window.alert(`毒核示例已摆放，但缺少以下卡牌：${missing.join('、')}`)
+    }
+  }
+
   const applySuggestion = (nextMain: PlacedCard[]) => {
     const allMap = new Map<string, PlacedCard>()
     for (const c of [...cards, ...reserveCards]) allMap.set(c.placementId, c)
@@ -5574,6 +5671,7 @@ export default function JibaoWorkbench({
             ))}
           </div>
           <button className={styles.applyBtn} onClick={applyExample1}>全能核示例</button>
+          <button className={styles.applyBtn} onClick={applyPoisonExample}>毒核示例</button>
           <button className={styles.applyBtn} onClick={() => setShowSupportPanel((v) => !v)}>
             已经支持的卡牌词条
           </button>

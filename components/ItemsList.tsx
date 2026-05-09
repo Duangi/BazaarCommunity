@@ -291,6 +291,21 @@ export default function ItemsList({
   lookupFilterItem = null,
   onClearLookupFilter,
 }: ItemsListProps) {
+  const getSupportFlag = (item: any): boolean => {
+    if (!supportByItemId) return false
+    const keys = [
+      String(item?.id || '').trim(),
+      String(item?.source_key || '').trim(),
+      String(item?.__raw?.id || '').trim(),
+    ].filter(Boolean)
+    for (const key of keys) {
+      if (Object.prototype.hasOwnProperty.call(supportByItemId, key)) {
+        return Boolean((supportByItemId as Record<string, boolean>)[key])
+      }
+    }
+    return false
+  }
+
   const normalizeText = (value: any): string =>
     (value == null ? '' : String(value)).toLowerCase().trim()
 
@@ -832,7 +847,7 @@ export default function ItemsList({
             key={item.id}
             item={item}
             sourceType={activeTab}
-            isFullySupported={activeTab === 'items' ? Boolean(supportByItemId?.[String(item?.id || '')]) : false}
+            isFullySupported={activeTab === 'items' ? getSupportFlag(item) : false}
             onClick={() => {
               toggleExpand(item.id)
               onSelectItem(item)
